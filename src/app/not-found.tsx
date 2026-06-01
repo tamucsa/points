@@ -1,4 +1,4 @@
-import NotFoundBox from "@/app/ui/NotFoundBox";
+import NotFoundBox from "@/app/components/ui/NotFoundBox";
 
 import { Metadata } from "next";
  

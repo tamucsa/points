@@ -1,4 +1,4 @@
-import LinkButton from "@/app/ui/LinkButton";
+import LinkButton from "@/app/components/ui/LinkButton";
 
 // import classNames from "classnames";
 
