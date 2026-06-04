@@ -7,7 +7,7 @@ export default function PendingPage() {
           You're registered!
         </h1>
         <p style={{ fontSize: 14, color: '#555', lineHeight: 1.6 }}>
-          An officer will assign your JT family after the sorting process. 
+          This dashboard will be available to you once you join your jiating! 
           You'll get full access to the leaderboard and events once that's done.
         </p>
       </div>

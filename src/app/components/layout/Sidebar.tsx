@@ -24,7 +24,7 @@ const NAV_ITEMS: NavItem[] = [
   { label: 'My Points',       path: '/profile',            emoji: '⭐' },
   { label: 'Members',         path: '/officer/members',    emoji: '👥', officerOnly: true },
   { label: 'Officer Events',  path: '/officer/events',     emoji: '📋', officerOnly: true },
-  { label: 'Semester',        path: '/officer/semester',   emoji: '📊', officerOnly: true },
+  // { label: 'Semester',        path: '/officer/semester',   emoji: '📊', officerOnly: true },
   { label: 'Admin',           path: '/admin/members',      emoji: '🔐', adminOnly: true },
 ]
 
