@@ -15,21 +15,24 @@ interface NavItem {
   path: string
   emoji: string
   officerOnly?: boolean
+  adminOnly?: boolean
 }
 
 const NAV_ITEMS: NavItem[] = [
-  { label: 'Leaderboard', path: '/leaderboard', emoji: '🏆' },
-  { label: 'Events',      path: '/events',      emoji: '📅' },
-  { label: 'My Points',   path: '/profile',     emoji: '⭐' },
-  { label: 'Members',     path: '/officer/members',   emoji: '👥', officerOnly: true },
-  { label: 'Dashboard',   path: '/officer/dashboard', emoji: '🎖️', officerOnly: true },
-  { label: 'Semester',    path: '/officer/semester',  emoji: '📊', officerOnly: true },
+  { label: 'Leaderboard',     path: '/leaderboard',        emoji: '🏆' },
+  { label: 'Events',          path: '/events',             emoji: '📅' },
+  { label: 'My Points',       path: '/profile',            emoji: '⭐' },
+  { label: 'Members',         path: '/officer/members',    emoji: '👥', officerOnly: true },
+  { label: 'Officer Events',  path: '/officer/events',     emoji: '📋', officerOnly: true },
+  { label: 'Semester',        path: '/officer/semester',   emoji: '📊', officerOnly: true },
+  { label: 'Admin',           path: '/admin/members',      emoji: '🔐', adminOnly: true },
 ]
 
 export default function Sidebar({ member }: { member: Member }) {
   const pathname = usePathname()
   const router = useRouter()
   const isOfficer = ['officer', 'admin'].includes(member.role)
+  const isAdmin = member.role === 'admin'
 
   const supabase = createBrowserClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -41,7 +44,13 @@ export default function Sidebar({ member }: { member: Member }) {
     router.push('/login')
   }
 
-  const visibleNav = NAV_ITEMS.filter(item => !item.officerOnly || isOfficer)
+  const visibleNav = NAV_ITEMS.filter(item => 
+  (!item.officerOnly || isOfficer) && (!item.adminOnly || isAdmin)
+)
+
+  const generalNav = NAV_ITEMS.filter(item => !item.officerOnly && !item.adminOnly)
+  const officerNav = NAV_ITEMS.filter(item => item.officerOnly)
+  const adminNav = NAV_ITEMS.filter(item => item.adminOnly)
 
   return (
     <div style={{
@@ -64,8 +73,8 @@ export default function Sidebar({ member }: { member: Member }) {
         </div>
       </div>
 
-      {/* Nav items */}
-      {visibleNav.map(item => {
+      {/* Top-level Nav items */}
+      {generalNav.map(item => {
         const active = pathname.startsWith(item.path)
         return (
           <button
@@ -94,18 +103,92 @@ export default function Sidebar({ member }: { member: Member }) {
         )
       })}
 
-      {/* Officer section divider */}
+      {/* Officer section */}
       {isOfficer && (
-        <div style={{
-          fontSize: 11,
-          color: '#333',
-          fontWeight: 600,
-          textTransform: 'uppercase',
-          letterSpacing: '0.08em',
-          padding: '16px 12px 4px',
-        }}>
-          Officer Tools
-        </div>
+        <>
+          <div style={{
+            fontSize: 11,
+            color: '#333',
+            fontWeight: 600,
+            textTransform: 'uppercase',
+            letterSpacing: '0.08em',
+            padding: '16px 12px 4px',
+          }}>
+            Officer
+          </div>
+          {officerNav.map(item => {
+            const active = pathname.startsWith(item.path)
+            return (
+              <button
+                key={item.path}
+                onClick={() => router.push(item.path)}
+                style={{
+                  background: active ? '#1e2130' : 'none',
+                  border: 'none',
+                  cursor: 'pointer',
+                  padding: '8px 12px',
+                  borderRadius: 8,
+                  fontFamily: 'inherit',
+                  fontSize: 14,
+                  fontWeight: 500,
+                  color: active ? '#fff' : '#666',
+                  textAlign: 'left',
+                  transition: 'all 0.15s',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 8,
+                }}
+              >
+                <span>{item.emoji}</span>
+                <span>{item.label}</span>
+              </button>
+            )
+          })}
+        </>
+      )}
+
+      {/* Admin section */}
+      {isAdmin && (
+        <>
+          <div style={{
+            fontSize: 11,
+            color: '#333',
+            fontWeight: 600,
+            textTransform: 'uppercase',
+            letterSpacing: '0.08em',
+            padding: '16px 12px 4px',
+          }}>
+            Admin
+          </div>
+          {adminNav.map(item => {
+            const active = pathname.startsWith(item.path)
+            return (
+              <button
+                key={item.path}
+                onClick={() => router.push(item.path)}
+                style={{
+                  background: active ? '#1e2130' : 'none',
+                  border: 'none',
+                  cursor: 'pointer',
+                  padding: '8px 12px',
+                  borderRadius: 8,
+                  fontFamily: 'inherit',
+                  fontSize: 14,
+                  fontWeight: 500,
+                  color: active ? '#fff' : '#666',
+                  textAlign: 'left',
+                  transition: 'all 0.15s',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 8,
+                }}
+              >
+                <span>{item.emoji}</span>
+                <span>{item.label}</span>
+              </button>
+            )
+          })}
+        </>
       )}
 
       {/* User info + sign out */}

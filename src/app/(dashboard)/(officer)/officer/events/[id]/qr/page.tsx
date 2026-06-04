@@ -1,9 +1,11 @@
 import { createServerClient } from '@supabase/ssr'
 import { cookies } from 'next/headers'
 import { redirect, notFound } from 'next/navigation'
-import QRFullScreen from '@/app/(officer)/dashboard/components/QRFullScreen'
+import QRFullScreen from '@/app/(dashboard)/(officer)/officer/events/components/QRFullScreen'
 
-export default async function QRPage({ params }: { params: { id: string } }) {
+export default async function QRPage({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params
+  
   const cookieStore = await cookies()
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -11,11 +13,7 @@ export default async function QRPage({ params }: { params: { id: string } }) {
     {
       cookies: {
         getAll() { return cookieStore.getAll() },
-        setAll(cookiesToSet) {
-          cookiesToSet.forEach(({ name, value, options }) =>
-            cookieStore.set(name, value, options)
-          )
-        },
+        setAll() {},
       },
     }
   )
@@ -26,7 +24,7 @@ export default async function QRPage({ params }: { params: { id: string } }) {
   const { data: event } = await supabase
     .from('events')
     .select('id, name, event_date, point_value, check_in_code, location')
-    .eq('id', params.id)
+    .eq('id', id)
     .eq('check_in_type', 'self')
     .single()
 

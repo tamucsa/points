@@ -1,5 +1,6 @@
 'use client'
 import { QRCodeSVG } from 'qrcode.react'
+import { useEffect, useState } from 'react'
 
 interface Event {
   id: string
@@ -17,7 +18,13 @@ const POINT_COLORS: Record<number, string> = {
 }
 
 export default function QRFullScreen({ event }: { event: Event }) {
-  const checkInUrl = `${window.location.origin}/checkin/${event.check_in_code}`
+  const [origin, setOrigin] = useState('')
+
+  useEffect(() => {
+    setOrigin(window.location.origin)
+  }, [])
+
+  const checkInUrl = `${origin}/checkin/${event.check_in_code}`
   const pointColor = POINT_COLORS[event.point_value] ?? '#4f6ef7'
 
   return (
@@ -39,18 +46,21 @@ export default function QRFullScreen({ event }: { event: Event }) {
         padding: 28, background: '#fff', borderRadius: 20,
         boxShadow: `0 0 80px ${pointColor}40`,
       }}>
-        <QRCodeSVG
-          value={checkInUrl}
-          size={300}
-          level="H"
-        />
+        {origin && (
+          <QRCodeSVG
+            value={checkInUrl}
+            size={300}
+            level="H"
+          />
+        )}
       </div>
 
-      <div style={{
-        display: 'flex', gap: 24, alignItems: 'center',
-        fontSize: 18, color: '#888',
-      }}>
-        <span>📅 {new Date(event.event_date).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}</span>
+      <div style={{ display: 'flex', gap: 24, alignItems: 'center', fontSize: 18, color: '#888' }}>
+        <span>
+          📅 {new Date(event.event_date).toLocaleDateString('en-US', {
+            month: 'long', day: 'numeric', year: 'numeric'
+          })}
+        </span>
         <span style={{ color: pointColor, fontWeight: 700 }}>
           +{event.point_value} point{event.point_value !== 1 ? 's' : ''}
         </span>

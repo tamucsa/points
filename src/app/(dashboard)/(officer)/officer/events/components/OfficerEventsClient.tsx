@@ -29,21 +29,40 @@ const POINT_COLORS: Record<number, string> = {
   1: '#4fc787',
 }
 
-export default function OfficerDashboardClient({ events, attendanceCounts, semester }: Props) {
+const SCOPE_LABELS: Record<string, string> = {
+  org:          '🏫 CSA-Wide',
+  jt_shared:    '🏅 JT Shared',
+  jt_specific:  '🏠 JT Specific',
+}
+
+const CHECKIN_LABELS: Record<string, string> = {
+  officer:       '👤 Officer',
+  self:          '🔲 QR Code',
+  rsvp_required: '📋 RSVP',
+}
+
+export default function OfficerEventsClient({ events, attendanceCounts, semester }: Props) {
   const router = useRouter()
   const [qrEvent, setQrEvent] = useState<Event | null>(null)
 
   const checkInUrl = (code: string) =>
-    `${window.location.origin}/checkin/${code}`
+    typeof window !== 'undefined'
+      ? `${window.location.origin}/checkin/${code}`
+      : `/checkin/${code}`
 
   return (
     <div style={{ padding: 28, maxWidth: 900, margin: '0 auto' }}>
 
       {/* Header */}
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 28 }}>
+      <div style={{
+        display: 'flex', alignItems: 'center',
+        justifyContent: 'space-between', marginBottom: 28,
+      }}>
         <div>
           <h1 style={{ fontSize: 22, fontWeight: 700, color: '#fff' }}>Events</h1>
-          <div style={{ fontSize: 13, color: '#555', marginTop: 2 }}>{semester?.name}</div>
+          <div style={{ fontSize: 13, color: '#555', marginTop: 2 }}>
+            {semester?.name} · {events.length} events
+          </div>
         </div>
         <button
           onClick={() => router.push('/officer/events/new')}
@@ -71,6 +90,7 @@ export default function OfficerDashboardClient({ events, attendanceCounts, semes
         {events.map(event => {
           const pointColor = POINT_COLORS[event.point_value] ?? '#888'
           const count = attendanceCounts[event.id] ?? 0
+          const isPast = new Date(event.event_date) < new Date()
 
           return (
             <div key={event.id} style={{
@@ -81,6 +101,7 @@ export default function OfficerDashboardClient({ events, attendanceCounts, semes
               display: 'flex',
               alignItems: 'center',
               gap: 16,
+              opacity: isPast ? 0.75 : 1,
             }}>
               {/* Point badge */}
               <div style={{
@@ -94,21 +115,47 @@ export default function OfficerDashboardClient({ events, attendanceCounts, semes
 
               {/* Event info */}
               <div style={{ flex: 1 }}>
-                <div style={{ fontSize: 14, fontWeight: 600, color: '#ddd' }}>
-                  {event.name}
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <span style={{ fontSize: 14, fontWeight: 600, color: '#ddd' }}>
+                    {event.name}
+                  </span>
+                  {!isPast && (
+                    <span style={{
+                      fontSize: 11, padding: '1px 7px', borderRadius: 20,
+                      background: '#4f6ef720', color: '#4f6ef7', fontWeight: 600,
+                    }}>
+                      Upcoming
+                    </span>
+                  )}
                 </div>
                 <div style={{ display: 'flex', gap: 8, marginTop: 4, flexWrap: 'wrap' }}>
                   <span style={{ fontSize: 12, color: '#555' }}>
-                    📅 {new Date(event.event_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                    📅 {new Date(event.event_date).toLocaleDateString('en-US', {
+                      month: 'short', day: 'numeric', year: 'numeric'
+                    })}
                   </span>
                   {event.location && (
-                    <span style={{ fontSize: 12, color: '#555' }}>📍 {event.location}</span>
+                    <span style={{ fontSize: 12, color: '#555' }}>
+                      📍 {event.location}
+                    </span>
                   )}
                   <span style={{
                     fontSize: 11, padding: '1px 6px', borderRadius: 4,
                     background: '#ffffff10', color: '#666',
                   }}>
                     {event.category}
+                  </span>
+                  <span style={{
+                    fontSize: 11, padding: '1px 6px', borderRadius: 4,
+                    background: '#ffffff08', color: '#555',
+                  }}>
+                    {SCOPE_LABELS[event.scope]}
+                  </span>
+                  <span style={{
+                    fontSize: 11, padding: '1px 6px', borderRadius: 4,
+                    background: '#ffffff08', color: '#555',
+                  }}>
+                    {CHECKIN_LABELS[event.check_in_type]}
                   </span>
                   <span style={{ fontSize: 12, color: '#555' }}>
                     👥 {count} attended
@@ -123,8 +170,10 @@ export default function OfficerDashboardClient({ events, attendanceCounts, semes
                     <button
                       onClick={() => setQrEvent(event)}
                       style={{
-                        padding: '6px 12px', background: '#4f6ef720',
-                        border: '1px solid #4f6ef740', color: '#4f6ef7',
+                        padding: '6px 12px',
+                        background: '#4f6ef720',
+                        border: '1px solid #4f6ef740',
+                        color: '#4f6ef7',
                         borderRadius: 7, fontSize: 12, fontWeight: 600,
                         cursor: 'pointer', fontFamily: 'inherit',
                       }}
@@ -136,7 +185,7 @@ export default function OfficerDashboardClient({ events, attendanceCounts, semes
                       style={{
                         padding: '6px 12px', background: 'transparent',
                         border: '1px solid #2a2f45', color: '#666',
-                        borderRadius: 7, fontSize: 12, fontWeight: 500,
+                        borderRadius: 7, fontSize: 12,
                         cursor: 'pointer', fontFamily: 'inherit',
                       }}
                     >
@@ -148,8 +197,25 @@ export default function OfficerDashboardClient({ events, attendanceCounts, semes
                   <button
                     onClick={() => router.push(`/officer/events/${event.id}/checkin`)}
                     style={{
-                      padding: '6px 12px', background: '#4fc78720',
-                      border: '1px solid #4fc78740', color: '#4fc787',
+                      padding: '6px 12px',
+                      background: '#4fc78720',
+                      border: '1px solid #4fc78740',
+                      color: '#4fc787',
+                      borderRadius: 7, fontSize: 12, fontWeight: 600,
+                      cursor: 'pointer', fontFamily: 'inherit',
+                    }}
+                  >
+                    Check In
+                  </button>
+                )}
+                {event.check_in_type === 'rsvp_required' && (
+                  <button
+                    onClick={() => router.push(`/officer/events/${event.id}/checkin`)}
+                    style={{
+                      padding: '6px 12px',
+                      background: '#f7934f20',
+                      border: '1px solid #f7934f40',
+                      color: '#f7934f',
                       borderRadius: 7, fontSize: 12, fontWeight: 600,
                       cursor: 'pointer', fontFamily: 'inherit',
                     }}
@@ -190,15 +256,15 @@ export default function OfficerDashboardClient({ events, attendanceCounts, semes
               background: '#161a27', borderRadius: 20,
               border: '1px solid #1e2337',
               padding: 40, textAlign: 'center',
-              display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 20,
+              display: 'flex', flexDirection: 'column',
+              alignItems: 'center', gap: 20,
+              maxWidth: 380, width: '100%',
             }}
           >
             <div style={{ fontSize: 18, fontWeight: 700, color: '#fff' }}>
               {qrEvent.name}
             </div>
-            <div style={{
-              padding: 20, background: '#fff', borderRadius: 12,
-            }}>
+            <div style={{ padding: 20, background: '#fff', borderRadius: 12 }}>
               <QRCodeSVG
                 value={checkInUrl(qrEvent.check_in_code!)}
                 size={220}
