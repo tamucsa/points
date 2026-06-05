@@ -11,23 +11,31 @@ export default function LoginPage() {
 
   const signInWithGoogle = async () => {
     setLoading(true)
-    await supabase.auth.signInWithOAuth({
+    const { data, error } = await supabase.auth.signInWithOAuth({
       provider: 'google',
       options: {
         redirectTo: `${window.location.origin}/api/auth/callback`,
         queryParams: { hd: 'tamu.edu' },
+        skipBrowserRedirect: true,
       },
     })
+
+    if (error || !data?.url) {
+      setLoading(false)
+      return
+    }
+
+    window.location.href = data.url
   }
 
   return (
     <div className="relative min-h-screen overflow-hidden bg-bg px-6 py-10 text-text">
-      <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,_rgba(71,121,184,0.16),_transparent_34%),radial-gradient(circle_at_bottom_right,_rgba(240,176,195,0.22),_transparent_38%)]" />
-      <div className="absolute left-[-6rem] top-20 h-44 w-44 rounded-full bg-primary/10 blur-3xl" />
-      <div className="absolute bottom-8 right-[-5rem] h-56 w-56 rounded-full bg-accent/20 blur-3xl" />
+      <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(71,121,184,0.16),transparent_34%),radial-gradient(circle_at_bottom_right,rgba(240,176,195,0.22),transparent_38%)]" />
+      <div className="absolute -left-24 top-20 h-44 w-44 rounded-full bg-primary/10 blur-3xl" />
+      <div className="absolute -right-20 bottom-8 h-56 w-56 rounded-full bg-accent/20 blur-3xl" />
 
       <div className="relative mx-auto flex min-h-[calc(100vh-5rem)] w-full max-w-6xl items-center justify-center">
-        <div className="grid w-full max-w-5xl overflow-hidden rounded-[2rem] border border-home-border bg-white shadow-[0_24px_80px_rgba(15,23,42,0.08)] lg:grid-cols-[1.15fr_0.85fr]">
+        <div className="grid w-full max-w-5xl overflow-hidden rounded-4xl border border-home-border bg-white shadow-[0_24px_80px_rgba(15,23,42,0.08)] lg:grid-cols-[1.15fr_0.85fr]">
           <div className="relative overflow-hidden bg-[linear-gradient(135deg,rgba(71,121,184,0.08),rgba(255,255,255,0.9)_52%,rgba(240,176,195,0.16))] p-8 sm:p-10 lg:p-12">
             <div className="mb-8 inline-flex items-center gap-2 rounded-full border border-primary/15 bg-white/80 px-4 py-2 text-xs font-semibold uppercase tracking-[0.24em] text-primary backdrop-blur">
               Texas A&amp;M Chinese Student Association
