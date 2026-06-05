@@ -3,14 +3,7 @@ import { createBrowserClient } from '@supabase/ssr'
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 
-interface GoogleUser {
-  id: string
-  email: string
-  user_metadata: {
-    full_name: string
-    avatar_url: string
-  }
-}
+import { GoogleUser } from '@/utils/types'
 
 export default function RegisterPage() {
   const router = useRouter()
@@ -103,12 +96,12 @@ export default function RegisterPage() {
   if (loading) return null // middleware handles redirect if no session
 
   return (
-    <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#0f1117' }}>
-      <div style={{ width: '100%', maxWidth: 440, padding: 32, background: '#161a27', borderRadius: 16, border: '1px solid #1e2337' }}>
+    <div className="min-h-screen flex items-center justify-center bg-[#0f1117]">
+      <div className="w-full max-w-md p-8 bg-[#161a27] rounded-lg border border-[#1e2337]">
 
         {/* Header */}
-        <div style={{ marginBottom: 28 }}>
-          <h1 style={{ fontSize: 22, fontWeight: 700, color: '#fff', marginBottom: 6 }}>
+        <div className="mb-7">
+          <h1 className="text-xl font-bold text-white mb-1.5">
             Complete your registration
           </h1>
           <p style={{ fontSize: 14, color: '#555' }}>
@@ -117,7 +110,7 @@ export default function RegisterPage() {
         </div>
 
         {/* Pre-filled from Google — read only */}
-        <div style={{ marginBottom: 20, padding: 14, background: '#0f1117', borderRadius: 10, display: 'flex', alignItems: 'center', gap: 12 }}>
+        <div className="mb-5 p-3.5 bg-[#0f1117] rounded-lg flex items-center gap-3">
           {user?.user_metadata.avatar_url && (
             <img
               src={user.user_metadata.avatar_url}
