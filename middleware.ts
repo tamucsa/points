@@ -30,6 +30,22 @@ export async function middleware(request: NextRequest) {
     return NextResponse.redirect(new URL('/login', request.url))
   }
 
+  if (user && !isPublicRoute) {
+    const { data: member } = await supabase
+      .from('members')
+      .select('status, auth_uid')
+      .eq('auth_uid', user.id)
+      .maybeSingle()
+
+    if (request.nextUrl.pathname.startsWith('/leaderboard') && member?.status === 'pending_jt') {
+      return NextResponse.redirect(new URL('/pending', request.url))
+    }
+
+    if (request.nextUrl.pathname.startsWith('/pending') && member?.status === 'active') {
+      return NextResponse.redirect(new URL('/leaderboard', request.url))
+    }
+  }
+
   if (user && request.nextUrl.pathname.startsWith('/login')) {
     return NextResponse.redirect(new URL('/leaderboard', request.url))
   }

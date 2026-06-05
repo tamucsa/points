@@ -1,6 +1,5 @@
 import { createServerClient } from '@supabase/ssr'
 import { cookies } from 'next/headers'
-import { redirect } from 'next/navigation'
 import Sidebar from '@/app/components/layout/Sidebar'
 
 export default async function DashboardLayout({
@@ -21,7 +20,8 @@ export default async function DashboardLayout({
   )
 
   const { data: { user } } = await supabase.auth.getUser()
-  if (!user) redirect('/login')
+
+  if (!user) return null
 
   const { data: member } = await supabase
     .from('members')
@@ -29,8 +29,9 @@ export default async function DashboardLayout({
     .eq('auth_uid', user.id)
     .single()
 
-  if (!member) redirect('/login')
-  if (member.status === 'pending_jt') redirect('/pending')
+  if (!member) {
+    return null
+  }
 
   return (
     <div style={{ display: 'flex', height: '100vh', background: '#0f1117' }}>

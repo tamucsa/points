@@ -1,4 +1,38 @@
-export default function PendingPage() {
+import { createServerClient } from '@supabase/ssr'
+import { cookies } from 'next/headers'
+import { redirect } from 'next/navigation'
+
+export default async function PendingPage() {
+  const cookieStore = await cookies()
+  const supabase = createServerClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    {
+      cookies: {
+        getAll() {
+          return cookieStore.getAll()
+        },
+        setAll() {},
+      },
+    }
+  )
+
+  const { data: { user } } = await supabase.auth.getUser()
+
+  if (!user) {
+    redirect('/login')
+  }
+
+  const { data: member } = await supabase
+    .from('members')
+    .select('status')
+    .eq('auth_uid', user.id)
+    .maybeSingle()
+
+  if (member?.status === 'active') {
+    redirect('/leaderboard')
+  }
+
   return (
     <div className="relative min-h-screen overflow-hidden bg-bg px-6 py-8 text-text">
       <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(71,121,184,0.16),transparent_34%),radial-gradient(circle_at_bottom_right,rgba(240,176,195,0.22),transparent_38%)]" />
