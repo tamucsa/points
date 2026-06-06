@@ -1,23 +1,12 @@
-import { createServerClient } from '@supabase/ssr'
-import { cookies } from 'next/headers'
 import { redirect } from 'next/navigation'
+import { createServerSupabase } from '@/utils/supabase/server'
 
 export default async function AdminLayout({
   children,
 }: {
   children: React.ReactNode
 }) {
-  const cookieStore = await cookies()
-  const supabase = createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-    {
-      cookies: {
-        getAll() { return cookieStore.getAll() },
-        setAll() {},
-      },
-    }
-  )
+  const supabase = await createServerSupabase()
 
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect('/login')
@@ -26,9 +15,8 @@ export default async function AdminLayout({
     .from('members')
     .select('role')
     .eq('auth_uid', user.id)
-    .single()
+    .maybeSingle()
 
-  // Admin only — officers get redirected
   if (!member || member.role !== 'admin') {
     redirect('/leaderboard')
   }

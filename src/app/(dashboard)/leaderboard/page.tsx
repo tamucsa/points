@@ -1,31 +1,21 @@
-import { createServerClient } from '@supabase/ssr'
-import { cookies } from 'next/headers'
 import LeaderboardClient from '@/app/(dashboard)/leaderboard/components/LeaderboardClient'
+import { createServerSupabase } from '@/utils/supabase/server'
 
 export default async function LeaderboardPage() {
-  const cookieStore = await cookies()
+  const supabase = await createServerSupabase()
 
-  const supabase = createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-    {
-      cookies: {
-        getAll() { return cookieStore.getAll() },
-        setAll() {},
-      },
-    }
-  )
-
-  const [{ data: members }, { data: jt }, { data: semester }] = await Promise.all([
-    supabase.from('v_current_leaderboard').select('*'),
-    supabase.from('v_jt_leaderboard').select('*'),
-    supabase.from('semesters').select('*').eq('is_active', true).single(),
+  const [{ data: members }, { data: semester }] = await Promise.all([
+    supabase
+      .from('v_current_leaderboard')
+      .select('id, preferred_name, full_name, profile_image_url, jt_family, jt_color, total_points')
+      .order('total_points', { ascending: false })
+      .limit(10),
+    supabase.from('semesters').select('name').eq('is_active', true).maybeSingle(),
   ])
 
   return (
     <LeaderboardClient
       members={members ?? []}
-      jtTotals={jt ?? []}
       semester={semester}
     />
   )

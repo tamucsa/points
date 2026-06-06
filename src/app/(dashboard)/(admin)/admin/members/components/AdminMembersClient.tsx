@@ -1,6 +1,6 @@
 'use client'
 import { useState } from 'react'
-import { createBrowserClient } from '@supabase/ssr'
+import { activateMember, importMembers } from '@/app/actions/members'
 
 interface PendingMember {
   id: string
@@ -58,11 +58,6 @@ function parseCSV(text: string): CSVRow[] {
 }
 
 export default function AdminMembersClient({ pending: initialPending, jtFamilies }: Props) {
-  const supabase = createBrowserClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-  )
-
   const [pending, setPending] = useState(initialPending)
   const [assignments, setAssignments] = useState<Record<string, string>>({})
   const [saving, setSaving] = useState<string | null>(null)
@@ -76,13 +71,12 @@ export default function AdminMembersClient({ pending: initialPending, jtFamilies
 
     setSaving(memberId)
 
-    await supabase
-      .from('members')
-      .update({ jt_family_id: jtFamilyId, status: 'active' })
-      .eq('id', memberId)
+    const result = await activateMember(memberId, jtFamilyId)
+    setSaving(null)
+
+    if (!result.success) return
 
     setPending(p => p.filter(m => m.id !== memberId))
-    setSaving(null)
   }
 
   const handleCSV = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -91,47 +85,22 @@ export default function AdminMembersClient({ pending: initialPending, jtFamilies
     setImporting(true)
 
     file.text().then(async (text) => {
-      const summary: ImportResult = { added: 0, skipped: 0, errors: [] }
       const rows = parseCSV(text)
+      const result = await importMembers(rows.map(row => ({
+        fullName: row['Full Name'],
+        preferredName: row['Preferred Name'],
+        email: row['TAMU Email'],
+        phone: row['Phone'],
+        graduationYear: row['Graduation Year'],
+      })))
 
-      for (const row of rows) {
-        const email = row['TAMU Email']?.trim().toLowerCase()
-
-        if (!email?.endsWith('@tamu.edu')) {
-          summary.errors.push(`${email} — not a @tamu.edu address`)
-          continue
-        }
-
-        const { data: existing } = await supabase
-          .from('members')
-          .select('id')
-          .eq('email', email)
-          .single()
-
-        if (existing) {
-          summary.skipped++
-          continue
-        }
-
-        const { error } = await supabase.from('members').insert({
-          email,
-          full_name:       row['Full Name']?.trim(),
-          preferred_name:  row['Preferred Name']?.trim() || null,
-          phone:           row['Phone']?.trim() || null,
-          graduation_year: parseInt(row['Graduation Year']) || null,
-          status:          'pending_jt',
-          role:            'member',
+      if (result.success) {
+        setImportResult({
+          added: result.added,
+          skipped: result.skipped,
+          errors: result.errors,
         })
-
-        if (error) {
-          summary.errors.push(`${email} — ${error.message}`)
-        } else {
-          summary.added++
-        }
-
       }
-
-      setImportResult(summary)
       setImporting(false)
     }).catch(() => {
       setImporting(false)

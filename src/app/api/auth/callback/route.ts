@@ -3,9 +3,21 @@ import { createClient } from '@supabase/supabase-js'
 import { cookies } from 'next/headers'
 import { NextResponse } from 'next/server'
 
+function safeNextPath(next: string | null, origin: string): string | null {
+  if (!next || !next.startsWith('/') || next.startsWith('//')) return null
+  try {
+    const url = new URL(next, origin)
+    if (url.origin !== origin) return null
+    return `${url.pathname}${url.search}`
+  } catch {
+    return null
+  }
+}
+
 export async function GET(request: Request) {
   const { searchParams, origin } = new URL(request.url)
   const code = searchParams.get('code')
+  const next = safeNextPath(searchParams.get('next'), origin)
 
   if (code) {
     const cookieStore = await cookies()
@@ -26,10 +38,11 @@ export async function GET(request: Request) {
 
     const { data: { user }, error } = await supabase.auth.exchangeCodeForSession(code)
 
-    console.log('user email:', user?.email)
-    console.log('auth error:', error)
+    if (error || !user) {
+      return NextResponse.redirect(`${origin}/login?error=auth_failed`)
+    }
 
-    if (!user?.email?.endsWith('@tamu.edu')) {
+    if (!user.email?.endsWith('@tamu.edu')) {
       await supabase.auth.signOut()
       return NextResponse.redirect(`${origin}/login?error=invalid_domain`)
     }
@@ -39,29 +52,29 @@ export async function GET(request: Request) {
       process.env.SUPABASE_SERVICE_ROLE_KEY!
     )
 
-    const { data: memberByAuthUid, error: memberByAuthUidError } = await supabaseAdmin
+    const { data: memberByAuthUid } = await supabaseAdmin
       .from('members')
       .select('id, status, auth_uid')
       .eq('auth_uid', user.id)
       .maybeSingle()
 
-    const { data: memberByEmail, error: memberByEmailError } = await supabaseAdmin
+    const { data: memberByEmail } = await supabaseAdmin
       .from('members')
       .select('id, status, auth_uid')
       .ilike('email', user.email ?? '')
       .maybeSingle()
 
     const member = memberByAuthUid ?? memberByEmail
-    const memberError = memberByAuthUidError ?? memberByEmailError
-
-    console.log('member:', member)
-    console.log('member error:', memberError)
 
     if (member && !member.auth_uid) {
       await supabaseAdmin
         .from('members')
         .update({ auth_uid: user.id })
         .eq('id', member.id)
+
+      if (next && member.status === 'active') {
+        return NextResponse.redirect(`${origin}${next}`)
+      }
 
       return NextResponse.redirect(
         member.status === 'active'
@@ -72,6 +85,10 @@ export async function GET(request: Request) {
 
     if (!member) {
       return NextResponse.redirect(`${origin}/register`)
+    }
+
+    if (next && member.status === 'active') {
+      return NextResponse.redirect(`${origin}${next}`)
     }
 
     return NextResponse.redirect(

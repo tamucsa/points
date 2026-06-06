@@ -1,6 +1,8 @@
 'use client'
-import { useState } from 'react'
+
 import { useRouter } from 'next/navigation'
+import { useMemo, useState } from 'react'
+import { inputClassName } from '@/utils/constants'
 
 interface Member {
   id: string
@@ -29,149 +31,96 @@ export default function MembersClient({ members, semester }: Props) {
 
   const jtFamilies = [...new Set(members.map(m => m.jt_family).filter(Boolean))]
 
-  const filtered = members.filter(m => {
+  const filtered = useMemo(() => members.filter(m => {
+    const q = search.toLowerCase()
     const matchesSearch =
-      m.full_name.toLowerCase().includes(search.toLowerCase()) ||
-      (m.preferred_name?.toLowerCase().includes(search.toLowerCase())) ||
-      m.email.toLowerCase().includes(search.toLowerCase())
+      m.full_name.toLowerCase().includes(q) ||
+      (m.preferred_name?.toLowerCase().includes(q)) ||
+      m.email.toLowerCase().includes(q)
     const matchesJT = filterJT === 'all' || m.jt_family === filterJT
     return matchesSearch && matchesJT
-  })
+  }), [members, search, filterJT])
 
   return (
-    <div style={{ padding: 28, maxWidth: 900, margin: '0 auto' }}>
-
-      {/* Header */}
-      <div style={{ marginBottom: 24 }}>
-        <h1 style={{ fontSize: 22, fontWeight: 700, color: '#fff' }}>Members</h1>
-        <div style={{ fontSize: 13, color: '#555', marginTop: 2 }}>
+    <div className="mx-auto max-w-5xl px-6 py-8 lg:px-8">
+      <div className="mb-6">
+        <h1 className="text-3xl font-bold tracking-tight text-text">Members</h1>
+        <p className="mt-1 text-sm text-subtitle">
           {semester?.name} · {members.length} active members
-        </div>
+        </p>
       </div>
 
-      {/* Search + filter */}
-      <div style={{ display: 'flex', gap: 10, marginBottom: 16 }}>
+      <div className="mb-4 flex flex-col gap-3 sm:flex-row">
         <input
           placeholder="Search by name or email…"
           value={search}
           onChange={e => setSearch(e.target.value)}
-          style={{
-            flex: 1, padding: '10px 14px',
-            background: '#161a27', border: '1px solid #2a2f45',
-            borderRadius: 8, color: '#ddd', fontSize: 14,
-            fontFamily: 'inherit', outline: 'none',
-          }}
+          className={inputClassName}
         />
         <select
           value={filterJT}
           onChange={e => setFilterJT(e.target.value)}
-          style={{
-            padding: '10px 14px',
-            background: '#161a27', border: '1px solid #2a2f45',
-            borderRadius: 8, color: '#ddd', fontSize: 14,
-            fontFamily: 'inherit', outline: 'none', cursor: 'pointer',
-          }}
+          className={`${inputClassName} cursor-pointer sm:max-w-[10rem]`}
         >
           <option value="all">All JTs</option>
-          {jtFamilies.map(jt => (
-            <option key={jt} value={jt!}>{jt}</option>
-          ))}
+          {jtFamilies.map(jt => <option key={jt} value={jt!}>{jt}</option>)}
         </select>
       </div>
 
-      {/* Members table */}
-      <div style={{
-        background: '#161a27', borderRadius: 14,
-        border: '1px solid #1e2337', overflow: 'hidden',
-      }}>
-        {/* Column headers */}
-        <div style={{
-          display: 'grid',
-          gridTemplateColumns: '1fr 120px 80px 80px 80px 80px 80px',
-          padding: '10px 20px',
-          borderBottom: '1px solid #1a1e2e',
-          fontSize: 11, color: '#444', fontWeight: 600,
-          textTransform: 'uppercase', letterSpacing: '0.05em',
-        }}>
+      <div className="overflow-x-auto rounded-4xl border border-home-border bg-white shadow-sm">
+        <div className="grid min-w-[640px] grid-cols-[1fr_7rem_4rem_4rem_4rem_4rem_4rem] border-b border-home-border bg-bg px-5 py-3 text-[11px] font-semibold uppercase tracking-[0.05em] text-subtitle">
           <div>Member</div>
-          <div>JT Family</div>
-          <div style={{ textAlign: 'right' }}>Total</div>
-          <div style={{ textAlign: 'right' }}>CSA</div>
-          <div style={{ textAlign: 'right' }}>JT</div>
-          <div style={{ textAlign: 'right' }}>Sports</div>
-          <div style={{ textAlign: 'right' }}>GM</div>
+          <div>JT</div>
+          <div className="text-right">Total</div>
+          <div className="text-right">CSA</div>
+          <div className="text-right">JT</div>
+          <div className="text-right">Sports</div>
+          <div className="text-right">GM</div>
         </div>
 
         {filtered.length === 0 && (
-          <div style={{ padding: 32, textAlign: 'center', color: '#444', fontSize: 14 }}>
-            No members found.
-          </div>
+          <div className="px-8 py-10 text-center text-sm text-subtitle">No members found.</div>
         )}
 
-        {filtered.map((m, i) => (
-          <div
+        {filtered.map(m => (
+          <button
             key={m.id}
+            type="button"
             onClick={() => router.push(`/officer/members/${m.id}`)}
-            style={{
-              display: 'grid',
-              gridTemplateColumns: '1fr 120px 80px 80px 80px 80px 80px',
-              padding: '12px 20px',
-              borderBottom: i < filtered.length - 1 ? '1px solid #0f1117' : 'none',
-              alignItems: 'center',
-              cursor: 'pointer',
-              transition: 'background 0.1s',
-            }}
-            onMouseEnter={e => (e.currentTarget.style.background = '#1a1e2e')}
-            onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
+            className="grid w-full min-w-[640px] grid-cols-[1fr_7rem_4rem_4rem_4rem_4rem_4rem] items-center border-b border-home-border px-5 py-3 text-left transition last:border-b-0 hover:bg-bg"
           >
-            {/* Member info */}
-            <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+            <div className="flex min-w-0 items-center gap-3">
               {m.profile_image_url ? (
-                <img
-                  src={m.profile_image_url}
-                  style={{ width: 32, height: 32, borderRadius: '50%', flexShrink: 0 }}
-                />
+                <img src={m.profile_image_url} alt="" className="h-8 w-8 shrink-0 rounded-full object-cover" />
               ) : (
-                <div style={{
-                  width: 32, height: 32, borderRadius: '50%', flexShrink: 0,
-                  background: (m.jt_color ?? '#4f6ef7') + '30',
-                  display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  fontSize: 12, fontWeight: 700, color: m.jt_color ?? '#4f6ef7',
-                }}>
+                <div
+                  className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-xs font-bold"
+                  style={{ background: `${m.jt_color ?? '#4779B8'}20`, color: m.jt_color ?? '#4779B8' }}
+                >
                   {(m.preferred_name || m.full_name)[0]}
                 </div>
               )}
-              <div>
-                <div style={{ fontSize: 13, fontWeight: 500, color: '#ddd' }}>
-                  {m.preferred_name || m.full_name}
-                </div>
-                <div style={{ fontSize: 11, color: '#555' }}>{m.email}</div>
+              <div className="min-w-0">
+                <div className="truncate text-sm font-medium text-text">{m.preferred_name || m.full_name}</div>
+                <div className="truncate text-xs text-subtitle">{m.email}</div>
               </div>
             </div>
-
-            {/* JT */}
             <div>
               {m.jt_family && (
-                <span style={{
-                  fontSize: 11, padding: '2px 8px', borderRadius: 20,
-                  fontWeight: 600,
-                  background: (m.jt_color ?? '#4f6ef7') + '20',
-                  color: m.jt_color ?? '#4f6ef7',
-                }}>
+                <span
+                  className="inline-block rounded-full px-2 py-0.5 text-[11px] font-semibold"
+                  style={{ background: `${m.jt_color ?? '#4779B8'}20`, color: m.jt_color ?? '#4779B8' }}
+                >
                   {m.jt_family}
                 </span>
               )}
             </div>
-
-            {/* Points */}
-            <div style={{ textAlign: 'right', fontSize: 14, fontWeight: 700, color: '#fff' }}>
-              {m.total_points}
-            </div>
-            <div style={{ textAlign: 'right', fontSize: 13, color: '#666' }}>{m.csa_points}</div>
-            <div style={{ textAlign: 'right', fontSize: 13, color: '#666' }}>{m.jt_points}</div>
-            <div style={{ textAlign: 'right', fontSize: 13, color: '#666' }}>{m.sports_points}</div>
-            <div style={{ textAlign: 'right', fontSize: 13, color: '#666' }}>{m.gm_points}</div>
-          </div>
+            <div className="text-right text-sm font-bold text-text">{m.total_points}</div>
+            <div className="text-right text-sm text-subtitle">{m.csa_points}</div>
+            <div className="text-right text-sm text-subtitle">{m.jt_points}</div>
+            <div className="text-right text-sm text-subtitle">{m.sports_points}</div>
+            <div className="text-right text-sm text-subtitle">{m.gm_points}</div>
+          </button>
         ))}
       </div>
     </div>

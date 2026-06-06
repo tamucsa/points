@@ -1,7 +1,9 @@
 'use client'
-import { useState } from 'react'
-import { createBrowserClient } from '@supabase/ssr'
+
 import { useRouter } from 'next/navigation'
+import { useState } from 'react'
+import { createEvent } from '@/app/actions/events'
+import { inputClassName, labelClassName } from '@/utils/constants'
 
 interface JTFamily {
   id: string
@@ -14,44 +16,19 @@ interface Props {
   jtFamilies: JTFamily[]
   officerJtFamilyId: string | null
   createdBy: string
-  isAdmin: boolean
 }
 
 const CATEGORIES = [
-  'GM',
-  'CSA',
-  'JT_Olympics',
-  'Mixer',
-  'Sports',
-  'Sports Spectator',
-  'Philanthropy',
-  'First Friday',
-  'Intern Event',
-  'Dance',
-  'Other',
+  'GM', 'CSA', 'JT_Olympics', 'Mixer', 'Sports', 'Sports Spectator',
+  'Philanthropy', 'First Friday', 'Intern Event', 'Dance', 'Other',
 ]
 
-const inputStyle: React.CSSProperties = {
-  width: '100%',
-  padding: '10px 14px',
-  background: '#0f1117',
-  border: '1px solid #2a2f45',
-  borderRadius: 8,
-  color: '#ddd',
-  fontSize: 14,
-  fontFamily: 'inherit',
-  outline: 'none',
-}
-
-const labelStyle: React.CSSProperties = {
-  fontSize: 12,
-  fontWeight: 600,
-  color: '#888',
-  textTransform: 'uppercase' as const,
-  letterSpacing: '0.05em',
-  display: 'block',
-  marginBottom: 6,
-}
+const scopeBtn = (active: boolean) =>
+  `flex-1 rounded-xl border px-3 py-2.5 text-sm font-medium transition ${
+    active
+      ? 'border-primary bg-primary/10 text-primary'
+      : 'border-home-border bg-white text-subtitle hover:border-primary/30'
+  }`
 
 export default function NewEventClient({
   semesterId,
@@ -59,155 +36,86 @@ export default function NewEventClient({
   jtFamilies,
   officerJtFamilyId,
   createdBy,
-  isAdmin,
 }: Props) {
   const router = useRouter()
-  const supabase = createBrowserClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-  )
-
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
-
   const [form, setForm] = useState({
-    name:           '',
-    category:       'GM',
-    point_value:    '1',
-    scope:          'org',
-    jt_family_id:   officerJtFamilyId ?? '',
-    check_in_type:  'officer',
-    event_date:     '',
-    location:       '',
-    description:    '',
-    rsvp_url:       '',
-    rsvp_deadline:  '',
-    // Sports dual check-in
+    name: '',
+    category: 'GM',
+    point_value: '1',
+    scope: 'org',
+    jt_family_id: officerJtFamilyId ?? '',
+    check_in_type: 'officer',
+    event_date: '',
+    location: '',
+    description: '',
+    rsvp_url: '',
+    rsvp_deadline: '',
     has_spectators: false,
   })
 
   const set = (key: string, value: string | boolean) =>
     setForm(f => ({ ...f, [key]: value }))
 
-  const isSports    = form.category === 'Sports'
+  const isSports = form.category === 'Sports'
   const isJTSpecific = form.scope === 'jt_specific'
-  const isRSVP      = form.check_in_type === 'rsvp_required'
-  const isSelf      = form.check_in_type === 'self'
+  const isRSVP = form.check_in_type === 'rsvp_required'
+  const isSelf = form.check_in_type === 'self'
 
   const handleSubmit = async () => {
+    setSubmitting(true)
     setError(null)
 
-    // Validation
-    if (!form.name.trim())    return setError('Event name is required.')
-    if (!form.event_date)     return setError('Event date is required.')
-    if (isJTSpecific && !form.jt_family_id) return setError('JT family is required for JT-specific events.')
+    const result = await createEvent({
+      semesterId,
+      name: form.name,
+      category: form.category,
+      pointValue: parseInt(form.point_value),
+      scope: form.scope,
+      jtFamilyId: isJTSpecific ? form.jt_family_id : null,
+      checkInType: form.check_in_type,
+      eventDate: form.event_date,
+      location: form.location.trim() || null,
+      description: form.description.trim() || null,
+      rsvpUrl: isRSVP && form.rsvp_url ? form.rsvp_url.trim() : null,
+      rsvpDeadline: isRSVP && form.rsvp_deadline ? form.rsvp_deadline : null,
+      createdBy,
+      hasSpectators: isSports && form.has_spectators,
+    })
 
-    setSubmitting(true)
-
-    // Insert main event
-    const { data: event, error: eventError } = await supabase
-      .from('events')
-      .insert({
-        semester_id:   semesterId,
-        name:          form.name.trim(),
-        category:      form.category,
-        point_value:   parseInt(form.point_value),
-        scope:         form.scope,
-        jt_family_id:  isJTSpecific ? form.jt_family_id : null,
-        check_in_type: form.check_in_type,
-        event_date:    form.event_date,
-        location:      form.location.trim() || null,
-        description:   form.description.trim() || null,
-        rsvp_url:      isRSVP && form.rsvp_url ? form.rsvp_url.trim() : null,
-        rsvp_deadline: isRSVP && form.rsvp_deadline ? form.rsvp_deadline : null,
-        created_by:    createdBy,
-      })
-      .select()
-      .single()
-
-    if (eventError || !event) {
-      setError('Failed to create event. Please try again.')
-      setSubmitting(false)
+    setSubmitting(false)
+    if (!result.success) {
+      setError(result.error ?? 'Failed to create event.')
       return
     }
-
-    // If Sports with spectators, create the linked spectator event
-    if (isSports && form.has_spectators) {
-      await supabase.from('events').insert({
-        semester_id:     semesterId,
-        name:            `${form.name.trim()} — Spectator`,
-        category:        'Sports Spectator',
-        point_value:     1,
-        scope:           form.scope,
-        jt_family_id:    isJTSpecific ? form.jt_family_id : null,
-        check_in_type:   'self',
-        event_date:      form.event_date,
-        location:        form.location.trim() || null,
-        created_by:      createdBy,
-        parent_event_id: event.id,
-      })
-    }
-
     router.push('/officer/events')
   }
 
   return (
-    <div style={{ padding: 28, maxWidth: 640, margin: '0 auto' }}>
+    <div className="mx-auto max-w-2xl px-6 py-8 lg:px-8">
+      <button onClick={() => router.back()} className="mb-4 text-sm text-subtitle hover:text-primary">
+        ← Back
+      </button>
+      <h1 className="text-3xl font-bold text-text">New Event</h1>
+      <p className="mt-1 text-sm text-subtitle">{semesterName}</p>
 
-      {/* Header */}
-      <div style={{ marginBottom: 28 }}>
-        <button
-          onClick={() => router.back()}
-          style={{
-            background: 'none', border: 'none', color: '#555',
-            cursor: 'pointer', fontFamily: 'inherit', fontSize: 13,
-            padding: 0, marginBottom: 12,
-          }}
-        >
-          ← Back
-        </button>
-        <h1 style={{ fontSize: 22, fontWeight: 700, color: '#fff' }}>New Event</h1>
-        <div style={{ fontSize: 13, color: '#555', marginTop: 2 }}>{semesterName}</div>
-      </div>
-
-      <div style={{
-        background: '#161a27', borderRadius: 14,
-        border: '1px solid #1e2337', padding: 28,
-        display: 'flex', flexDirection: 'column', gap: 20,
-      }}>
-
-        {/* Name */}
+      <div className="mt-6 flex flex-col gap-5 rounded-4xl border border-home-border bg-white p-6 shadow-sm">
         <div>
-          <label style={labelStyle}>Event Name *</label>
-          <input
-            style={inputStyle}
-            placeholder="e.g. First Friday March"
-            value={form.name}
-            onChange={e => set('name', e.target.value)}
-          />
+          <label className={labelClassName}>Event Name *</label>
+          <input className={inputClassName} placeholder="e.g. First Friday March" value={form.name} onChange={e => set('name', e.target.value)} />
         </div>
 
-        {/* Category + Points row */}
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
+        <div className="grid gap-4 sm:grid-cols-2">
           <div>
-            <label style={labelStyle}>Category *</label>
-            <select
-              style={{ ...inputStyle, cursor: 'pointer' }}
-              value={form.category}
-              onChange={e => set('category', e.target.value)}
-            >
-              {CATEGORIES.map(c => (
-                <option key={c} value={c}>{c}</option>
-              ))}
+            <label className={labelClassName}>Category *</label>
+            <select className={`${inputClassName} cursor-pointer`} value={form.category} onChange={e => set('category', e.target.value)}>
+              {CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
             </select>
           </div>
           <div>
-            <label style={labelStyle}>Point Value *</label>
-            <select
-              style={{ ...inputStyle, cursor: 'pointer' }}
-              value={form.point_value}
-              onChange={e => set('point_value', e.target.value)}
-            >
+            <label className={labelClassName}>Point Value *</label>
+            <select className={`${inputClassName} cursor-pointer`} value={form.point_value} onChange={e => set('point_value', e.target.value)}>
               <option value="1">1 point</option>
               <option value="2">2 points</option>
               <option value="3">3 points</option>
@@ -215,207 +123,107 @@ export default function NewEventClient({
           </div>
         </div>
 
-        {/* Date + Location row */}
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
+        <div className="grid gap-4 sm:grid-cols-2">
           <div>
-            <label style={labelStyle}>Date *</label>
-            <input
-              type="date"
-              style={inputStyle}
-              value={form.event_date}
-              onChange={e => set('event_date', e.target.value)}
-            />
+            <label className={labelClassName}>Date *</label>
+            <input type="date" className={inputClassName} value={form.event_date} onChange={e => set('event_date', e.target.value)} />
           </div>
           <div>
-            <label style={labelStyle}>Location</label>
-            <input
-              style={inputStyle}
-              placeholder="e.g. MSC 2406"
-              value={form.location}
-              onChange={e => set('location', e.target.value)}
-            />
+            <label className={labelClassName}>Location</label>
+            <input className={inputClassName} placeholder="e.g. MSC 2406" value={form.location} onChange={e => set('location', e.target.value)} />
           </div>
         </div>
 
-        {/* Scope */}
         <div>
-          <label style={labelStyle}>Event Scope *</label>
-          <div style={{ display: 'flex', gap: 8 }}>
+          <label className={labelClassName}>Event Scope *</label>
+          <div className="flex flex-wrap gap-2">
             {[
-              { value: 'org',         label: '🏫 CSA-Wide' },
-              { value: 'jt_shared',   label: '🏅 JT Shared' },
+              { value: 'org', label: '🏫 CSA-Wide' },
+              { value: 'jt_shared', label: '🏅 JT Shared' },
               { value: 'jt_specific', label: '🏠 JT Specific' },
             ].map(opt => (
-              <button
-                key={opt.value}
-                onClick={() => set('scope', opt.value)}
-                style={{
-                  flex: 1, padding: '8px 12px',
-                  background: form.scope === opt.value ? '#4f6ef720' : '#0f1117',
-                  border: `1px solid ${form.scope === opt.value ? '#4f6ef7' : '#2a2f45'}`,
-                  color: form.scope === opt.value ? '#4f6ef7' : '#666',
-                  borderRadius: 8, fontSize: 13, fontWeight: 500,
-                  cursor: 'pointer', fontFamily: 'inherit',
-                }}
-              >
+              <button key={opt.value} type="button" onClick={() => set('scope', opt.value)} className={scopeBtn(form.scope === opt.value)}>
                 {opt.label}
               </button>
             ))}
           </div>
         </div>
 
-        {/* JT Family selector — only for jt_specific */}
         {isJTSpecific && (
           <div>
-            <label style={labelStyle}>JT Family *</label>
-            <select
-              style={{ ...inputStyle, cursor: 'pointer' }}
-              value={form.jt_family_id}
-              onChange={e => set('jt_family_id', e.target.value)}
-            >
+            <label className={labelClassName}>JT Family *</label>
+            <select className={`${inputClassName} cursor-pointer`} value={form.jt_family_id} onChange={e => set('jt_family_id', e.target.value)}>
               <option value="">Select JT family…</option>
-              {jtFamilies.map(jt => (
-                <option key={jt.id} value={jt.id}>{jt.name}</option>
-              ))}
+              {jtFamilies.map(jt => <option key={jt.id} value={jt.id}>{jt.name}</option>)}
             </select>
           </div>
         )}
 
-        {/* Check-in type */}
         <div>
-          <label style={labelStyle}>Check-in Type *</label>
-          <div style={{ display: 'flex', gap: 8 }}>
+          <label className={labelClassName}>Check-in Type *</label>
+          <div className="flex flex-wrap gap-2">
             {[
-              { value: 'officer',       label: '👤 Officer' },
-              { value: 'self',          label: '🔲 QR Code' },
+              { value: 'officer', label: '👤 Officer' },
+              { value: 'self', label: '🔲 QR Code' },
               { value: 'rsvp_required', label: '📋 RSVP' },
             ].map(opt => (
-              <button
-                key={opt.value}
-                onClick={() => set('check_in_type', opt.value)}
-                style={{
-                  flex: 1, padding: '8px 12px',
-                  background: form.check_in_type === opt.value ? '#4f6ef720' : '#0f1117',
-                  border: `1px solid ${form.check_in_type === opt.value ? '#4f6ef7' : '#2a2f45'}`,
-                  color: form.check_in_type === opt.value ? '#4f6ef7' : '#666',
-                  borderRadius: 8, fontSize: 13, fontWeight: 500,
-                  cursor: 'pointer', fontFamily: 'inherit',
-                }}
-              >
+              <button key={opt.value} type="button" onClick={() => set('check_in_type', opt.value)} className={scopeBtn(form.check_in_type === opt.value)}>
                 {opt.label}
               </button>
             ))}
           </div>
           {isSelf && (
-            <div style={{ marginTop: 8, fontSize: 12, color: '#555' }}>
-              A QR code will be automatically generated after creating the event.
-            </div>
+            <p className="mt-2 text-xs text-subtitle">A QR code is generated automatically when the event is created.</p>
           )}
         </div>
 
-        {/* RSVP fields */}
         {isRSVP && (
-          <div style={{
-            padding: 16, background: '#0f1117',
-            borderRadius: 10, border: '1px solid #2a2f45',
-            display: 'flex', flexDirection: 'column', gap: 14,
-          }}>
+          <div className="space-y-4 rounded-2xl border border-home-border bg-bg p-4">
             <div>
-              <label style={labelStyle}>RSVP Link</label>
-              <input
-                style={inputStyle}
-                placeholder="https://forms.gle/..."
-                value={form.rsvp_url}
-                onChange={e => set('rsvp_url', e.target.value)}
-              />
+              <label className={labelClassName}>RSVP Link</label>
+              <input className={inputClassName} placeholder="https://forms.gle/..." value={form.rsvp_url} onChange={e => set('rsvp_url', e.target.value)} />
             </div>
             <div>
-              <label style={labelStyle}>RSVP Deadline</label>
-              <input
-                type="datetime-local"
-                style={inputStyle}
-                value={form.rsvp_deadline}
-                onChange={e => set('rsvp_deadline', e.target.value)}
-              />
+              <label className={labelClassName}>RSVP Deadline</label>
+              <input type="datetime-local" className={inputClassName} value={form.rsvp_deadline} onChange={e => set('rsvp_deadline', e.target.value)} />
             </div>
           </div>
         )}
 
-        {/* Sports spectator toggle */}
         {isSports && (
-          <div style={{
-            padding: 16, background: '#0f1117',
-            borderRadius: 10, border: '1px solid #2a2f45',
-          }}>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-              <div>
-                <div style={{ fontSize: 13, fontWeight: 600, color: '#ccc' }}>
-                  Enable Spectator Check-in
-                </div>
-                <div style={{ fontSize: 12, color: '#555', marginTop: 2 }}>
-                  Creates a separate QR check-in for spectators worth 1 point (capped at 10/semester)
-                </div>
-              </div>
-              <button
-                onClick={() => set('has_spectators', !form.has_spectators)}
-                style={{
-                  width: 44, height: 24, borderRadius: 12,
-                  background: form.has_spectators ? '#4f6ef7' : '#2a2f45',
-                  border: 'none', cursor: 'pointer',
-                  position: 'relative', transition: 'background 0.2s',
-                  flexShrink: 0,
-                }}
-              >
-                <div style={{
-                  width: 18, height: 18, borderRadius: '50%',
-                  background: '#fff', position: 'absolute',
-                  top: 3, transition: 'left 0.2s',
-                  left: form.has_spectators ? 23 : 3,
-                }} />
-              </button>
+          <div className="flex items-center justify-between rounded-2xl border border-home-border bg-bg p-4">
+            <div>
+              <div className="text-sm font-semibold text-text">Enable Spectator Check-in</div>
+              <div className="mt-1 text-xs text-subtitle">Separate QR event worth 1 pt (capped at 10/semester)</div>
             </div>
+            <button
+              type="button"
+              onClick={() => set('has_spectators', !form.has_spectators)}
+              className={`relative h-6 w-11 rounded-full transition ${form.has_spectators ? 'bg-primary' : 'bg-home-border'}`}
+            >
+              <span className={`absolute top-0.5 h-5 w-5 rounded-full bg-white transition ${form.has_spectators ? 'left-[1.35rem]' : 'left-0.5'}`} />
+            </button>
           </div>
         )}
 
-        {/* Description */}
         <div>
-          <label style={labelStyle}>Description <span style={{ color: '#444', fontWeight: 400 }}>(optional)</span></label>
-          <textarea
-            style={{ ...inputStyle, minHeight: 80, resize: 'vertical' }}
-            placeholder="Any additional details about this event…"
-            value={form.description}
-            onChange={e => set('description', e.target.value)}
-          />
+          <label className={labelClassName}>Description <span className="font-normal normal-case text-subtitle">(optional)</span></label>
+          <textarea className={`${inputClassName} min-h-24 resize-y`} placeholder="Additional details…" value={form.description} onChange={e => set('description', e.target.value)} />
         </div>
 
-        {/* Error */}
         {error && (
-          <div style={{
-            padding: 12, background: '#e74c3c15',
-            borderRadius: 8, border: '1px solid #e74c3c30',
-          }}>
-            <p style={{ fontSize: 13, color: '#e74c3c' }}>{error}</p>
+          <div className="rounded-2xl border border-[#f5b0b0] bg-[#fff4f4] p-3">
+            <p className="text-sm text-[#c94b4b]">{error}</p>
           </div>
         )}
 
-        {/* Submit */}
         <button
           onClick={handleSubmit}
           disabled={submitting}
-          style={{
-            padding: '12px',
-            background: submitting ? '#2a2f45' : '#4f6ef7',
-            color: submitting ? '#555' : '#fff',
-            border: 'none', borderRadius: 10,
-            fontSize: 15, fontWeight: 600,
-            cursor: submitting ? 'not-allowed' : 'pointer',
-            fontFamily: 'inherit',
-            transition: 'all 0.15s',
-          }}
+          className="rounded-xl bg-primary px-4 py-3 text-[15px] font-semibold text-white disabled:bg-[#9cb8d8]"
         >
           {submitting ? 'Creating…' : 'Create Event'}
         </button>
-
       </div>
     </div>
   )

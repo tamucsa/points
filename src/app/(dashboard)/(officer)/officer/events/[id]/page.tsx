@@ -1,20 +1,10 @@
-import { createServerClient } from '@supabase/ssr'
-import { cookies } from 'next/headers'
-import { redirect, notFound } from 'next/navigation'
+import { notFound, redirect } from 'next/navigation'
 import EventDetailClient from '@/app/(dashboard)/(officer)/officer/events/components/EventDetailClient'
+import { createServerSupabase } from '@/utils/supabase/server'
 
-export default async function EventDetailPage({ params }: { params: { id: string } }) {
-  const cookieStore = await cookies()
-  const supabase = createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-    {
-      cookies: {
-        getAll() { return cookieStore.getAll() },
-        setAll() {},
-      },
-    }
-  )
+export default async function EventDetailPage({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params
+  const supabase = await createServerSupabase()
 
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect('/login')
@@ -22,8 +12,8 @@ export default async function EventDetailPage({ params }: { params: { id: string
   const { data: event } = await supabase
     .from('events')
     .select('*')
-    .eq('id', params.id)
-    .single()
+    .eq('id', id)
+    .maybeSingle()
 
   if (!event) notFound()
 
@@ -43,7 +33,7 @@ export default async function EventDetailPage({ params }: { params: { id: string
         profile_image_url
       )
     `)
-    .eq('event_id', params.id)
+    .eq('event_id', id)
     .order('recorded_at', { ascending: false })
 
   const normalizedAttendance = (attendance ?? []).map((row) => ({

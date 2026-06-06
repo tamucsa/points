@@ -1,16 +1,13 @@
 'use client'
-import { createBrowserClient } from '@supabase/ssr'
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
-
+import { registerMember } from '@/app/actions/members'
 import { GoogleUser } from '@/utils/types'
+import { createBrowserSupabase } from '@/utils/supabase/client'
 
 export default function RegisterPage() {
   const router = useRouter()
-  const supabase = createBrowserClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-  )
+  const supabase = createBrowserSupabase()
 
   const [user, setUser] = useState<GoogleUser | null>(null)
   const [loading, setLoading] = useState(true)
@@ -36,7 +33,7 @@ export default function RegisterPage() {
         .from('members')
         .select('id, status')
         .eq('auth_uid', user.id)
-        .single()
+        .maybeSingle()
 
       if (existing) {
         router.push(existing.status === 'active' ? '/leaderboard' : '/pending')
@@ -72,20 +69,14 @@ export default function RegisterPage() {
 
     setSubmitting(true)
 
-    const { error: insertError } = await supabase.from('members').insert({
-      auth_uid:          user!.id,
-      email:             user!.email,
-      full_name:         user!.user_metadata.full_name,
-      preferred_name:    form.preferred_name.trim(),
-      graduation_year:   year,
-      phone:             form.phone.trim() || null,
-      profile_image_url: user!.user_metadata.avatar_url,
-      status:            'pending_jt',
-      role:              'member',
+    const result = await registerMember({
+      preferredName: form.preferred_name,
+      graduationYear: year,
+      phone: form.phone,
     })
 
-    if (insertError) {
-      setError('Something went wrong. Please try again.')
+    if (!result.success) {
+      setError(result.error ?? 'Something went wrong. Please try again.')
       setSubmitting(false)
       return
     }

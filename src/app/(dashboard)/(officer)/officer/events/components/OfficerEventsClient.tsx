@@ -1,7 +1,9 @@
 'use client'
-import { useState } from 'react'
+
 import { QRCodeSVG } from 'qrcode.react'
 import { useRouter } from 'next/navigation'
+import { useState } from 'react'
+import { CHECKIN_TYPE_LABELS, POINT_COLORS, SCOPE_LABELS } from '@/utils/constants'
 
 interface Event {
   id: string
@@ -13,32 +15,12 @@ interface Event {
   event_date: string
   location: string | null
   check_in_code: string | null
-  rsvp_url: string | null
-  rsvp_deadline: string | null
 }
 
 interface Props {
   events: Event[]
   attendanceCounts: Record<string, number>
-  semester: { id: string, name: string } | null
-}
-
-const POINT_COLORS: Record<number, string> = {
-  3: '#4f6ef7',
-  2: '#f7934f',
-  1: '#4fc787',
-}
-
-const SCOPE_LABELS: Record<string, string> = {
-  org:          '🏫 CSA-Wide',
-  jt_shared:    '🏅 JT Shared',
-  jt_specific:  '🏠 JT Specific',
-}
-
-const CHECKIN_LABELS: Record<string, string> = {
-  officer:       '👤 Officer',
-  self:          '🔲 QR Code',
-  rsvp_required: '📋 RSVP',
+  semester: { id: string; name: string } | null
 }
 
 export default function OfficerEventsClient({ events, attendanceCounts, semester }: Props) {
@@ -51,186 +33,93 @@ export default function OfficerEventsClient({ events, attendanceCounts, semester
       : `/checkin/${code}`
 
   return (
-    <div style={{ padding: 28, maxWidth: 900, margin: '0 auto' }}>
-
-      {/* Header */}
-      <div style={{
-        display: 'flex', alignItems: 'center',
-        justifyContent: 'space-between', marginBottom: 28,
-      }}>
+    <div className="mx-auto max-w-5xl px-6 py-8 lg:px-8">
+      <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 style={{ fontSize: 22, fontWeight: 700, color: '#fff' }}>Events</h1>
-          <div style={{ fontSize: 13, color: '#555', marginTop: 2 }}>
+          <h1 className="text-3xl font-bold tracking-tight text-text">Officer Events</h1>
+          <p className="mt-1 text-sm text-subtitle">
             {semester?.name} · {events.length} events
-          </div>
+          </p>
         </div>
         <button
           onClick={() => router.push('/officer/events/new')}
-          style={{
-            padding: '9px 18px', background: '#4f6ef7', color: '#fff',
-            border: 'none', borderRadius: 8, fontSize: 14, fontWeight: 600,
-            cursor: 'pointer', fontFamily: 'inherit',
-          }}
+          className="rounded-xl bg-primary px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-[#35679e]"
         >
           + New Event
         </button>
       </div>
 
-      {/* Event list */}
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+      <div className="flex flex-col gap-3">
         {events.length === 0 && (
-          <div style={{
-            padding: 40, textAlign: 'center', color: '#444',
-            background: '#161a27', borderRadius: 14, border: '1px solid #1e2337',
-          }}>
+          <div className="rounded-4xl border border-home-border bg-white px-10 py-12 text-center text-sm text-subtitle shadow-sm">
             No events yet. Create your first event above.
           </div>
         )}
 
         {events.map(event => {
-          const pointColor = POINT_COLORS[event.point_value] ?? '#888'
-          const count = attendanceCounts[event.id] ?? 0
           const isPast = new Date(event.event_date) < new Date()
+          const count = attendanceCounts[event.id] ?? 0
 
           return (
-            <div key={event.id} style={{
-              padding: '16px 20px',
-              background: '#161a27',
-              borderRadius: 12,
-              border: '1px solid #1e2337',
-              display: 'flex',
-              alignItems: 'center',
-              gap: 16,
-              opacity: isPast ? 0.75 : 1,
-            }}>
-              {/* Point badge */}
-              <div style={{
-                width: 44, height: 44, borderRadius: 10, flexShrink: 0,
-                background: pointColor + '20',
-                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                fontSize: 18, fontWeight: 800, color: pointColor,
-              }}>
+            <div
+              key={event.id}
+              className={`flex flex-col gap-4 rounded-3xl border border-home-border bg-white p-5 shadow-sm sm:flex-row sm:items-center ${isPast ? 'opacity-75' : ''}`}
+            >
+              <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-primary/10 text-lg font-extrabold text-primary">
                 {event.point_value}
               </div>
 
-              {/* Event info */}
-              <div style={{ flex: 1 }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                  <span style={{ fontSize: 14, fontWeight: 600, color: '#ddd' }}>
-                    {event.name}
-                  </span>
+              <div className="min-w-0 flex-1">
+                <div className="flex flex-wrap items-center gap-2">
+                  <span className="text-sm font-semibold text-text">{event.name}</span>
                   {!isPast && (
-                    <span style={{
-                      fontSize: 11, padding: '1px 7px', borderRadius: 20,
-                      background: '#4f6ef720', color: '#4f6ef7', fontWeight: 600,
-                    }}>
+                    <span className="rounded-full bg-primary/10 px-2 py-0.5 text-[11px] font-semibold text-primary">
                       Upcoming
                     </span>
                   )}
                 </div>
-                <div style={{ display: 'flex', gap: 8, marginTop: 4, flexWrap: 'wrap' }}>
-                  <span style={{ fontSize: 12, color: '#555' }}>
+                <div className="mt-1 flex flex-wrap gap-2 text-xs text-subtitle">
+                  <span>
                     📅 {new Date(event.event_date).toLocaleDateString('en-US', {
-                      month: 'short', day: 'numeric', year: 'numeric'
+                      month: 'short', day: 'numeric', year: 'numeric',
                     })}
                   </span>
-                  {event.location && (
-                    <span style={{ fontSize: 12, color: '#555' }}>
-                      📍 {event.location}
-                    </span>
-                  )}
-                  <span style={{
-                    fontSize: 11, padding: '1px 6px', borderRadius: 4,
-                    background: '#ffffff10', color: '#666',
-                  }}>
-                    {event.category}
-                  </span>
-                  <span style={{
-                    fontSize: 11, padding: '1px 6px', borderRadius: 4,
-                    background: '#ffffff08', color: '#555',
-                  }}>
-                    {SCOPE_LABELS[event.scope]}
-                  </span>
-                  <span style={{
-                    fontSize: 11, padding: '1px 6px', borderRadius: 4,
-                    background: '#ffffff08', color: '#555',
-                  }}>
-                    {CHECKIN_LABELS[event.check_in_type]}
-                  </span>
-                  <span style={{ fontSize: 12, color: '#555' }}>
-                    👥 {count} attended
-                  </span>
+                  {event.location && <span>📍 {event.location}</span>}
+                  <span className="rounded-md bg-bg px-2 py-0.5">{event.category}</span>
+                  <span className="rounded-md bg-bg px-2 py-0.5">{SCOPE_LABELS[event.scope]}</span>
+                  <span className="rounded-md bg-bg px-2 py-0.5">{CHECKIN_TYPE_LABELS[event.check_in_type]}</span>
+                  <span>👥 {count} attended</span>
                 </div>
               </div>
 
-              {/* Actions */}
-              <div style={{ display: 'flex', gap: 8, flexShrink: 0 }}>
+              <div className="flex flex-wrap gap-2 shrink-0">
                 {event.check_in_type === 'self' && event.check_in_code && (
                   <>
                     <button
                       onClick={() => setQrEvent(event)}
-                      style={{
-                        padding: '6px 12px',
-                        background: '#4f6ef720',
-                        border: '1px solid #4f6ef740',
-                        color: '#4f6ef7',
-                        borderRadius: 7, fontSize: 12, fontWeight: 600,
-                        cursor: 'pointer', fontFamily: 'inherit',
-                      }}
+                      className="rounded-xl border border-primary/30 bg-primary/10 px-3 py-2 text-xs font-semibold text-primary"
                     >
                       Show QR
                     </button>
                     <button
                       onClick={() => window.open(`/officer/events/${event.id}/qr`, '_blank')}
-                      style={{
-                        padding: '6px 12px', background: 'transparent',
-                        border: '1px solid #2a2f45', color: '#666',
-                        borderRadius: 7, fontSize: 12,
-                        cursor: 'pointer', fontFamily: 'inherit',
-                      }}
+                      className="rounded-xl border border-home-border px-3 py-2 text-xs text-subtitle"
                     >
                       Full Screen
                     </button>
                   </>
                 )}
-                {event.check_in_type === 'officer' && (
+                {(event.check_in_type === 'officer' || event.check_in_type === 'rsvp_required') && (
                   <button
                     onClick={() => router.push(`/officer/events/${event.id}/checkin`)}
-                    style={{
-                      padding: '6px 12px',
-                      background: '#4fc78720',
-                      border: '1px solid #4fc78740',
-                      color: '#4fc787',
-                      borderRadius: 7, fontSize: 12, fontWeight: 600,
-                      cursor: 'pointer', fontFamily: 'inherit',
-                    }}
-                  >
-                    Check In
-                  </button>
-                )}
-                {event.check_in_type === 'rsvp_required' && (
-                  <button
-                    onClick={() => router.push(`/officer/events/${event.id}/checkin`)}
-                    style={{
-                      padding: '6px 12px',
-                      background: '#f7934f20',
-                      border: '1px solid #f7934f40',
-                      color: '#f7934f',
-                      borderRadius: 7, fontSize: 12, fontWeight: 600,
-                      cursor: 'pointer', fontFamily: 'inherit',
-                    }}
+                    className="rounded-xl border border-primary/30 bg-primary/10 px-3 py-2 text-xs font-semibold text-primary"
                   >
                     Check In
                   </button>
                 )}
                 <button
                   onClick={() => router.push(`/officer/events/${event.id}`)}
-                  style={{
-                    padding: '6px 12px', background: 'transparent',
-                    border: '1px solid #2a2f45', color: '#666',
-                    borderRadius: 7, fontSize: 12,
-                    cursor: 'pointer', fontFamily: 'inherit',
-                  }}
+                  className="rounded-xl border border-home-border px-3 py-2 text-xs text-subtitle"
                 >
                   View
                 </button>
@@ -240,59 +129,36 @@ export default function OfficerEventsClient({ events, attendanceCounts, semester
         })}
       </div>
 
-      {/* QR Modal */}
       {qrEvent && (
         <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4"
           onClick={() => setQrEvent(null)}
-          style={{
-            position: 'fixed', inset: 0, zIndex: 50,
-            background: '#000000cc',
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-          }}
         >
           <div
+            className="w-full max-w-sm rounded-4xl border border-home-border bg-white p-8 text-center shadow-xl"
             onClick={e => e.stopPropagation()}
-            style={{
-              background: '#161a27', borderRadius: 20,
-              border: '1px solid #1e2337',
-              padding: 40, textAlign: 'center',
-              display: 'flex', flexDirection: 'column',
-              alignItems: 'center', gap: 20,
-              maxWidth: 380, width: '100%',
-            }}
           >
-            <div style={{ fontSize: 18, fontWeight: 700, color: '#fff' }}>
-              {qrEvent.name}
-            </div>
-            <div style={{ padding: 20, background: '#fff', borderRadius: 12 }}>
+            <h2 className="text-lg font-bold text-text">{qrEvent.name}</h2>
+            <div className="mx-auto mt-5 inline-block rounded-2xl bg-white p-5 shadow-sm">
               <QRCodeSVG
                 value={checkInUrl(qrEvent.check_in_code!)}
                 size={220}
                 level="H"
               />
             </div>
-            <div style={{ fontSize: 13, color: '#555' }}>
-              📅 {new Date(qrEvent.event_date).toLocaleDateString()} · ⭐ {qrEvent.point_value} point{qrEvent.point_value !== 1 ? 's' : ''}
-            </div>
-            <div style={{ display: 'flex', gap: 10 }}>
+            <p className="mt-4 text-sm text-subtitle">
+              📅 {new Date(qrEvent.event_date).toLocaleDateString()} · ⭐ {qrEvent.point_value} pt
+            </p>
+            <div className="mt-5 flex justify-center gap-3">
               <button
                 onClick={() => window.open(`/officer/events/${qrEvent.id}/qr`, '_blank')}
-                style={{
-                  padding: '8px 16px', background: '#4f6ef7', color: '#fff',
-                  border: 'none', borderRadius: 8, fontSize: 13, fontWeight: 600,
-                  cursor: 'pointer', fontFamily: 'inherit',
-                }}
+                className="rounded-xl bg-primary px-4 py-2 text-sm font-semibold text-white"
               >
-                Open Full Screen
+                Full Screen
               </button>
               <button
                 onClick={() => setQrEvent(null)}
-                style={{
-                  padding: '8px 16px', background: 'transparent',
-                  border: '1px solid #2a2f45', color: '#666',
-                  borderRadius: 8, fontSize: 13,
-                  cursor: 'pointer', fontFamily: 'inherit',
-                }}
+                className="rounded-xl border border-home-border px-4 py-2 text-sm text-subtitle"
               >
                 Close
               </button>

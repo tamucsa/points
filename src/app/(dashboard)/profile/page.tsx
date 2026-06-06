@@ -1,20 +1,9 @@
-import { createServerClient } from '@supabase/ssr'
-import { cookies } from 'next/headers'
 import { redirect } from 'next/navigation'
 import ProfileClient from '@/app/(dashboard)/profile/components/ProfileClient'
+import { createServerSupabase } from '@/utils/supabase/server'
 
 export default async function ProfilePage() {
-  const cookieStore = await cookies()
-  const supabase = createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-    {
-      cookies: {
-        getAll() { return cookieStore.getAll() },
-        setAll() {},
-      },
-    }
-  )
+  const supabase = await createServerSupabase()
 
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect('/login')
@@ -35,7 +24,12 @@ export default async function ProfilePage() {
     .eq('id', member.id)
     .single()
 
-  // Get their full attendance history for this semester
+  const { data: semester } = await supabase
+    .from('semesters')
+    .select('id')
+    .eq('is_active', true)
+    .maybeSingle()
+
   const { data: attendance } = await supabase
     .from('attendance')
     .select(`
@@ -51,6 +45,7 @@ export default async function ProfilePage() {
       )
     `)
     .eq('member_id', member.id)
+    .eq('semester_id', semester?.id ?? '00000000-0000-0000-0000-000000000000')
     .order('recorded_at', { ascending: false })
 
   // Get their historical semester summaries

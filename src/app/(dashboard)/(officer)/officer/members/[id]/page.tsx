@@ -1,21 +1,10 @@
-import { createServerClient } from '@supabase/ssr'
-import { cookies } from 'next/headers'
-import { redirect, notFound } from 'next/navigation'
+import { notFound, redirect } from 'next/navigation'
 import MemberDetailClient from '@/app/(dashboard)/(officer)/officer/members/components/MemberDetailClient'
+import { createServerSupabase } from '@/utils/supabase/server'
 
 export default async function MemberDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
-  const cookieStore = await cookies()
-  const supabase = createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-    {
-      cookies: {
-        getAll() { return cookieStore.getAll() },
-        setAll() {},
-      },
-    }
-  )
+  const supabase = await createServerSupabase()
 
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect('/login')
