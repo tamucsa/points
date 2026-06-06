@@ -27,7 +27,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body className={`${bayon.className} ${akshar.className} antialiased bg-white text-black`}>
+      <body className={`${bayon.className} ${akshar.className} antialiased bg-bg text-text`}>
         {children}
         <Analytics />
       </body>

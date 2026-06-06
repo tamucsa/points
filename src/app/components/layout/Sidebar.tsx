@@ -44,31 +44,18 @@ export default function Sidebar({ member }: { member: Member }) {
     router.push('/login')
   }
 
-  const visibleNav = NAV_ITEMS.filter(item => 
-  (!item.officerOnly || isOfficer) && (!item.adminOnly || isAdmin)
-)
-
   const generalNav = NAV_ITEMS.filter(item => !item.officerOnly && !item.adminOnly)
   const officerNav = NAV_ITEMS.filter(item => item.officerOnly)
   const adminNav = NAV_ITEMS.filter(item => item.adminOnly)
 
   return (
-    <div style={{
-      width: 220,
-      background: '#0c0f1a',
-      borderRight: '1px solid #1a1e2e',
-      display: 'flex',
-      flexDirection: 'column',
-      padding: '24px 12px',
-      gap: 4,
-      flexShrink: 0,
-    }}>
+    <aside className="flex w-72 shrink-0 flex-col border-r border-home-border bg-white px-4 py-6 shadow-[8px_0_40px_rgba(15,23,42,0.04)]">
       {/* Logo */}
-      <div style={{ padding: '8px 12px 24px' }}>
-        <div style={{ fontSize: 18, fontWeight: 700, color: '#fff', letterSpacing: '-0.5px' }}>
+      <div className="px-2 pb-6">
+        <div className="text-[1.15rem] font-bold tracking-[-0.04em] text-text">
           CSA Points
         </div>
-        <div style={{ fontSize: 12, color: '#555', marginTop: 2 }}>
+        <div className="mt-1 text-xs text-subtitle">
           {isOfficer ? member.role.charAt(0).toUpperCase() + member.role.slice(1) : 'Member'}
         </div>
       </div>
@@ -80,24 +67,9 @@ export default function Sidebar({ member }: { member: Member }) {
           <button
             key={item.path}
             onClick={() => router.push(item.path)}
-            style={{
-              background: active ? '#1e2130' : 'none',
-              border: 'none',
-              cursor: 'pointer',
-              padding: '8px 12px',
-              borderRadius: 8,
-              fontFamily: 'inherit',
-              fontSize: 14,
-              fontWeight: 500,
-              color: active ? '#fff' : '#666',
-              textAlign: 'left',
-              transition: 'all 0.15s',
-              display: 'flex',
-              alignItems: 'center',
-              gap: 8,
-            }}
+            className={`mb-1 flex items-center gap-3 rounded-2xl px-3 py-3 text-left text-sm font-medium transition ${active ? 'bg-primary/10 text-primary shadow-sm' : 'text-subtitle hover:bg-bg hover:text-text'}`}
           >
-            <span>{item.emoji}</span>
+            <span className="text-base">{item.emoji}</span>
             <span>{item.label}</span>
           </button>
         )
@@ -106,14 +78,7 @@ export default function Sidebar({ member }: { member: Member }) {
       {/* Officer section */}
       {isOfficer && (
         <>
-          <div style={{
-            fontSize: 11,
-            color: '#333',
-            fontWeight: 600,
-            textTransform: 'uppercase',
-            letterSpacing: '0.08em',
-            padding: '16px 12px 4px',
-          }}>
+          <div className="px-3 pt-5 pb-2 text-[0.7rem] font-semibold uppercase tracking-[0.12em] text-subtitle">
             Officer
           </div>
           {officerNav.map(item => {
@@ -122,24 +87,9 @@ export default function Sidebar({ member }: { member: Member }) {
               <button
                 key={item.path}
                 onClick={() => router.push(item.path)}
-                style={{
-                  background: active ? '#1e2130' : 'none',
-                  border: 'none',
-                  cursor: 'pointer',
-                  padding: '8px 12px',
-                  borderRadius: 8,
-                  fontFamily: 'inherit',
-                  fontSize: 14,
-                  fontWeight: 500,
-                  color: active ? '#fff' : '#666',
-                  textAlign: 'left',
-                  transition: 'all 0.15s',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: 8,
-                }}
+                className={`mb-1 flex items-center gap-3 rounded-2xl px-3 py-3 text-left text-sm font-medium transition ${active ? 'bg-primary/10 text-primary shadow-sm' : 'text-subtitle hover:bg-bg hover:text-text'}`}
               >
-                <span>{item.emoji}</span>
+                <span className="text-base">{item.emoji}</span>
                 <span>{item.label}</span>
               </button>
             )
@@ -150,14 +100,7 @@ export default function Sidebar({ member }: { member: Member }) {
       {/* Admin section */}
       {isAdmin && (
         <>
-          <div style={{
-            fontSize: 11,
-            color: '#333',
-            fontWeight: 600,
-            textTransform: 'uppercase',
-            letterSpacing: '0.08em',
-            padding: '16px 12px 4px',
-          }}>
+          <div className="px-3 pt-5 pb-2 text-[0.7rem] font-semibold uppercase tracking-[0.12em] text-subtitle">
             Admin
           </div>
           {adminNav.map(item => {
@@ -166,24 +109,9 @@ export default function Sidebar({ member }: { member: Member }) {
               <button
                 key={item.path}
                 onClick={() => router.push(item.path)}
-                style={{
-                  background: active ? '#1e2130' : 'none',
-                  border: 'none',
-                  cursor: 'pointer',
-                  padding: '8px 12px',
-                  borderRadius: 8,
-                  fontFamily: 'inherit',
-                  fontSize: 14,
-                  fontWeight: 500,
-                  color: active ? '#fff' : '#666',
-                  textAlign: 'left',
-                  transition: 'all 0.15s',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: 8,
-                }}
+                className={`mb-1 flex items-center gap-3 rounded-2xl px-3 py-3 text-left text-sm font-medium transition ${active ? 'bg-primary/10 text-primary shadow-sm' : 'text-subtitle hover:bg-bg hover:text-text'}`}
               >
-                <span>{item.emoji}</span>
+                <span className="text-base">{item.emoji}</span>
                 <span>{item.label}</span>
               </button>
             )
@@ -192,55 +120,34 @@ export default function Sidebar({ member }: { member: Member }) {
       )}
 
       {/* User info + sign out */}
-      <div style={{ marginTop: 'auto' }}>
-        <div style={{
-          padding: 12,
-          background: '#161a27',
-          borderRadius: 10,
-          border: '1px solid #1e2337',
-        }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 10 }}>
+      <div className="mt-auto pt-6">
+        <div className="rounded-3xl border border-home-border bg-bg p-4 shadow-sm">
+          <div className="mb-3 flex items-center gap-3">
             {member.profile_image_url ? (
               <img
                 src={member.profile_image_url}
-                style={{ width: 32, height: 32, borderRadius: '50%' }}
+                className="h-8 w-8 rounded-full border border-home-border object-cover"
               />
             ) : (
-              <div style={{
-                width: 32, height: 32, borderRadius: '50%',
-                background: '#4f6ef720',
-                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                fontSize: 13, fontWeight: 700, color: '#4f6ef7',
-              }}>
+              <div className="flex h-8 w-8 items-center justify-center rounded-full bg-accent/20 text-sm font-bold text-accent">
                 {(member.preferred_name || member.full_name)[0]}
               </div>
             )}
             <div>
-              <div style={{ fontSize: 13, fontWeight: 500, color: '#ccc' }}>
+              <div className="text-sm font-medium text-text">
                 {member.preferred_name || member.full_name}
               </div>
-              <div style={{ fontSize: 11, color: '#555' }}>{member.role}</div>
+              <div className="text-xs text-subtitle">{member.role}</div>
             </div>
           </div>
           <button
             onClick={signOut}
-            style={{
-              width: '100%',
-              padding: '6px 0',
-              background: 'transparent',
-              border: '1px solid #2a2f45',
-              borderRadius: 6,
-              color: '#555',
-              fontSize: 12,
-              fontFamily: 'inherit',
-              cursor: 'pointer',
-              transition: 'all 0.15s',
-            }}
+            className="w-full rounded-xl border border-home-border bg-white px-3 py-2 text-sm text-subtitle transition hover:border-primary/30 hover:text-primary"
           >
             Sign out
           </button>
         </div>
       </div>
-    </div>
+    </aside>
   )
 }

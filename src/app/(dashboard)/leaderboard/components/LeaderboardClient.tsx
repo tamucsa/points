@@ -41,33 +41,22 @@ export default function LeaderboardClient({ members, jtTotals, semester }: Props
   const maxPts = members[0]?.total_points ?? 1
 
   return (
-    <div style={{ padding: 28, maxWidth: 900, margin: '0 auto' }}>
+    <div className="mx-auto max-w-6xl px-6 py-8 lg:px-8">
 
       {/* Header */}
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 24 }}>
+      <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 style={{ fontSize: 22, fontWeight: 700, color: '#fff' }}>Leaderboard</h1>
-          <div style={{ fontSize: 13, color: '#555', marginTop: 2 }}>
+          <h1 className="text-3xl font-bold tracking-tight text-text">Leaderboard</h1>
+          <div className="mt-1 text-sm text-subtitle">
             {semester?.name ?? 'Current Semester'} · {members.length} members
           </div>
         </div>
-        <div style={{ display: 'flex', gap: 4, background: '#0f1117', padding: 4, borderRadius: 8 }}>
+        <div className="inline-flex rounded-2xl border border-home-border bg-white p-1 shadow-sm">
           {TABS.map(t => (
             <button
               key={t}
               onClick={() => setTab(t)}
-              style={{
-                padding: '6px 14px',
-                borderRadius: 6,
-                border: 'none',
-                fontFamily: 'inherit',
-                fontSize: 13,
-                fontWeight: 500,
-                cursor: 'pointer',
-                background: tab === t ? '#1e2337' : 'transparent',
-                color: tab === t ? '#fff' : '#555',
-                transition: 'all 0.15s',
-              }}
+              className={`rounded-xl px-4 py-2 text-sm font-medium transition ${tab === t ? 'bg-primary text-white shadow-sm' : 'text-subtitle hover:bg-bg hover:text-text'}`}
             >
               {t}
             </button>
@@ -77,29 +66,19 @@ export default function LeaderboardClient({ members, jtTotals, semester }: Props
 
       {/* Overall tab */}
       {tab === 'Overall' && (
-        <div style={{ background: '#161a27', borderRadius: 14, border: '1px solid #1e2337', overflow: 'hidden' }}>
+        <div className="overflow-hidden rounded-4xl border border-home-border bg-white shadow-[0_20px_60px_rgba(15,23,42,0.06)]">
           {/* Column headers */}
-          <div style={{
-            display: 'grid',
-            gridTemplateColumns: '40px 1fr 70px 70px 70px 100px',
-            padding: '10px 20px',
-            borderBottom: '1px solid #1a1e2e',
-            fontSize: 11,
-            color: '#444',
-            fontWeight: 600,
-            textTransform: 'uppercase',
-            letterSpacing: '0.05em',
-          }}>
+          <div className="grid grid-cols-[40px_1fr_70px_70px_70px_100px] border-b border-home-border bg-bg px-5 py-3 text-[11px] font-semibold uppercase tracking-[0.05em] text-subtitle">
             <div>#</div>
             <div>Member</div>
-            <div style={{ textAlign: 'right' }}>Total</div>
-            <div style={{ textAlign: 'right' }}>CSA</div>
-            <div style={{ textAlign: 'right' }}>JT</div>
-            <div style={{ paddingLeft: 12 }}>Progress</div>
+            <div className="text-right">Total</div>
+            <div className="text-right">CSA</div>
+            <div className="text-right">JT</div>
+            <div className="pl-3">Progress</div>
           </div>
 
           {members.length === 0 && (
-            <div style={{ padding: 40, textAlign: 'center', color: '#444', fontSize: 14 }}>
+            <div className="px-10 py-12 text-center text-sm text-subtitle">
               No active members yet.
             </div>
           )}
@@ -107,58 +86,32 @@ export default function LeaderboardClient({ members, jtTotals, semester }: Props
           {members.map((m, i) => (
             <div
               key={m.id}
-              style={{
-                display: 'grid',
-                gridTemplateColumns: '40px 1fr 70px 70px 70px 100px',
-                padding: '12px 20px',
-                borderBottom: i < members.length - 1 ? '1px solid #0f1117' : 'none',
-                alignItems: 'center',
-              }}
+              className="grid grid-cols-[40px_1fr_70px_70px_70px_100px] items-center border-b border-home-border px-5 py-4 last:border-b-0"
             >
               {/* Rank */}
-              <div style={{
-                fontSize: 13,
-                fontWeight: 700,
-                color: i === 0 ? '#FFD700' : i === 1 ? '#C0C0C0' : i === 2 ? '#CD7F32' : '#333',
-              }}>
+              <div className="text-sm font-bold text-primary">
                 {i + 1}
               </div>
 
               {/* Member info */}
-              <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+              <div className="flex items-center gap-3">
                 {m.profile_image_url ? (
                   <img
                     src={m.profile_image_url}
                     alt={m.preferred_name}
-                    style={{ width: 32, height: 32, borderRadius: '50%', flexShrink: 0 }}
+                    className="h-8 w-8 shrink-0 rounded-full border border-home-border object-cover"
                   />
                 ) : (
-                  <div style={{
-                    width: 32, height: 32, borderRadius: '50%',
-                    background: (m.jt_color ?? '#4f6ef7') + '30',
-                    display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    fontSize: 12, fontWeight: 700,
-                    color: m.jt_color ?? '#4f6ef7',
-                    flexShrink: 0,
-                  }}>
+                  <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-primary/10 text-xs font-bold text-primary">
                     {m.preferred_name?.[0] ?? m.full_name?.[0]}
                   </div>
                 )}
                 <div>
-                  <div style={{ fontSize: 13, fontWeight: 500, color: '#ddd' }}>
+                  <div className="text-sm font-medium text-text">
                     {m.preferred_name || m.full_name}
                   </div>
                   {m.jt_family && (
-                    <span style={{
-                      display: 'inline-block',
-                      padding: '1px 7px',
-                      borderRadius: 20,
-                      fontSize: 11,
-                      fontWeight: 600,
-                      background: (m.jt_color ?? '#4f6ef7') + '20',
-                      color: m.jt_color ?? '#4f6ef7',
-                      marginTop: 2,
-                    }}>
+                    <span className="mt-1 inline-block rounded-full bg-accent/15 px-2 py-0.5 text-[11px] font-semibold text-accent">
                       {m.jt_family}
                     </span>
                   )}
@@ -166,26 +119,20 @@ export default function LeaderboardClient({ members, jtTotals, semester }: Props
               </div>
 
               {/* Points */}
-              <div style={{ textAlign: 'right', fontSize: 15, fontWeight: 700, color: '#fff' }}>
+              <div className="text-right text-sm font-bold text-text">
                 {m.total_points}
               </div>
-              <div style={{ textAlign: 'right', fontSize: 13, color: '#666' }}>
+              <div className="text-right text-sm text-subtitle">
                 {m.csa_points}
               </div>
-              <div style={{ textAlign: 'right', fontSize: 13, color: '#666' }}>
+              <div className="text-right text-sm text-subtitle">
                 {m.jt_points}
               </div>
 
               {/* Progress bar */}
-              <div style={{ paddingLeft: 12 }}>
-                <div style={{ height: 4, background: '#1a1e2e', borderRadius: 4, overflow: 'hidden' }}>
-                  <div style={{
-                    height: '100%',
-                    width: `${(m.total_points / maxPts) * 100}%`,
-                    background: m.jt_color ?? '#4f6ef7',
-                    borderRadius: 4,
-                    transition: 'width 0.3s',
-                  }} />
+              <div className="pl-3">
+                <div className="h-2 overflow-hidden rounded-full bg-bg">
+                  <div className="h-full rounded-full bg-primary transition-all" style={{ width: `${(m.total_points / maxPts) * 100}%` }} />
                 </div>
               </div>
             </div>
@@ -195,39 +142,34 @@ export default function LeaderboardClient({ members, jtTotals, semester }: Props
 
       {/* By JT tab */}
       {tab === 'By JT' && (
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 16 }}>
+        <div className="grid gap-4 md:grid-cols-2">
           {jtTotals.length === 0 && (
-            <div style={{ gridColumn: 'span 2', padding: 40, textAlign: 'center', color: '#444', fontSize: 14 }}>
+            <div className="rounded-3xl border border-home-border bg-white px-10 py-12 text-center text-sm text-subtitle md:col-span-2">
               No JT data yet.
             </div>
           )}
           {[...jtTotals].sort((a, b) => b.total_points - a.total_points).map((jt, i) => (
             <div
               key={jt.jt_family}
-              style={{ padding: 20, background: '#161a27', borderRadius: 14, border: '1px solid #1e2337' }}
+              className="rounded-4xl border border-home-border bg-white p-5 shadow-sm"
             >
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                  <div style={{ width: 10, height: 10, borderRadius: '50%', background: jt.jt_color ?? '#4f6ef7' }} />
-                  <span style={{ fontWeight: 700, fontSize: 16, color: '#fff' }}>{jt.jt_family}</span>
-                  {i === 0 && <span style={{ fontSize: 14 }}>👑</span>}
+              <div className="mb-4 flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <div className="h-2.5 w-2.5 rounded-full bg-primary" />
+                  <span className="text-base font-bold text-text">{jt.jt_family}</span>
+                  {i === 0 && <span className="text-sm">👑</span>}
                 </div>
-                <div style={{ fontSize: 11, color: '#555' }}>{jt.member_count} members</div>
+                <div className="text-xs text-subtitle">{jt.member_count} members</div>
               </div>
-              <div style={{ fontSize: 36, fontWeight: 800, color: jt.jt_color ?? '#4f6ef7', letterSpacing: '-1px' }}>
+              <div className="text-4xl font-extrabold tracking-[-1px] text-primary">
                 {jt.total_points}
               </div>
-              <div style={{ fontSize: 12, color: '#555', marginTop: 2 }}>total points</div>
-              <div style={{ fontSize: 12, color: '#444', marginTop: 4 }}>
+              <div className="mt-1 text-xs text-subtitle">total points</div>
+              <div className="mt-1 text-xs text-subtitle/80">
                 {jt.avg_points_per_member} avg per member
               </div>
-              <div style={{ height: 4, background: '#1a1e2e', borderRadius: 4, marginTop: 14, overflow: 'hidden' }}>
-                <div style={{
-                  height: '100%',
-                  width: `${(jt.total_points / (jtTotals[0]?.total_points || 1)) * 100}%`,
-                  background: jt.jt_color ?? '#4f6ef7',
-                  borderRadius: 4,
-                }} />
+              <div className="mt-4 h-2 overflow-hidden rounded-full bg-bg">
+                <div className="h-full rounded-full bg-primary" style={{ width: `${(jt.total_points / (jtTotals[0]?.total_points || 1)) * 100}%` }} />
               </div>
             </div>
           ))}

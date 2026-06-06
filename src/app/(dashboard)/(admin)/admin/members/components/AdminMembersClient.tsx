@@ -139,29 +139,23 @@ export default function AdminMembersClient({ pending: initialPending, jtFamilies
   }
 
   return (
-    <div style={{ padding: 28, maxWidth: 800, margin: '0 auto' }}>
+    <div className="mx-auto max-w-5xl px-6 py-8 lg:px-8">
 
       {/* Header */}
-      <div style={{ marginBottom: 24 }}>
-        <h1 style={{ fontSize: 22, fontWeight: 700, color: '#fff' }}>Member Admin</h1>
-        <div style={{ fontSize: 13, color: '#555', marginTop: 2 }}>
+      <div className="mb-6">
+        <h1 className="text-3xl font-bold tracking-tight text-text">Member Admin</h1>
+        <div className="mt-1 text-sm text-subtitle">
           Admin only
         </div>
       </div>
 
       {/* Tabs */}
-      <div style={{ display: 'flex', gap: 4, marginBottom: 24, background: '#0f1117', padding: 4, borderRadius: 8, width: 'fit-content' }}>
+      <div className="mb-6 inline-flex rounded-2xl border border-home-border bg-white p-1 shadow-sm">
         {(['pending', 'import'] as const).map(t => (
           <button
             key={t}
             onClick={() => setTab(t)}
-            style={{
-              padding: '6px 16px', borderRadius: 6, border: 'none',
-              fontFamily: 'inherit', fontSize: 13, fontWeight: 500,
-              cursor: 'pointer',
-              background: tab === t ? '#1e2337' : 'transparent',
-              color: tab === t ? '#fff' : '#555',
-            }}
+            className={`rounded-xl px-4 py-2 text-sm font-medium transition ${tab === t ? 'bg-primary text-white shadow-sm' : 'text-subtitle hover:bg-bg hover:text-text'}`}
           >
             {t === 'pending' ? `Pending JT (${pending.length})` : 'CSV Import'}
           </button>
@@ -170,47 +164,30 @@ export default function AdminMembersClient({ pending: initialPending, jtFamilies
 
       {/* Pending tab */}
       {tab === 'pending' && (
-        <div style={{
-          background: '#161a27', borderRadius: 14,
-          border: '1px solid #1e2337', overflow: 'hidden',
-        }}>
+        <div className="overflow-hidden rounded-4xl border border-home-border bg-white shadow-sm">
           {pending.length === 0 && (
-            <div style={{ padding: 32, textAlign: 'center', color: '#444', fontSize: 14 }}>
+            <div className="px-8 py-10 text-center text-sm text-subtitle">
               No members pending JT assignment.
             </div>
           )}
           {pending.map((m, i) => (
-            <div key={m.id} style={{
-              display: 'flex', alignItems: 'center', gap: 14,
-              padding: '14px 20px',
-              borderBottom: i < pending.length - 1 ? '1px solid #0f1117' : 'none',
-            }}>
-              <div style={{
-                width: 36, height: 36, borderRadius: '50%',
-                background: '#f7934f20', flexShrink: 0,
-                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                fontSize: 13, fontWeight: 700, color: '#f7934f',
-              }}>
+            <div key={m.id} className="flex items-center gap-4 border-b border-home-border px-5 py-4 last:border-b-0">
+              <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-accent/15 text-sm font-bold text-accent">
                 {(m.preferred_name || m.full_name)[0]}
               </div>
-              <div style={{ flex: 1 }}>
-                <div style={{ fontSize: 13, fontWeight: 500, color: '#ddd' }}>
+              <div className="flex-1">
+                <div className="text-sm font-medium text-text">
                   {m.preferred_name || m.full_name}
                 </div>
-                <div style={{ fontSize: 11, color: '#555' }}>{m.email}</div>
+                <div className="text-xs text-subtitle">{m.email}</div>
                 {m.graduation_year && (
-                  <div style={{ fontSize: 11, color: '#444' }}>Class of {m.graduation_year}</div>
+                  <div className="text-xs text-subtitle/80">Class of {m.graduation_year}</div>
                 )}
               </div>
               <select
                 value={assignments[m.id] ?? ''}
                 onChange={e => setAssignments(a => ({ ...a, [m.id]: e.target.value }))}
-                style={{
-                  padding: '7px 10px',
-                  background: '#0f1117', border: '1px solid #2a2f45',
-                  borderRadius: 7, color: '#ddd', fontSize: 13,
-                  fontFamily: 'inherit', cursor: 'pointer',
-                }}
+                className="rounded-xl border border-home-border bg-white px-3 py-2 text-sm text-text shadow-sm"
               >
                 <option value="">Assign JT…</option>
                 {jtFamilies.map(jt => (
@@ -220,15 +197,7 @@ export default function AdminMembersClient({ pending: initialPending, jtFamilies
               <button
                 onClick={() => assignJT(m.id)}
                 disabled={!assignments[m.id] || saving === m.id}
-                style={{
-                  padding: '7px 14px',
-                  background: assignments[m.id] ? '#4f6ef7' : '#2a2f45',
-                  color: assignments[m.id] ? '#fff' : '#555',
-                  border: 'none', borderRadius: 7,
-                  fontSize: 13, fontWeight: 600,
-                  cursor: assignments[m.id] ? 'pointer' : 'not-allowed',
-                  fontFamily: 'inherit',
-                }}
+                className="rounded-xl bg-primary px-4 py-2 text-sm font-semibold text-white transition disabled:cursor-not-allowed disabled:bg-[#9cb8d8]"
               >
                 {saving === m.id ? 'Saving…' : 'Activate'}
               </button>
@@ -239,14 +208,11 @@ export default function AdminMembersClient({ pending: initialPending, jtFamilies
 
       {/* Import tab */}
       {tab === 'import' && (
-        <div style={{
-          background: '#161a27', borderRadius: 14,
-          border: '1px solid #1e2337', padding: 28,
-        }}>
-          <div style={{ fontSize: 15, fontWeight: 600, color: '#ddd', marginBottom: 8 }}>
+        <div className="rounded-4xl border border-home-border bg-white p-7 shadow-sm">
+          <div className="mb-2 text-base font-semibold text-text">
             Import from Google Form CSV
           </div>
-          <div style={{ fontSize: 13, color: '#555', marginBottom: 20, lineHeight: 1.6 }}>
+          <div className="mb-5 text-sm leading-6 text-subtitle">
             Export responses from Google Forms as a CSV file. The form should collect:
             Full Name, Preferred Name, TAMU Email, Graduation Year, and Phone (optional).
           </div>
@@ -256,44 +222,30 @@ export default function AdminMembersClient({ pending: initialPending, jtFamilies
             accept=".csv"
             onChange={handleCSV}
             disabled={importing}
-            style={{
-              display: 'block', marginBottom: 20,
-              color: '#888', fontSize: 13, fontFamily: 'inherit',
-            }}
+            className="mb-5 block text-sm text-subtitle"
           />
 
           {importing && (
-            <div style={{ fontSize: 13, color: '#555' }}>Importing…</div>
+            <div className="text-sm text-subtitle">Importing…</div>
           )}
 
           {importResult && (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-              <div style={{
-                padding: 12, background: '#4fc78715',
-                borderRadius: 8, border: '1px solid #4fc78730',
-                fontSize: 13, color: '#4fc787',
-              }}>
+            <div className="flex flex-col gap-3">
+              <div className="rounded-2xl border border-green-200 bg-green-50 p-3 text-sm text-green-700">
                 ✅ {importResult.added} members added
               </div>
               {importResult.skipped > 0 && (
-                <div style={{
-                  padding: 12, background: '#ffffff08',
-                  borderRadius: 8, border: '1px solid #2a2f45',
-                  fontSize: 13, color: '#666',
-                }}>
+                <div className="rounded-2xl border border-home-border bg-bg p-3 text-sm text-subtitle">
                   ⏭️ {importResult.skipped} already existed, skipped
                 </div>
               )}
               {importResult.errors.length > 0 && (
-                <div style={{
-                  padding: 12, background: '#e74c3c15',
-                  borderRadius: 8, border: '1px solid #e74c3c30',
-                }}>
-                  <div style={{ fontSize: 13, color: '#e74c3c', marginBottom: 6 }}>
+                <div className="rounded-2xl border border-red-200 bg-red-50 p-3">
+                  <div className="mb-2 text-sm text-red-500">
                     ⚠️ {importResult.errors.length} errors
                   </div>
                   {importResult.errors.map((err, i) => (
-                    <div key={i} style={{ fontSize: 12, color: '#e74c3c80' }}>{err}</div>
+                    <div key={i} className="text-xs text-red-400">{err}</div>
                   ))}
                 </div>
               )}

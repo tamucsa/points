@@ -71,71 +71,53 @@ export default function ProfileClient({ member, points, attendance, history }: P
   ]
 
   return (
-    <div style={{ padding: 28, maxWidth: 800, margin: '0 auto' }}>
+    <div className="mx-auto max-w-5xl px-6 py-8 lg:px-8">
 
       {/* Header */}
-      <div style={{
-        display: 'flex', alignItems: 'center', gap: 20,
-        marginBottom: 32, padding: 24,
-        background: '#161a27', borderRadius: 14, border: '1px solid #1e2337',
-      }}>
+      <div className="mb-8 flex flex-col gap-5 rounded-4xl border border-home-border bg-white p-6 shadow-sm sm:flex-row sm:items-center">
         {member.profile_image_url ? (
           <img
             src={member.profile_image_url}
-            style={{ width: 64, height: 64, borderRadius: '50%', flexShrink: 0 }}
+            className="h-16 w-16 rounded-full border border-home-border object-cover"
           />
         ) : (
-          <div style={{
-            width: 64, height: 64, borderRadius: '50%',
-            background: color + '30', flexShrink: 0,
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-            fontSize: 24, fontWeight: 700, color,
-          }}>
+          <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-full bg-primary/10 text-2xl font-bold text-primary">
             {displayName[0]}
           </div>
         )}
-        <div style={{ flex: 1 }}>
-          <div style={{ fontSize: 22, fontWeight: 700, color: '#fff' }}>{displayName}</div>
+        <div className="flex-1">
+          <div className="text-2xl font-bold text-text">{displayName}</div>
           {points?.jt_family && (
-            <span style={{
-              display: 'inline-block', marginTop: 4,
-              padding: '2px 10px', borderRadius: 20,
-              fontSize: 12, fontWeight: 600,
-              background: color + '20', color,
-            }}>
+            <span className="mt-2 inline-block rounded-full bg-accent/15 px-3 py-1 text-xs font-semibold text-accent">
               {points.jt_family}
             </span>
           )}
           {member.graduation_year && (
-            <div style={{ fontSize: 13, color: '#555', marginTop: 4 }}>
+            <div className="mt-2 text-sm text-subtitle">
               Class of {member.graduation_year}
             </div>
           )}
         </div>
-        <div style={{ textAlign: 'right' }}>
-          <div style={{ fontSize: 48, fontWeight: 800, color: '#fff', letterSpacing: '-2px' }}>
+        <div className="text-right">
+          <div className="text-5xl font-extrabold tracking-[-2px] text-text">
             {points?.total_points ?? 0}
           </div>
-          <div style={{ fontSize: 13, color: '#555' }}>total points</div>
+          <div className="text-sm text-subtitle">total points</div>
         </div>
       </div>
 
       {/* Point Breakdown */}
-      <div style={{ marginBottom: 28 }}>
-        <h2 style={{ fontSize: 16, fontWeight: 700, color: '#fff', marginBottom: 12 }}>
+      <div className="mb-8">
+        <h2 className="mb-3 text-lg font-bold text-text">
           Point Breakdown
         </h2>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 12 }}>
+        <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
           {breakdown.map(cat => (
-            <div key={cat.label} style={{
-              padding: 16, background: '#161a27',
-              borderRadius: 12, border: '1px solid #1e2337',
-              textAlign: 'center',
-            }}>
-              <div style={{ fontSize: 28, fontWeight: 800, color: cat.color }}>
+            <div key={cat.label} className="rounded-3xl border border-home-border bg-white p-4 text-center shadow-sm">
+              <div className="text-3xl font-extrabold text-primary">
                 {cat.value}
               </div>
-              <div style={{ fontSize: 12, color: '#555', marginTop: 4 }}>
+              <div className="mt-2 text-xs text-subtitle">
                 {cat.label}
               </div>
             </div>
@@ -144,13 +126,13 @@ export default function ProfileClient({ member, points, attendance, history }: P
       </div>
 
       {/* Attendance History */}
-      <div style={{ marginBottom: 28 }}>
-        <h2 style={{ fontSize: 16, fontWeight: 700, color: '#fff', marginBottom: 12 }}>
+      <div className="mb-8">
+        <h2 className="mb-3 text-lg font-bold text-text">
           This Semester
         </h2>
-        <div style={{ background: '#161a27', borderRadius: 14, border: '1px solid #1e2337', overflow: 'hidden' }}>
+        <div className="overflow-hidden rounded-4xl border border-home-border bg-white shadow-sm">
           {attendance.length === 0 && (
-            <div style={{ padding: 32, textAlign: 'center', color: '#444', fontSize: 14 }}>
+            <div className="px-8 py-10 text-center text-sm text-subtitle">
               No events attended yet this semester.
             </div>
           )}
@@ -158,41 +140,26 @@ export default function ProfileClient({ member, points, attendance, history }: P
             const cat = row.events?.category ?? 'default'
             const catColor = CATEGORY_COLORS[cat] ?? CATEGORY_COLORS.default
             return (
-              <div key={row.id} style={{
-                display: 'flex', alignItems: 'center', gap: 14,
-                padding: '12px 20px',
-                borderBottom: i < attendance.length - 1 ? '1px solid #0f1117' : 'none',
-              }}>
+              <div key={row.id} className="flex items-center gap-4 border-b border-home-border px-5 py-3 last:border-b-0">
                 {/* Point badge */}
-                <div style={{
-                  width: 36, height: 36, borderRadius: 8, flexShrink: 0,
-                  background: catColor + '20',
-                  display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  fontSize: 15, fontWeight: 800, color: catColor,
-                }}>
+                <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-sm font-extrabold text-primary">
                   {row.counted ? `+${row.events?.point_value}` : '—'}
                 </div>
 
                 {/* Event info */}
                 <div style={{ flex: 1 }}>
-                  <div style={{ fontSize: 13, fontWeight: 500, color: '#ddd' }}>
+                  <div className="text-sm font-medium text-text">
                     {row.events?.name}
                   </div>
-                  <div style={{ display: 'flex', gap: 8, marginTop: 3 }}>
-                    <span style={{ fontSize: 11, color: '#555' }}>
+                  <div className="mt-1 flex flex-wrap gap-2 text-xs text-subtitle">
+                    <span>
                       {row.events?.event_date}
                     </span>
-                    <span style={{
-                      fontSize: 11, padding: '1px 6px', borderRadius: 4,
-                      background: catColor + '15', color: catColor,
-                    }}>
+                    <span className="rounded-md bg-primary/10 px-2 py-0.5 text-[11px] text-primary">
                       {cat}
                     </span>
                     {!row.counted && (
-                      <span style={{
-                        fontSize: 11, padding: '1px 6px', borderRadius: 4,
-                        background: '#e74c3c15', color: '#e74c3c',
-                      }}>
+                      <span className="rounded-md bg-red-50 px-2 py-0.5 text-[11px] text-red-500">
                         cap reached
                       </span>
                     )}
@@ -200,7 +167,7 @@ export default function ProfileClient({ member, points, attendance, history }: P
                 </div>
 
                 {/* Check-in method */}
-                <div style={{ fontSize: 11, color: '#444' }}>
+                <div className="text-xs text-subtitle">
                   {CHECKIN_LABELS[row.check_in_method] ?? row.check_in_method}
                 </div>
               </div>
@@ -212,25 +179,21 @@ export default function ProfileClient({ member, points, attendance, history }: P
       {/* Semester History */}
       {history.length > 0 && (
         <div>
-          <h2 style={{ fontSize: 16, fontWeight: 700, color: '#fff', marginBottom: 12 }}>
+          <h2 className="mb-3 text-lg font-bold text-text">
             Past Semesters
           </h2>
-          <div style={{ background: '#161a27', borderRadius: 14, border: '1px solid #1e2337', overflow: 'hidden' }}>
+          <div className="overflow-hidden rounded-4xl border border-home-border bg-white shadow-sm">
             {history.map((sem, i) => (
-              <div key={sem.id} style={{
-                display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                padding: '14px 20px',
-                borderBottom: i < history.length - 1 ? '1px solid #0f1117' : 'none',
-              }}>
+              <div key={sem.id} className="flex items-center justify-between border-b border-home-border px-5 py-4 last:border-b-0">
                 <div>
-                  <div style={{ fontSize: 13, fontWeight: 500, color: '#ddd' }}>
+                  <div className="text-sm font-medium text-text">
                     {sem.semesters?.name}
                   </div>
-                  <div style={{ fontSize: 12, color: '#555', marginTop: 2 }}>
+                  <div className="mt-1 text-xs text-subtitle">
                     {sem.jt_family_name}
                   </div>
                 </div>
-                <div style={{ fontSize: 18, fontWeight: 700, color: '#fff' }}>
+                <div className="text-base font-bold text-primary">
                   {sem.total_points} pts
                 </div>
               </div>

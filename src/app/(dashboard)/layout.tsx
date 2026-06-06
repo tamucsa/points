@@ -34,9 +34,9 @@ export default async function DashboardLayout({
   }
 
   return (
-    <div style={{ display: 'flex', height: '100vh', background: '#0f1117' }}>
+    <div className="flex min-h-screen bg-bg text-text">
       <Sidebar member={member} />
-      <main style={{ flex: 1, overflow: 'auto' }}>
+      <main className="flex-1 overflow-auto bg-[radial-gradient(circle_at_top_right,rgba(71,121,184,0.05),transparent_28%),radial-gradient(circle_at_bottom_left,rgba(240,176,195,0.12),transparent_28%)]">
         {children}
       </main>
     </div>
