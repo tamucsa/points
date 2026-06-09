@@ -1,3 +1,5 @@
+export const OFFICER_MEMBERS_PAGE_SIZE = 25
+
 export const inputClassName =
   'w-full rounded-xl border border-home-border bg-white px-4 py-3 text-sm text-text outline-none transition placeholder:text-[#8b96aa] focus:border-primary focus:ring-2 focus:ring-primary/15'
 

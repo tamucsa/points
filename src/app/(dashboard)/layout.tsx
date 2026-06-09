@@ -1,24 +1,15 @@
 import { redirect } from 'next/navigation'
 import Sidebar from '@/app/components/layout/Sidebar'
-import { createServerSupabase } from '@/utils/supabase/server'
+import { getCurrentMember } from '@/utils/supabase/auth'
 
 export default async function DashboardLayout({
   children,
 }: {
   children: React.ReactNode
 }) {
-  const supabase = await createServerSupabase()
-
-  const { data: { user } } = await supabase.auth.getUser()
+  const { user, member } = await getCurrentMember()
 
   if (!user) redirect('/login')
-
-  const { data: member } = await supabase
-    .from('members')
-    .select('id, preferred_name, full_name, role, status, profile_image_url')
-    .eq('auth_uid', user.id)
-    .maybeSingle()
-
   if (!member) redirect('/register')
 
   if (member.status === 'pending_jt') redirect('/pending')

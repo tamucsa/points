@@ -1,28 +1,65 @@
-import { redirect } from 'next/navigation'
 import MembersClient from '@/app/(dashboard)/(officer)/officer/members/components/MembersClient'
+import { OFFICER_MEMBERS_PAGE_SIZE } from '@/utils/constants'
+import { getActiveSemester } from '@/utils/supabase/auth'
 import { createServerSupabase } from '@/utils/supabase/server'
 
-export default async function MembersPage() {
+const MEMBER_COLUMNS =
+  'id, full_name, preferred_name, email, profile_image_url, jt_family, jt_color, total_points, csa_points, jt_points, sports_points, gm_points'
+
+interface SearchParams {
+  page?: string
+  q?: string
+  jt?: string
+}
+
+export default async function MembersPage({
+  searchParams,
+}: {
+  searchParams: Promise<SearchParams>
+}) {
+  const { page: pageParam, q = '', jt = 'all' } = await searchParams
+  const page = Math.max(1, Number(pageParam) || 1)
+  const query = q.trim()
+  const from = (page - 1) * OFFICER_MEMBERS_PAGE_SIZE
+  const to = from + OFFICER_MEMBERS_PAGE_SIZE - 1
+
   const supabase = await createServerSupabase()
 
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) redirect('/login')
-
-  const { data: members } = await supabase
+  let membersQuery = supabase
     .from('v_current_leaderboard')
-    .select('*')
+    .select(MEMBER_COLUMNS, { count: 'exact' })
     .order('total_points', { ascending: false })
 
-  const { data: semester } = await supabase
-    .from('semesters')
-    .select('name')
-    .eq('is_active', true)
-    .single()
+  if (query) {
+    const pattern = `%${query}%`
+    membersQuery = membersQuery.or(
+      `full_name.ilike.${pattern},preferred_name.ilike.${pattern},email.ilike.${pattern}`,
+    )
+  }
+
+  if (jt !== 'all') {
+    membersQuery = membersQuery.eq('jt_family', jt)
+  }
+
+  const [{ data: members, count }, semester, { data: jtFamilies }] = await Promise.all([
+    membersQuery.range(from, to),
+    getActiveSemester(),
+    supabase.from('jt_families').select('name').eq('is_active', true).order('name'),
+  ])
+
+  const totalCount = count ?? 0
+  const totalPages = Math.max(1, Math.ceil(totalCount / OFFICER_MEMBERS_PAGE_SIZE))
 
   return (
     <MembersClient
       members={members ?? []}
-      semester={semester}
+      semester={semester ? { name: semester.name } : null}
+      jtFamilies={(jtFamilies ?? []).map(f => f.name)}
+      page={page}
+      totalPages={totalPages}
+      totalCount={totalCount}
+      query={query}
+      filterJT={jt}
     />
   )
 }
