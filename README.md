@@ -1,36 +1,52 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# TAMU CSA Points
 
-## Getting Started
+Points tracking system for the Texas A&M Chinese Student Association (CSA). Members sign in with TAMU Google, view points/leaderboards, and check in to events. Officers/admins manage events and onboarding.
 
-First, run the development server:
+## Quickstart (developers)
+
+### Prereqs
+- Node.js (recommended: latest LTS)
+- npm (or your preferred package manager)
+- A Supabase project (hosted) or a local Supabase stack
+
+### Setup
+1. Install dependencies:
+
+```bash
+npm install
+```
+
+2. Create `.env.local` with the required variables (names only; see docs):
+
+```bash
+NEXT_PUBLIC_SUPABASE_URL=...
+NEXT_PUBLIC_SUPABASE_ANON_KEY=...
+SUPABASE_SERVICE_ROLE_KEY=...
+NEXT_PUBLIC_SITE_URL=...
+```
+
+3. Run the dev server:
 
 ```bash
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Open `http://localhost:3000`.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Documentation (comprehensive)
+- **Local setup**: `docs/LOCAL_SETUP.md`
+- **Environment variables**: `docs/ENVIRONMENT.md`
+- **Architecture (developer onboarding / transfer)**: `docs/ARCHITECTURE.md`
+- **Operations (all workflows)**: `docs/OPERATIONS.md`
+- **Known issues**: `docs/KNOWN_ISSUES.md`
+- **Deployment**: `docs/DEPLOYMENT.md`
+- **User onboarding**:
+  - Members: `docs/ONBOARDING_MEMBERS.md`
+  - Officers: `docs/ONBOARDING_OFFICERS.md`
+  - Admins: `docs/ONBOARDING_ADMINS.md`
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
-
-## Learn More
-
-To learn more about Next.js, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+## Commands
+- **Dev**: `npm run dev`
+- **Build**: `npm run build`
+- **Lint**: `npm run lint`
+- **Format**: `npm run format`
