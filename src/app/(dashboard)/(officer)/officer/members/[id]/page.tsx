@@ -7,7 +7,7 @@ export default async function MemberDetailPage({ params }: { params: Promise<{ i
   const supabase = await createServerSupabase()
 
   const { data: { user } } = await supabase.auth.getUser()
-  if (!user) redirect('/login')
+  if (!user) redirect('/')
 
   const { data: member } = await supabase
     .from('v_current_leaderboard')

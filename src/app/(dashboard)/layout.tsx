@@ -9,7 +9,7 @@ export default async function DashboardLayout({
 }) {
   const { user, member } = await getCurrentMember()
 
-  if (!user) redirect('/login')
+  if (!user) redirect('/')
   if (!member) redirect('/register')
 
   if (member.status === 'pending_jt') redirect('/pending')

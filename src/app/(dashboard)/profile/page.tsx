@@ -6,7 +6,7 @@ export default async function ProfilePage() {
   const supabase = await createServerSupabase()
 
   const { data: { user } } = await supabase.auth.getUser()
-  if (!user) redirect('/login')
+  if (!user) redirect('/')
 
   // Get member row
   const { data: member } = await supabase
@@ -15,7 +15,7 @@ export default async function ProfilePage() {
     .eq('auth_uid', user.id)
     .single()
 
-  if (!member) redirect('/login')
+  if (!member) redirect('/')
 
   // Get their full point breakdown from the leaderboard view
   const { data: points } = await supabase

@@ -7,7 +7,7 @@ export default async function OfficerCheckinPage({ params }: { params: Promise<{
   const supabase = await createServerSupabase()
 
   const { data: { user } } = await supabase.auth.getUser()
-  if (!user) redirect('/login')
+  if (!user) redirect('/')
 
   const { data: officer } = await supabase
     .from('members')

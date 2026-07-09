@@ -8,7 +8,7 @@ export default async function QRPage({ params }: { params: Promise<{ id: string 
   const supabase = await createServerSupabase()
 
   const { data: { user } } = await supabase.auth.getUser()
-  if (!user) redirect('/login')
+  if (!user) redirect('/')
 
   const { data: event } = await supabase
     .from('events')

@@ -39,12 +39,12 @@ export async function GET(request: Request) {
     const { data: { user }, error } = await supabase.auth.exchangeCodeForSession(code)
 
     if (error || !user) {
-      return NextResponse.redirect(`${origin}/login?error=auth_failed`)
+      return NextResponse.redirect(`${origin}/?error=auth_failed`)
     }
 
     if (!user.email?.endsWith('@tamu.edu')) {
       await supabase.auth.signOut()
-      return NextResponse.redirect(`${origin}/login?error=invalid_domain`)
+      return NextResponse.redirect(`${origin}/?error=invalid_domain`)
     }
 
     const supabaseAdmin = createClient(
@@ -98,5 +98,5 @@ export async function GET(request: Request) {
     )
   }
 
-  return NextResponse.redirect(`${origin}/login?error=auth_failed`)
+  return NextResponse.redirect(`${origin}/?error=auth_failed`)
 }

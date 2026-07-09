@@ -13,7 +13,7 @@ This document explains how the system is structured, how requests flow through t
 ## Repository layout
 
 - `src/app/`: Next.js routes, layouts, server components, and client components.
-  - `(auth)/`: login/register/pending experience
+  - `(auth)/`: public homepage (`/`), sign-in, registration, pending onboarding, and legal pages (`/privacy`, `/terms`). `/login` redirects to `/` for backward compatibility.
   - `(dashboard)/`: authenticated app shell + pages (leaderboard/events/profile)
   - `(dashboard)/(officer)/officer`: officer tools
   - `(dashboard)/(admin)/admin`: admin tools
@@ -45,8 +45,10 @@ Derived views (used by UI):
 
 ### 1) Middleware gating
 `middleware.ts` enforces:
-- Unauthenticated users are redirected to `/login` (except public routes).
+- Unauthenticated users are redirected to `/` (except public routes).
 - `pending_jt` users are restricted to onboarding routes.
+
+Public routes (no sign-in required): `/`, `/login` (redirects to `/`), `/register`, `/pending`, `/privacy`, `/terms`, `/checkin/*`, `/api/auth/*`.
 
 ### 2) Layout gating
 `src/app/(dashboard)/layout.tsx` loads the current member and renders the app shell (`Sidebar` + page content). Officer/admin sections have their own layouts that enforce role membership.

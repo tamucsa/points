@@ -6,7 +6,7 @@ export default async function AdminMembersPage() {
   const supabase = await createServerSupabase()
 
   const { data: { user } } = await supabase.auth.getUser()
-  if (!user) redirect('/login')
+  if (!user) redirect('/')
 
   // Pending members
   const { data: pending } = await supabase

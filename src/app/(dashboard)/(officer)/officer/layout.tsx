@@ -8,7 +8,7 @@ export default async function OfficerLayout({
 }) {
   const { user, member } = await getCurrentMember()
 
-  if (!user) redirect('/login')
+  if (!user) redirect('/')
   if (!member || !['officer', 'admin'].includes(member.role)) {
     redirect('/leaderboard')
   }

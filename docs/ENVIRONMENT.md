@@ -47,7 +47,7 @@ If a variable is missing after pulling, add it in Vercel (Project → Settings �
 
 ### `NEXT_PUBLIC_SITE_URL`
 - **Purpose**: Fallback base URL for generating absolute links when request headers don’t include host/proto (used by officer QR page).
-- **Where to get it**: Your deployed site URL (e.g., Vercel production URL). For local dev, `http://localhost:3000`.
+- **Where to get it**: Production: `https://points.csatamu.org`. For local dev, `http://localhost:3000`.
 
 ## Notes
 

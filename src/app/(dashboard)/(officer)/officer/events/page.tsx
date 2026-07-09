@@ -6,7 +6,7 @@ export default async function OfficerEventsPage() {
   const supabase = await createServerSupabase()
 
   const { data: { user } } = await supabase.auth.getUser()
-  if (!user) redirect('/login')
+  if (!user) redirect('/')
 
   const { data: semester } = await supabase
     .from('semesters')

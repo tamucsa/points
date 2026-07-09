@@ -2,7 +2,7 @@ import { createServerClient } from '@supabase/ssr'
 import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
 
-const publicRoutes = ['/login', '/register', '/pending', '/api/auth', '/checkin']
+const publicRoutes = ['/register', '/pending', '/api/auth', '/checkin', '/privacy', '/terms', '/login']
 
 const pendingAllowedRoutes = ['/pending', '/register', '/api/auth', '/checkin']
 
@@ -27,10 +27,12 @@ export async function middleware(request: NextRequest) {
 
   const { data: { user } } = await supabase.auth.getUser()
 
-  const isPublicRoute = publicRoutes.some(r => pathname.startsWith(r))
+  const isPublicRoute =
+    pathname === '/' ||
+    publicRoutes.some(r => pathname.startsWith(r))
 
   if (!user && !isPublicRoute) {
-    return NextResponse.redirect(new URL('/login', request.url))
+    return NextResponse.redirect(new URL('/', request.url))
   }
 
   let member: { status: string } | null = null
@@ -56,7 +58,7 @@ export async function middleware(request: NextRequest) {
     return NextResponse.redirect(new URL('/leaderboard', request.url))
   }
 
-  if (user && pathname.startsWith('/login')) {
+  if (user && (pathname === '/' || pathname.startsWith('/login'))) {
     const dest = member?.status === 'pending_jt' ? '/pending' : '/leaderboard'
     return NextResponse.redirect(new URL(dest, request.url))
   }

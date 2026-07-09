@@ -8,7 +8,7 @@ export default async function AdminLayout({
 }) {
   const { user, member } = await getCurrentMember()
 
-  if (!user) redirect('/login')
+  if (!user) redirect('/')
   if (!member || member.role !== 'admin') {
     redirect('/leaderboard')
   }

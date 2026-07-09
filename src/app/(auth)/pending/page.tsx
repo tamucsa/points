@@ -7,7 +7,7 @@ export default async function PendingPage() {
   const { data: { user } } = await supabase.auth.getUser()
 
   if (!user) {
-    redirect('/login')
+    redirect('/')
   }
 
   const { data: member } = await supabase

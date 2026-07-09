@@ -35,7 +35,9 @@ Operational recommendation:
 
 ## Post-deploy verification checklist
 
-- Login works (TAMU domain enforcement).
+- Homepage (`/`) loads with app description, sign-in, and links to Privacy Policy and Terms of Service.
+- `/privacy` and `/terms` are publicly accessible.
+- Sign-in works (TAMU domain enforcement).
 - Redirects behave correctly for:
   - unauthenticated users
   - `pending_jt` members
@@ -44,4 +46,23 @@ Operational recommendation:
 - Admin routes are inaccessible to non-admins.
 - Leaderboard renders and shows correct totals.
 - Check-in flow works (self/QR and officer check-in).
+
+## Google OAuth (production)
+
+Production is hosted at `https://points.csatamu.org`. Google Cloud OAuth consent screen should use:
+
+| Field | URL |
+|-------|-----|
+| App home page | `https://points.csatamu.org` |
+| Privacy policy | `https://points.csatamu.org/privacy` |
+| Terms of service | `https://points.csatamu.org/terms` |
+
+Sign-in uses Supabase Google OAuth with basic scopes only (`openid`, `email`, `profile`). The app's callback route is `/api/auth/callback`; Google must also allow the Supabase project callback URL (`https://<project-ref>.supabase.co/auth/v1/callback`) on the OAuth client.
+
+Operational notes:
+- App must be **In production** (not Testing) for unrestricted member sign-in beyond the test-user cap.
+- Only the three basic Google sign-in scopes should remain on the OAuth consent screen Data Access page.
+- Brand verification in Google Cloud improves consent-screen trust (app name/logo); a Supabase custom auth domain requires a paid Supabase plan and is optional.
+
+See `docs/ARCHITECTURE.md` for auth flow details and ownership transfer checklist.
 

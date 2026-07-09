@@ -6,7 +6,7 @@ export default async function NewEventPage() {
   const supabase = await createServerSupabase()
 
   const { data: { user } } = await supabase.auth.getUser()
-  if (!user) redirect('/login')
+  if (!user) redirect('/')
 
   const { data: member } = await supabase
     .from('members')
@@ -14,7 +14,7 @@ export default async function NewEventPage() {
     .eq('auth_uid', user.id)
     .maybeSingle()
 
-  if (!member) redirect('/login')
+  if (!member) redirect('/')
 
   const { data: semester } = await supabase
     .from('semesters')

@@ -7,7 +7,7 @@ export default async function EventDetailPage({ params }: { params: Promise<{ id
   const supabase = await createServerSupabase()
 
   const { data: { user } } = await supabase.auth.getUser()
-  if (!user) redirect('/login')
+  if (!user) redirect('/')
 
   const { data: event } = await supabase
     .from('events')
