@@ -29,7 +29,7 @@ export default async function OfficerCheckinPage({ params }: { params: Promise<{
 
   const { data: members } = await supabase
     .from('members')
-    .select('id, full_name, preferred_name, email, jt_family_id, jt_families(name)')
+    .select('id, full_name, preferred_name, email, profile_image_url, jt_family_id, jt_families(name, color)')
     .eq('status', 'active')
     .order('preferred_name')
 
@@ -40,15 +40,21 @@ export default async function OfficerCheckinPage({ params }: { params: Promise<{
 
   const checkedInIds = new Set(attendance?.map(a => a.member_id) ?? [])
 
-  const normalizedMembers = (members ?? []).map(m => ({
-    id: m.id,
-    full_name: m.full_name,
-    preferred_name: m.preferred_name,
-    email: m.email,
-    jt_family: Array.isArray(m.jt_families)
-      ? m.jt_families[0]?.name ?? null
-      : (m.jt_families as { name: string } | null)?.name ?? null,
-  }))
+  const normalizedMembers = (members ?? []).map(m => {
+    const jtFamily = Array.isArray(m.jt_families)
+      ? m.jt_families[0] ?? null
+      : (m.jt_families as { name: string; color: string } | null)
+
+    return {
+      id: m.id,
+      full_name: m.full_name,
+      preferred_name: m.preferred_name,
+      email: m.email,
+      profile_image_url: m.profile_image_url,
+      jt_family: jtFamily?.name ?? null,
+      jt_color: jtFamily?.color ?? null,
+    }
+  })
 
   return (
     <OfficerCheckinClient

@@ -1,7 +1,7 @@
 'use client'
 
 import JtFamilyBadge from '@/app/(dashboard)/leaderboard/components/JtFamilyBadge'
-import LeaderboardMemberAvatar from '@/app/(dashboard)/leaderboard/components/LeaderboardMemberAvatar'
+import MemberAvatar from '@/app/components/MemberAvatar'
 import LeaderboardTabs from '@/app/(dashboard)/leaderboard/components/LeaderboardTabs'
 
 interface Member {
@@ -54,10 +54,11 @@ export default function LeaderboardClient({ members, semester }: Props) {
             >
               <div className="text-sm font-bold text-primary">{i + 1}</div>
               <div className="flex min-w-0 items-center gap-3">
-                <LeaderboardMemberAvatar
+                <MemberAvatar
                   name={displayName}
                   profileImageUrl={m.profile_image_url}
-                  jtColor={m.jt_color}
+                  color={m.jt_color}
+                  bordered
                 />
                 <div className="min-w-0">
                   <div className="truncate text-sm font-medium text-text">{displayName}</div>

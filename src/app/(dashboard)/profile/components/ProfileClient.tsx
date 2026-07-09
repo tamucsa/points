@@ -1,5 +1,7 @@
 'use client'
 
+import MemberAvatar from '@/app/components/MemberAvatar'
+
 interface Member {
   id: string
   full_name: string
@@ -75,16 +77,13 @@ export default function ProfileClient({ member, points, attendance, history }: P
 
       {/* Header */}
       <div className="mb-8 flex flex-col gap-5 rounded-4xl border border-home-border bg-white p-6 shadow-sm sm:flex-row sm:items-center">
-        {member.profile_image_url ? (
-          <img
-            src={member.profile_image_url}
-            className="h-16 w-16 rounded-full border border-home-border object-cover"
-          />
-        ) : (
-          <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-full bg-primary/10 text-2xl font-bold text-primary">
-            {displayName[0]}
-          </div>
-        )}
+        <MemberAvatar
+          name={displayName}
+          profileImageUrl={member.profile_image_url}
+          color={color}
+          size="lg"
+          bordered
+        />
         <div className="flex-1">
           <div className="text-2xl font-bold text-text">{displayName}</div>
           {points?.jt_family && (

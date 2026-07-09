@@ -1,7 +1,7 @@
 'use client'
 
 import JtFamilyBadge from '@/app/(dashboard)/leaderboard/components/JtFamilyBadge'
-import LeaderboardMemberAvatar from '@/app/(dashboard)/leaderboard/components/LeaderboardMemberAvatar'
+import MemberAvatar from '@/app/components/MemberAvatar'
 import LeaderboardTabs from '@/app/(dashboard)/leaderboard/components/LeaderboardTabs'
 
 interface TopMember {
@@ -65,11 +65,12 @@ export default function JiatingsLeaderboardClient({ jiatings, semester }: Props)
                       className="flex items-center gap-3 border-b border-home-border px-5 py-3 last:border-b-0"
                     >
                       <div className="w-5 shrink-0 text-sm font-bold text-primary">{i + 1}</div>
-                      <LeaderboardMemberAvatar
+                      <MemberAvatar
                         name={displayName}
                         profileImageUrl={member.profile_image_url}
-                        jtColor={member.jt_color ?? jiating.color}
+                        color={member.jt_color ?? jiating.color}
                         size="md"
+                        bordered
                       />
                       <div className="min-w-0 flex-1 truncate text-sm font-medium text-text">
                         {displayName}

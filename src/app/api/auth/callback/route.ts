@@ -66,10 +66,15 @@ export async function GET(request: Request) {
 
     const member = memberByAuthUid ?? memberByEmail
 
+    const avatarUrl = user.user_metadata?.avatar_url as string | undefined
+
     if (member && !member.auth_uid) {
       await supabaseAdmin
         .from('members')
-        .update({ auth_uid: user.id })
+        .update({
+          auth_uid: user.id,
+          ...(avatarUrl ? { profile_image_url: avatarUrl } : {}),
+        })
         .eq('id', member.id)
 
       if (next && member.status === 'active') {
@@ -81,6 +86,13 @@ export async function GET(request: Request) {
           ? `${origin}/leaderboard`
           : `${origin}/pending`
       )
+    }
+
+    if (member && avatarUrl) {
+      await supabaseAdmin
+        .from('members')
+        .update({ profile_image_url: avatarUrl })
+        .eq('id', member.id)
     }
 
     if (!member) {

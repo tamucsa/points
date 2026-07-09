@@ -3,6 +3,7 @@
 import { useRouter } from 'next/navigation'
 import { useMemo, useState } from 'react'
 import { officerCheckIn } from '@/app/actions/attendance'
+import MemberAvatar from '@/app/components/MemberAvatar'
 
 interface Event {
   id: string
@@ -19,7 +20,9 @@ interface Member {
   full_name: string
   preferred_name: string | null
   email: string
+  profile_image_url: string | null
   jt_family: string | null
+  jt_color: string | null
 }
 
 interface Props {
@@ -92,19 +95,22 @@ export default function OfficerCheckinClient({ event, members, checkedInIds }: P
         {filtered.length === 0 && (
           <div className="px-8 py-10 text-center text-sm text-subtitle">No members found.</div>
         )}
-        {filtered.map((m, i) => {
+        {filtered.map(m => {
           const isCheckedIn = checkedIn.has(m.id)
+          const displayName = m.preferred_name || m.full_name
           return (
             <div
               key={m.id}
               className="flex items-center gap-4 border-b border-home-border px-5 py-4 last:border-b-0"
             >
-              <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-primary/10 text-sm font-bold text-primary">
-                {(m.preferred_name || m.full_name)[0]}
-              </div>
+              <MemberAvatar
+                name={displayName}
+                profileImageUrl={m.profile_image_url}
+                color={m.jt_color}
+              />
               <div className="min-w-0 flex-1">
                 <div className="truncate text-sm font-medium text-text">
-                  {m.preferred_name || m.full_name}
+                  {displayName}
                 </div>
                 <div className="truncate text-xs text-subtitle">
                   {m.email}{m.jt_family ? ` · ${m.jt_family}` : ''}

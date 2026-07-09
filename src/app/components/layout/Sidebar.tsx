@@ -3,6 +3,7 @@
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { useEffect, useState } from 'react'
+import MemberAvatar from '@/app/components/MemberAvatar'
 
 interface Member {
   id: string
@@ -130,17 +131,10 @@ export default function Sidebar({ member }: { member: Member }) {
       <div className="shrink-0 border-t border-home-border pt-4">
         <div className={`rounded-3xl border border-home-border bg-bg shadow-sm ${collapsed ? 'p-2' : 'p-4'}`}>
           <div className={`flex items-center ${collapsed ? 'justify-center' : 'gap-3'}`}>
-            {member.profile_image_url ? (
-              <img
-                src={member.profile_image_url}
-                alt={displayName}
-                className="h-8 w-8 shrink-0 rounded-full border border-home-border object-cover"
-              />
-            ) : (
-              <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-accent/20 text-sm font-bold text-accent">
-                {displayName[0]}
-              </div>
-            )}
+            <MemberAvatar
+              name={displayName}
+              profileImageUrl={member.profile_image_url}
+            />
             {!collapsed && (
               <div className="min-w-0">
                 <div className="truncate text-sm font-medium text-text">{displayName}</div>

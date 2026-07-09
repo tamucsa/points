@@ -1,6 +1,7 @@
 'use client'
 
 import { useRouter } from 'next/navigation'
+import MemberAvatar from '@/app/components/MemberAvatar'
 import { CHECKIN_METHOD_LABELS } from '@/utils/constants'
 
 interface Event {
@@ -109,17 +110,10 @@ export default function EventDetailClient({ event, attendance }: Props) {
         )}
         {attendance.map(row => (
           <div key={row.id} className="flex items-center gap-4 border-b border-home-border px-5 py-3 last:border-b-0">
-            {row.members.profile_image_url ? (
-              <img
-                src={row.members.profile_image_url}
-                alt=""
-                className="h-8 w-8 shrink-0 rounded-full object-cover"
-              />
-            ) : (
-              <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-primary/10 text-xs font-bold text-primary">
-                {(row.members.preferred_name || row.members.full_name)[0]}
-              </div>
-            )}
+            <MemberAvatar
+              name={row.members.preferred_name || row.members.full_name}
+              profileImageUrl={row.members.profile_image_url}
+            />
             <div className="min-w-0 flex-1">
               <div className="truncate text-sm font-medium text-text">
                 {row.members.preferred_name || row.members.full_name}

@@ -3,6 +3,7 @@
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { useState } from 'react'
+import MemberAvatar from '@/app/components/MemberAvatar'
 import { inputClassName, OFFICER_MEMBERS_PAGE_SIZE } from '@/utils/constants'
 
 interface Member {
@@ -128,16 +129,11 @@ export default function MembersClient({
             className="grid min-w-[640px] grid-cols-[1fr_7rem_4rem_4rem_4rem_4rem_4rem] items-center border-b border-home-border px-5 py-3 transition last:border-b-0 hover:bg-bg"
           >
             <div className="flex min-w-0 items-center gap-3">
-              {m.profile_image_url ? (
-                <img src={m.profile_image_url} alt="" className="h-8 w-8 shrink-0 rounded-full object-cover" />
-              ) : (
-                <div
-                  className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-xs font-bold"
-                  style={{ background: `${m.jt_color ?? '#4779B8'}20`, color: m.jt_color ?? '#4779B8' }}
-                >
-                  {(m.preferred_name || m.full_name)[0]}
-                </div>
-              )}
+              <MemberAvatar
+                name={m.preferred_name || m.full_name}
+                profileImageUrl={m.profile_image_url}
+                color={m.jt_color}
+              />
               <div className="min-w-0">
                 <div className="truncate text-sm font-medium text-text">{m.preferred_name || m.full_name}</div>
                 <div className="truncate text-xs text-subtitle">{m.email}</div>

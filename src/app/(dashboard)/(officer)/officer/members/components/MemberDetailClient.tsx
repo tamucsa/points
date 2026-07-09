@@ -1,6 +1,7 @@
 'use client'
 
 import { useRouter } from 'next/navigation'
+import MemberAvatar from '@/app/components/MemberAvatar'
 import { CATEGORY_COLORS, CHECKIN_METHOD_LABELS } from '@/utils/constants'
 
 interface Member {
@@ -8,6 +9,7 @@ interface Member {
   full_name: string
   preferred_name: string | null
   email: string
+  profile_image_url: string | null
   jt_family: string | null
   jt_color: string | null
   total_points: number
@@ -60,12 +62,13 @@ export default function MemberDetailClient({ member, attendance, history }: Prop
       <button onClick={() => router.back()} className="mb-5 text-sm text-subtitle hover:text-primary">← Back</button>
 
       <div className="mb-6 flex flex-col gap-4 rounded-4xl border border-home-border bg-white p-6 shadow-sm sm:flex-row sm:items-center">
-        <div
-          className="flex h-16 w-16 shrink-0 items-center justify-center rounded-full text-2xl font-bold"
-          style={{ background: `${color}20`, color }}
-        >
-          {displayName[0]}
-        </div>
+        <MemberAvatar
+          name={displayName}
+          profileImageUrl={member.profile_image_url}
+          color={color}
+          size="lg"
+          bordered
+        />
         <div className="min-w-0 flex-1">
           <h1 className="text-2xl font-bold text-text">{displayName}</h1>
           <p className="text-sm text-subtitle">{member.email}</p>
