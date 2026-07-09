@@ -16,14 +16,7 @@ Points tracking system for the Texas A&M Chinese Student Association (CSA). Memb
 npm install
 ```
 
-2. Create `.env.local` with the required variables (names only; see docs):
-
-```bash
-NEXT_PUBLIC_SUPABASE_URL=...
-NEXT_PUBLIC_SUPABASE_ANON_KEY=...
-SUPABASE_SERVICE_ROLE_KEY=...
-NEXT_PUBLIC_SITE_URL=...
-```
+2. Set up `.env.local` — see `docs/ENVIRONMENT.md`.
 
 3. Run the dev server:
 

@@ -2,6 +2,34 @@
 
 This project uses Next.js App Router + Supabase. **Do not commit secrets**; only document variable *names* and purpose here.
 
+## Getting variables locally (recommended)
+
+This project is deployed on **Vercel**. For local development, pull env vars from the Vercel project instead of copying them by hand.
+
+1. Log in (one-time):
+
+```bash
+npx vercel login
+```
+
+2. Link the repo to the Vercel project (one-time per machine):
+
+```bash
+npx vercel link
+```
+
+Select the correct team and the **CSA Points** project when prompted.
+
+3. Pull into `.env.local`:
+
+```bash
+npx vercel env pull .env.local --environment=development
+```
+
+Use `--environment=preview` or `--environment=production` only when you intentionally need those values locally.
+
+If a variable is missing after pulling, add it in Vercel (Project → Settings → Environment Variables) for the target environment, then pull again.
+
 ## Required
 
 ### `NEXT_PUBLIC_SUPABASE_URL`

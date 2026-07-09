@@ -10,7 +10,7 @@ This doc is the **authoritative** setup guide for onboarding new developers.
 npm install
 ```
 
-2. Create `.env.local` (see `docs/ENVIRONMENT.md`).
+2. Set up `.env.local` — follow `docs/ENVIRONMENT.md` (Vercel pull workflow).
 
 3. Start the dev server:
 
