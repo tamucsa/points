@@ -18,7 +18,6 @@ interface Event {
 interface Member {
   id: string
   full_name: string
-  preferred_name: string | null
   email: string
   profile_image_url: string | null
   jt_family: string | null
@@ -42,7 +41,6 @@ export default function OfficerCheckinClient({ event, members, checkedInIds }: P
     const q = search.toLowerCase()
     return members.filter(m =>
       m.full_name.toLowerCase().includes(q) ||
-      (m.preferred_name?.toLowerCase().includes(q)) ||
       m.email.toLowerCase().includes(q)
     )
   }, [members, search])
@@ -97,7 +95,7 @@ export default function OfficerCheckinClient({ event, members, checkedInIds }: P
         )}
         {filtered.map(m => {
           const isCheckedIn = checkedIn.has(m.id)
-          const displayName = m.preferred_name || m.full_name
+          const displayName = m.full_name
           return (
             <div
               key={m.id}

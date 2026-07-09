@@ -1,11 +1,11 @@
 'use client'
 import { useState } from 'react'
 import { activateMember, importMembers } from '@/app/actions/members'
+import MemberAvatar from '@/app/components/MemberAvatar'
 
 interface PendingMember {
   id: string
   full_name: string
-  preferred_name: string | null
   email: string
   graduation_year: number | null
   created_at: string
@@ -23,7 +23,6 @@ interface Props {
 
 interface CSVRow {
   'Full Name': string
-  'Preferred Name': string
   'TAMU Email': string
   'Phone': string
   'Graduation Year': string
@@ -88,7 +87,6 @@ export default function AdminMembersClient({ pending: initialPending, jtFamilies
       const rows = parseCSV(text)
       const result = await importMembers(rows.map(row => ({
         fullName: row['Full Name'],
-        preferredName: row['Preferred Name'],
         email: row['TAMU Email'],
         phone: row['Phone'],
         graduationYear: row['Graduation Year'],
@@ -139,14 +137,12 @@ export default function AdminMembersClient({ pending: initialPending, jtFamilies
               No members pending JT assignment.
             </div>
           )}
-          {pending.map((m, i) => (
+          {pending.map(m => (
             <div key={m.id} className="flex items-center gap-4 border-b border-home-border px-5 py-4 last:border-b-0">
-              <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-accent/15 text-sm font-bold text-accent">
-                {(m.preferred_name || m.full_name)[0]}
-              </div>
+              <MemberAvatar name={m.full_name} />
               <div className="flex-1">
                 <div className="text-sm font-medium text-text">
-                  {m.preferred_name || m.full_name}
+                  {m.full_name}
                 </div>
                 <div className="text-xs text-subtitle">{m.email}</div>
                 {m.graduation_year && (
@@ -183,7 +179,7 @@ export default function AdminMembersClient({ pending: initialPending, jtFamilies
           </div>
           <div className="mb-5 text-sm leading-6 text-subtitle">
             Export responses from Google Forms as a CSV file. The form should collect:
-            Full Name, Preferred Name, TAMU Email, Graduation Year, and Phone (optional).
+            Full Name, TAMU Email, Graduation Year, and Phone (optional).
           </div>
 
           <input

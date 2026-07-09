@@ -37,6 +37,15 @@ Core tables (names reflect actual schema):
 - `semester_summaries`: optional historical rollups per member per semester
 - `years`, `semester_families`: configuration/support tables
 
+### Member name field
+
+`members.full_name` is the only name column — shown on the leaderboard, member lists, and profile.
+
+- **Self-registration** (`/register`): first and last name from the form are concatenated into `full_name`.
+- **Admin CSV import**: `Full Name` column maps directly to `full_name`.
+
+Registration helpers live in `src/utils/members.ts`.
+
 Derived views (used by UI):
 - `v_current_leaderboard`: active members + points breakdown for the active semester
 - `v_jt_leaderboard`: per-jiating aggregation for the active semester

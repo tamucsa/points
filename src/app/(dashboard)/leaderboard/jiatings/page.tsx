@@ -3,7 +3,7 @@ import { getActiveSemester } from '@/utils/supabase/auth'
 import { createServerSupabase } from '@/utils/supabase/server'
 
 const TOP_MEMBER_COLUMNS =
-  'id, preferred_name, full_name, profile_image_url, jt_color, total_points'
+  'id, full_name, profile_image_url, jt_color, total_points'
 
 export default async function JiatingsLeaderboardPage() {
   const supabase = await createServerSupabase()

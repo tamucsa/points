@@ -29,9 +29,9 @@ export default async function OfficerCheckinPage({ params }: { params: Promise<{
 
   const { data: members } = await supabase
     .from('members')
-    .select('id, full_name, preferred_name, email, profile_image_url, jt_family_id, jt_families(name, color)')
+    .select('id, full_name, email, profile_image_url, jt_family_id, jt_families(name, color)')
     .eq('status', 'active')
-    .order('preferred_name')
+    .order('full_name')
 
   const { data: attendance } = await supabase
     .from('attendance')
@@ -48,7 +48,6 @@ export default async function OfficerCheckinPage({ params }: { params: Promise<{
     return {
       id: m.id,
       full_name: m.full_name,
-      preferred_name: m.preferred_name,
       email: m.email,
       profile_image_url: m.profile_image_url,
       jt_family: jtFamily?.name ?? null,

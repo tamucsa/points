@@ -29,7 +29,6 @@ export default async function EventDetailPage({ params }: { params: Promise<{ id
       members (
         id,
         full_name,
-        preferred_name,
         profile_image_url
       )
     `)

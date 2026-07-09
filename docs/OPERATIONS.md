@@ -38,7 +38,7 @@ New members authenticate with TAMU Google (`@tamu.edu`). The auth callback links
 2. Member signs in with a `@tamu.edu` account.
 3. If no `members` row exists, they are redirected to `/register`.
 4. Member fills in:
-   - Preferred name (required)
+   - First name and last name (required) — stored together as `full_name`
    - Graduation year (required)
    - Phone (optional)
 5. Member submits the form.
@@ -52,8 +52,7 @@ Use this at the start of a semester to pre-load the roster before members sign i
 1. Admin signs in and goes to **Admin** → `/admin/members`.
 2. Open the **Import** tab.
 3. Prepare a CSV with these exact column headers:
-   - `Full Name`
-   - `Preferred Name`
+   - `Full Name` — complete name as shown in the app (required)
    - `TAMU Email`
    - `Phone`
    - `Graduation Year`

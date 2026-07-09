@@ -18,7 +18,6 @@ interface Event {
 interface Member {
   id: string
   status: string
-  preferred_name: string | null
   full_name: string
 }
 
@@ -142,7 +141,7 @@ export default function CheckinClient({ event, code, userEmail, member, alreadyC
               {userEmail && member && member.status === 'active' && !alreadyCheckedIn && !success && (
                 <div className="space-y-4">
                   <p className="text-sm text-subtitle">
-                    Checking in as <span className="font-medium text-text">{member.preferred_name || member.full_name}</span>
+                    Checking in as <span className="font-medium text-text">{member.full_name}</span>
                   </p>
                   {error && (
                     <div className="rounded-2xl border border-[#f5b0b0] bg-[#fff4f4] p-3">

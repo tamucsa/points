@@ -13,6 +13,12 @@ This guide is for CSA members using the points system.
    - **Events**
    - **My Points**
 
+## Registration form (name fields)
+
+The registration form asks for **first name** and **last name** separately (both required). They are combined and stored as your **full name** — this is what appears on the leaderboard and member lists.
+
+Names are pre-filled from your Google account when possible; review and correct them before submitting.
+
 ## Checking in to events
 
 There are two common flows:

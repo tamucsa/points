@@ -52,7 +52,7 @@ export default function PrivacyPage() {
               </li>
               <li>
                 <strong className="font-semibold text-text">Membership information you provide:</strong>{' '}
-                preferred name, graduation year, and optional phone number during registration.
+                full name (first and last), graduation year, and optional phone number during registration.
               </li>
               <li>
                 <strong className="font-semibold text-text">Activity data:</strong> event attendance,

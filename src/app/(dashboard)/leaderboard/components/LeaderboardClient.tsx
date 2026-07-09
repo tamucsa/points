@@ -7,7 +7,6 @@ import LeaderboardTabs from '@/app/(dashboard)/leaderboard/components/Leaderboar
 interface Member {
   id: string
   full_name: string
-  preferred_name: string | null
   profile_image_url: string | null
   jt_family: string | null
   jt_color: string | null
@@ -45,7 +44,7 @@ export default function LeaderboardClient({ members, semester }: Props) {
         )}
 
         {members.map((m, i) => {
-          const displayName = m.preferred_name || m.full_name
+          const displayName = m.full_name
 
           return (
             <div

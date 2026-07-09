@@ -7,7 +7,6 @@ import { CATEGORY_COLORS, CHECKIN_METHOD_LABELS } from '@/utils/constants'
 interface Member {
   id: string
   full_name: string
-  preferred_name: string | null
   email: string
   profile_image_url: string | null
   jt_family: string | null
@@ -48,7 +47,7 @@ interface Props {
 export default function MemberDetailClient({ member, attendance, history }: Props) {
   const router = useRouter()
   const color = member.jt_color ?? '#4779B8'
-  const displayName = member.preferred_name || member.full_name
+  const displayName = member.full_name
 
   const breakdown = [
     { label: 'CSA', value: member.csa_points },

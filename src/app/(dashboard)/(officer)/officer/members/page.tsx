@@ -4,7 +4,7 @@ import { getActiveSemester } from '@/utils/supabase/auth'
 import { createServerSupabase } from '@/utils/supabase/server'
 
 const MEMBER_COLUMNS =
-  'id, full_name, preferred_name, email, profile_image_url, jt_family, jt_color, total_points, csa_points, jt_points, sports_points, gm_points'
+  'id, full_name, email, profile_image_url, jt_family, jt_color, total_points, csa_points, jt_points, sports_points, gm_points'
 
 interface SearchParams {
   page?: string
@@ -33,7 +33,7 @@ export default async function MembersPage({
   if (query) {
     const pattern = `%${query}%`
     membersQuery = membersQuery.or(
-      `full_name.ilike.${pattern},preferred_name.ilike.${pattern},email.ilike.${pattern}`,
+      `full_name.ilike.${pattern},email.ilike.${pattern}`,
     )
   }
 

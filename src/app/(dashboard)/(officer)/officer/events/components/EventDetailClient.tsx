@@ -25,7 +25,6 @@ interface AttendanceRow {
   recorded_at: string
   members: {
     full_name: string
-    preferred_name: string | null
     profile_image_url: string | null
   }
 }
@@ -108,15 +107,17 @@ export default function EventDetailClient({ event, attendance }: Props) {
         {attendance.length === 0 && (
           <div className="px-8 py-10 text-center text-sm text-subtitle">No check-ins yet.</div>
         )}
-        {attendance.map(row => (
+        {attendance.map(row => {
+          const displayName = row.members.full_name
+          return (
           <div key={row.id} className="flex items-center gap-4 border-b border-home-border px-5 py-3 last:border-b-0">
             <MemberAvatar
-              name={row.members.preferred_name || row.members.full_name}
+              name={displayName}
               profileImageUrl={row.members.profile_image_url}
             />
             <div className="min-w-0 flex-1">
               <div className="truncate text-sm font-medium text-text">
-                {row.members.preferred_name || row.members.full_name}
+                {displayName}
               </div>
               <div className="text-xs text-subtitle">
                 {new Date(row.recorded_at).toLocaleTimeString('en-US', {
@@ -136,7 +137,8 @@ export default function EventDetailClient({ event, attendance }: Props) {
               )}
             </div>
           </div>
-        ))}
+          )
+        })}
       </div>
     </div>
   )

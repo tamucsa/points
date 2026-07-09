@@ -9,7 +9,6 @@ import { inputClassName, OFFICER_MEMBERS_PAGE_SIZE } from '@/utils/constants'
 interface Member {
   id: string
   full_name: string
-  preferred_name: string | null
   email: string
   profile_image_url: string | null
   jt_family: string | null
@@ -122,7 +121,9 @@ export default function MembersClient({
           <div className="px-8 py-10 text-center text-sm text-subtitle">No members found.</div>
         )}
 
-        {members.map(m => (
+        {members.map(m => {
+          const displayName = m.full_name
+          return (
           <Link
             key={m.id}
             href={`/officer/members/${m.id}`}
@@ -130,12 +131,12 @@ export default function MembersClient({
           >
             <div className="flex min-w-0 items-center gap-3">
               <MemberAvatar
-                name={m.preferred_name || m.full_name}
+                name={displayName}
                 profileImageUrl={m.profile_image_url}
                 color={m.jt_color}
               />
               <div className="min-w-0">
-                <div className="truncate text-sm font-medium text-text">{m.preferred_name || m.full_name}</div>
+                <div className="truncate text-sm font-medium text-text">{displayName}</div>
                 <div className="truncate text-xs text-subtitle">{m.email}</div>
               </div>
             </div>
@@ -155,7 +156,8 @@ export default function MembersClient({
             <div className="text-right text-sm text-subtitle">{m.sports_points}</div>
             <div className="text-right text-sm text-subtitle">{m.gm_points}</div>
           </Link>
-        ))}
+          )
+        })}
       </div>
 
       {totalCount > 0 && (

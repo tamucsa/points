@@ -26,6 +26,10 @@ Pending members are `members.status = 'pending_jt'`.
 Result:
 - Member gains access to dashboard pages (leaderboard/events/profile).
 
+## CSV member import
+
+When bulk-importing members, the CSV needs a **Full Name** column mapped to `full_name`. Use the member's complete name as they should appear in the app.
+
 ## Role management
 
 ### Promote to officer

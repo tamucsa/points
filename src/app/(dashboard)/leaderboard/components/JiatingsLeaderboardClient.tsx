@@ -7,7 +7,6 @@ import LeaderboardTabs from '@/app/(dashboard)/leaderboard/components/Leaderboar
 interface TopMember {
   id: string
   full_name: string
-  preferred_name: string | null
   profile_image_url: string | null
   jt_color: string | null
   total_points: number
@@ -57,7 +56,7 @@ export default function JiatingsLeaderboardClient({ jiatings, semester }: Props)
             ) : (
               <div>
                 {jiating.topMembers.map((member, i) => {
-                  const displayName = member.preferred_name || member.full_name
+                  const displayName = member.full_name
 
                   return (
                     <div

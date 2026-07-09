@@ -5,7 +5,6 @@ import MemberAvatar from '@/app/components/MemberAvatar'
 interface Member {
   id: string
   full_name: string
-  preferred_name: string | null
   profile_image_url: string | null
   graduation_year: number | null
 }
@@ -62,7 +61,7 @@ const CHECKIN_LABELS: Record<string, string> = {
 }
 
 export default function ProfileClient({ member, points, attendance, history }: Props) {
-  const displayName = member.preferred_name || member.full_name
+  const displayName = member.full_name
   const color = points?.jt_color ?? '#4f6ef7'
 
   const breakdown = [

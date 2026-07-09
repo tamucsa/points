@@ -1,5 +1,6 @@
 'use server'
 
+import { validateRegistrationNames } from '@/utils/members'
 import { createActionSupabase } from '@/utils/supabase/action'
 
 async function requireAdmin() {
@@ -39,7 +40,6 @@ export async function activateMember(memberId: string, jtFamilyId: string) {
 
 export interface ImportMemberRow {
   fullName: string
-  preferredName: string
   email: string
   phone: string
   graduationYear: string
@@ -73,7 +73,6 @@ export async function importMembers(rows: ImportMemberRow[]) {
     const { error } = await supabase.from('members').insert({
       email,
       full_name: row.fullName?.trim(),
-      preferred_name: row.preferredName?.trim() || null,
       phone: row.phone?.trim() || null,
       graduation_year: parseInt(row.graduationYear) || null,
       status: 'pending_jt',
@@ -91,7 +90,8 @@ export async function importMembers(rows: ImportMemberRow[]) {
 }
 
 export async function registerMember(input: {
-  preferredName: string
+  firstName: string
+  lastName: string
   graduationYear: number
   phone: string
 }) {
@@ -99,11 +99,13 @@ export async function registerMember(input: {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return { success: false, error: 'Not authenticated.' }
 
+  const names = validateRegistrationNames(input.firstName, input.lastName)
+  if (!names.ok) return { success: false, error: names.error }
+
   const { error } = await supabase.from('members').insert({
     auth_uid: user.id,
     email: user.email,
-    full_name: user.user_metadata.full_name,
-    preferred_name: input.preferredName.trim(),
+    full_name: names.fullName,
     graduation_year: input.graduationYear,
     phone: input.phone.trim() || null,
     profile_image_url: user.user_metadata.avatar_url,

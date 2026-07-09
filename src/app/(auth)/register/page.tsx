@@ -2,6 +2,8 @@
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { registerMember } from '@/app/actions/members'
+import MemberAvatar from '@/app/components/MemberAvatar'
+import { parseGoogleName, validateRegistrationNames } from '@/utils/members'
 import { GoogleUser } from '@/utils/types'
 import { createBrowserSupabase } from '@/utils/supabase/client'
 
@@ -14,7 +16,8 @@ export default function RegisterPage() {
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [form, setForm] = useState({
-    preferred_name: '',
+    first_name: '',
+    last_name: '',
     graduation_year: '',
     phone: '',
   })
@@ -28,7 +31,6 @@ export default function RegisterPage() {
         return
       }
 
-      // If they already have a member row, they shouldn't be here
       const { data: existing } = await supabase
         .from('members')
         .select('id, status')
@@ -40,7 +42,14 @@ export default function RegisterPage() {
         return
       }
 
-      setUser(user as unknown as GoogleUser)
+      const googleUser = user as unknown as GoogleUser
+      const { firstName, lastName } = parseGoogleName(googleUser.user_metadata)
+      setForm(f => ({
+        ...f,
+        first_name: firstName,
+        last_name: lastName,
+      }))
+      setUser(googleUser)
       setLoading(false)
     }
 
@@ -50,11 +59,12 @@ export default function RegisterPage() {
   const handleSubmit = async () => {
     setError(null)
 
-    // Validation
-    if (!form.preferred_name.trim()) {
-      setError('Preferred name is required.')
+    const names = validateRegistrationNames(form.first_name, form.last_name)
+    if (!names.ok) {
+      setError(names.error)
       return
     }
+
     if (!form.graduation_year) {
       setError('Graduation year is required.')
       return
@@ -70,7 +80,8 @@ export default function RegisterPage() {
     setSubmitting(true)
 
     const result = await registerMember({
-      preferredName: form.preferred_name,
+      firstName: form.first_name,
+      lastName: form.last_name,
       graduationYear: year,
       phone: form.phone,
     })
@@ -84,7 +95,12 @@ export default function RegisterPage() {
     router.push('/pending')
   }
 
-  if (loading) return null // middleware handles redirect if no session
+  const previewName =
+    [form.first_name.trim(), form.last_name.trim()].filter(Boolean).join(' ') ||
+    user?.user_metadata.full_name ||
+    ''
+
+  if (loading) return null
 
   return (
     <div className="relative min-h-screen overflow-hidden bg-bg px-6 py-6 text-text lg:max-h-screen lg:min-h-0">
@@ -110,7 +126,7 @@ export default function RegisterPage() {
               <div className="rounded-2xl border border-home-border bg-white/85 p-4 shadow-sm">
                 <div className="text-sm font-semibold text-primary">Profile</div>
                 <div className="mt-1 text-sm leading-6 text-subtitle">
-                  Confirm your preferred name and contact info.
+                  Confirm your name and contact info.
                 </div>
               </div>
               <div className="rounded-2xl border border-home-border bg-white/85 p-4 shadow-sm">
@@ -131,17 +147,14 @@ export default function RegisterPage() {
           <div className="flex items-center justify-center bg-white p-8 sm:p-10 lg:p-12">
             <div className="w-full max-w-md rounded-[1.75rem] border border-home-border bg-bg p-6 shadow-[0_16px_48px_rgba(71,121,184,0.08)] sm:p-8">
               <div className="mb-4 flex items-center gap-3 rounded-2xl border border-home-border bg-white p-3.5 shadow-sm sm:mb-6 sm:p-4">
-                {user?.user_metadata.avatar_url && (
-                  <img
-                    src={user.user_metadata.avatar_url}
-                    alt="Profile"
-                    className="h-12 w-12 rounded-full border border-home-border object-cover"
-                  />
-                )}
+                <MemberAvatar
+                  name={previewName}
+                  profileImageUrl={user?.user_metadata.avatar_url}
+                  size="md"
+                  bordered
+                />
                 <div className="min-w-0">
-                  <div className="truncate text-sm font-semibold text-text">
-                    {user?.user_metadata.full_name}
-                  </div>
+                  <div className="truncate text-sm font-semibold text-text">{previewName}</div>
                   <div className="truncate text-sm text-subtitle">{user?.email}</div>
                 </div>
               </div>
@@ -155,15 +168,29 @@ export default function RegisterPage() {
               <div className="space-y-3 sm:space-y-4">
                 <div>
                   <label className="mb-2 block text-xs font-semibold uppercase tracking-[0.06em] text-subtitle">
-                    Preferred Name *
+                    Name *
                   </label>
-                  <input
-                    type="text"
-                    placeholder="What should we call you?"
-                    value={form.preferred_name}
-                    onChange={e => setForm(f => ({ ...f, preferred_name: e.target.value }))}
-                    className={inputClassName}
-                  />
+                  <p className="mb-2 text-xs leading-5 text-subtitle">
+                    This is how your name will appear on the leaderboard.
+                  </p>
+                  <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                    <input
+                      type="text"
+                      placeholder="First name"
+                      value={form.first_name}
+                      onChange={e => setForm(f => ({ ...f, first_name: e.target.value }))}
+                      className={inputClassName}
+                      autoComplete="given-name"
+                    />
+                    <input
+                      type="text"
+                      placeholder="Last name"
+                      value={form.last_name}
+                      onChange={e => setForm(f => ({ ...f, last_name: e.target.value }))}
+                      className={inputClassName}
+                      autoComplete="family-name"
+                    />
+                  </div>
                 </div>
 
                 <div>
@@ -192,6 +219,7 @@ export default function RegisterPage() {
                     value={form.phone}
                     onChange={e => setForm(f => ({ ...f, phone: e.target.value }))}
                     className={inputClassName}
+                    autoComplete="tel"
                   />
                 </div>
               </div>

@@ -7,7 +7,6 @@ import MemberAvatar from '@/app/components/MemberAvatar'
 
 interface Member {
   id: string
-  preferred_name: string | null
   full_name: string
   role: string
   profile_image_url: string | null
@@ -57,7 +56,7 @@ export default function Sidebar({ member }: { member: Member }) {
   const officerNav = NAV_ITEMS.filter(item => item.officerOnly)
   const adminNav = NAV_ITEMS.filter(item => item.adminOnly)
 
-  const displayName = member.preferred_name || member.full_name
+  const displayName = member.full_name
 
   const navLink = (item: NavItem) => {
     const active = pathname.startsWith(item.path)

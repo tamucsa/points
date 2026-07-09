@@ -11,7 +11,7 @@ export default async function AdminMembersPage() {
   // Pending members
   const { data: pending } = await supabase
     .from('members')
-    .select('id, full_name, preferred_name, email, graduation_year, created_at')
+    .select('id, full_name, email, graduation_year, created_at')
     .eq('status', 'pending_jt')
     .order('created_at', { ascending: true })
 
