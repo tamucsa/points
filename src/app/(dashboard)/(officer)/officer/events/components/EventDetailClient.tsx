@@ -33,7 +33,7 @@ interface AttendanceRow {
   members: {
     full_name: string
     profile_image_url: string | null
-  }
+  } | null
 }
 
 interface PublishedSnapshot {
@@ -251,12 +251,12 @@ export default function EventDetailClient({ event, attendance, publishedSnapshot
           <div className="px-8 py-10 text-center text-sm text-subtitle">No check-ins yet.</div>
         )}
         {attendance.map(row => {
-          const displayName = row.members.full_name
+          const displayName = row.members?.full_name ?? 'Unknown member'
           return (
           <div key={row.id} className="flex items-center gap-4 border-b border-home-border px-5 py-3 last:border-b-0">
             <MemberAvatar
               name={displayName}
-              profileImageUrl={row.members.profile_image_url}
+              profileImageUrl={row.members?.profile_image_url ?? null}
             />
             <div className="min-w-0 flex-1">
               <div className="truncate text-sm font-medium text-text">

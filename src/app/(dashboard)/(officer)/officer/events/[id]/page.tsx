@@ -19,7 +19,7 @@ export default async function EventDetailPage({ params }: { params: Promise<{ id
   if (!event) notFound()
 
   // Get attendance list for this event
-  const { data: attendance } = await supabase
+  const { data: attendance, error: attendanceError } = await supabase
     .from('attendance')
     .select(`
       id,
@@ -27,7 +27,7 @@ export default async function EventDetailPage({ params }: { params: Promise<{ id
       verified,
       counted,
       recorded_at,
-      members (
+      members!attendance_member_id_fkey (
         id,
         full_name,
         profile_image_url
@@ -35,6 +35,10 @@ export default async function EventDetailPage({ params }: { params: Promise<{ id
     `)
     .eq('event_id', id)
     .order('recorded_at', { ascending: false })
+
+  if (attendanceError) {
+    console.error('Failed to load event attendance:', attendanceError.message)
+  }
 
   const normalizedAttendance = (attendance ?? []).map((row) => ({
     ...row,
