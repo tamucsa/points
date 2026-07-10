@@ -5,7 +5,7 @@ import EmptyState from '@/app/components/EmptyState'
 import { EventMetaChip, EventMetaItem, EventMetaRow } from '@/app/components/EventMeta'
 import PageHeader from '@/app/components/PageHeader'
 import { isJiatingOlympicsCategory, isMixerCategory, isSportsRelatedCategory } from '@/utils/events'
-import { formatEventSchedule, isEventPast } from '@/utils/datetime'
+import { formatEventSchedule, isEventPast, sortEventsByStartsAt } from '@/utils/datetime'
 import { Building2, Calendar, Clock, Handshake, Home, MapPin, Medal, Trophy } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
 
@@ -104,29 +104,33 @@ export default function MemberEventsClient({ events, attendedIds, semester }: Pr
     {
       label: 'CSA-Wide',
       icon: Building2,
-      events: upcoming.filter(e => e.scope === 'org'),
+      events: sortEventsByStartsAt(upcoming.filter(e => e.scope === 'org')),
     },
     {
       label: 'Your JT Events',
       icon: Home,
-      events: upcoming.filter(e => e.scope === 'jt_specific'),
+      events: sortEventsByStartsAt(upcoming.filter(e => e.scope === 'jt_specific')),
     },
     {
       label: 'JT Olympics',
       icon: Medal,
-      events: upcoming.filter(e => e.scope === 'jt_shared' && isJiatingOlympicsCategory(e.category)),
+      events: sortEventsByStartsAt(
+        upcoming.filter(e => e.scope === 'jt_shared' && isJiatingOlympicsCategory(e.category)),
+      ),
     },
     {
       label: 'Mixers',
       icon: Handshake,
-      events: upcoming.filter(e => isMixerCategory(e.category)),
+      events: sortEventsByStartsAt(upcoming.filter(e => isMixerCategory(e.category))),
     },
     {
       label: 'Sports & Dance',
       icon: Trophy,
-      events: upcoming.filter(e => isSportsRelatedCategory(e.category)),
+      events: sortEventsByStartsAt(upcoming.filter(e => isSportsRelatedCategory(e.category))),
     },
   ].filter(s => s.events.length > 0)
+
+  const sortedPast = sortEventsByStartsAt(past, 'desc')
 
   return (
     <div className="mx-auto max-w-5xl px-6 py-8 lg:px-8">
@@ -162,18 +166,18 @@ export default function MemberEventsClient({ events, attendedIds, semester }: Pr
       ))}
 
       {/* Past events toggle */}
-      {past.length > 0 && (
+      {sortedPast.length > 0 && (
         <div>
           <button
             onClick={() => setShowPast(p => !p)}
             className="mb-4 rounded-xl border border-home-border bg-white px-4 py-2 text-sm text-subtitle shadow-sm transition hover:border-primary/30 hover:text-primary"
           >
-            {showPast ? '▲ Hide' : '▼ Show'} Past Events ({past.length})
+            {showPast ? '▲ Hide' : '▼ Show'} Past Events ({sortedPast.length})
           </button>
 
           {showPast && (
             <div className="flex flex-col gap-3">
-              {past.map(event => (
+              {sortedPast.map(event => (
                 <EventCard
                   key={event.id}
                   event={event}

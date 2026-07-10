@@ -8,6 +8,12 @@ export default async function OfficerEventsPage() {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect('/')
 
+  const { data: member } = await supabase
+    .from('members')
+    .select('role')
+    .eq('auth_uid', user.id)
+    .single()
+
   const { data: semester } = await supabase
     .from('semesters')
     .select('id, name')
@@ -19,7 +25,7 @@ export default async function OfficerEventsPage() {
     .select('*')
     .eq('semester_id', semester?.id)
     .is('parent_event_id', null)       // hide spectator child events from main list
-    .order('starts_at', { ascending: false })
+    .order('starts_at', { ascending: true })
 
   // Get attendance counts per event
   const { data: counts } = await supabase
@@ -37,6 +43,7 @@ export default async function OfficerEventsPage() {
       events={events ?? []}
       attendanceCounts={attendanceCounts}
       semester={semester}
+      isAdmin={member?.role === 'admin'}
     />
   )
 }

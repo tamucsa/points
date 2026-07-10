@@ -3,12 +3,13 @@
 import { QRCodeSVG } from 'qrcode.react'
 import { useRouter } from 'next/navigation'
 import { useState } from 'react'
+import { deleteEvent } from '@/app/actions/events'
 import IconLabel, { CheckInTypeBadge, ScopeBadge } from '@/app/components/IconLabel'
 import EmptyState from '@/app/components/EmptyState'
 import { EventMetaChip, EventMetaItem, EventMetaRow } from '@/app/components/EventMeta'
 import PageHeader from '@/app/components/PageHeader'
-import { formatEventDate, isEventPast } from '@/utils/datetime'
-import { Calendar, MapPin, Plus, Star, Users } from 'lucide-react'
+import { formatEventDate, isEventPast, sortEventsForDisplay } from '@/utils/datetime'
+import { Calendar, MapPin, Plus, Star, Trash2, Users } from 'lucide-react'
 
 interface Event {
   id: string
@@ -26,6 +27,7 @@ interface Props {
   events: Event[]
   attendanceCounts: Record<string, number>
   semester: { id: string; name: string } | null
+  isAdmin: boolean
 }
 
 const actionPrimaryClassName =
@@ -34,14 +36,46 @@ const actionPrimaryClassName =
 const actionSecondaryClassName =
   'min-h-11 flex-1 rounded-xl border border-home-border bg-white px-4 py-2.5 text-sm text-subtitle transition hover:border-primary/30 hover:bg-bg hover:text-text sm:min-h-0 sm:flex-none sm:px-3 sm:py-2 sm:text-xs'
 
-export default function OfficerEventsClient({ events, attendanceCounts, semester }: Props) {
+const actionDangerClassName =
+  'inline-flex min-h-11 items-center justify-center gap-1.5 rounded-xl border border-[#f5b0b0] bg-[#fff4f4] px-4 py-2.5 text-sm font-semibold leading-none text-[#c94b4b] transition hover:border-[#e88a8a] hover:bg-[#ffe8e8] sm:min-h-0 sm:px-3 sm:py-2 sm:text-xs'
+
+export default function OfficerEventsClient({ events, attendanceCounts, semester, isAdmin }: Props) {
   const router = useRouter()
   const [qrEvent, setQrEvent] = useState<Event | null>(null)
+  const [deleteTarget, setDeleteTarget] = useState<Event | null>(null)
+  const [deleting, setDeleting] = useState(false)
+  const [deleteError, setDeleteError] = useState<string | null>(null)
+
+  const closeDeleteModal = () => {
+    if (deleting) return
+    setDeleteTarget(null)
+    setDeleteError(null)
+  }
+
+  const handleConfirmDelete = async () => {
+    if (!deleteTarget) return
+
+    setDeleting(true)
+    setDeleteError(null)
+
+    const result = await deleteEvent(deleteTarget.id)
+
+    setDeleting(false)
+    if (!result.success) {
+      setDeleteError(result.error ?? 'Failed to delete event.')
+      return
+    }
+
+    setDeleteTarget(null)
+    router.refresh()
+  }
 
   const checkInUrl = (code: string) =>
     typeof window !== 'undefined'
       ? `${window.location.origin}/checkin/${code}`
       : `/checkin/${code}`
+
+  const sortedEvents = sortEventsForDisplay(events)
 
   return (
     <div className="mx-auto max-w-5xl px-6 py-8 lg:px-8">
@@ -68,7 +102,7 @@ export default function OfficerEventsClient({ events, attendanceCounts, semester
           />
         )}
 
-        {events.map(event => {
+        {sortedEvents.map(event => {
           const isPast = isEventPast(event.starts_at)
           const count = attendanceCounts[event.id] ?? 0
 
@@ -125,7 +159,7 @@ export default function OfficerEventsClient({ events, attendanceCounts, semester
               </div>
 
               <div
-                className="flex w-full shrink-0 flex-wrap gap-2 sm:w-auto"
+                className="flex w-full shrink-0 flex-wrap items-center gap-2 sm:w-auto sm:justify-end"
                 onClick={e => e.stopPropagation()}
                 onKeyDown={e => e.stopPropagation()}
               >
@@ -156,11 +190,77 @@ export default function OfficerEventsClient({ events, attendanceCounts, semester
                     Check In
                   </button>
                 )}
+                {isAdmin && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setDeleteTarget(event)
+                      setDeleteError(null)
+                    }}
+                    className={actionDangerClassName}
+                  >
+                    <Trash2 className="size-3.5 shrink-0" aria-hidden />
+                    Delete
+                  </button>
+                )}
               </div>
             </div>
           )
         })}
       </div>
+
+      {deleteTarget && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4"
+          onClick={closeDeleteModal}
+        >
+          <div
+            className="w-full max-w-md rounded-4xl border border-home-border bg-white p-6 shadow-xl sm:p-8"
+            onClick={e => e.stopPropagation()}
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="delete-event-title"
+          >
+            <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-2xl bg-[#fff4f4]">
+              <Trash2 className="size-5 text-[#c94b4b]" aria-hidden />
+            </div>
+            <h2 id="delete-event-title" className="text-center text-lg font-bold text-text">
+              Delete this event?
+            </h2>
+            <p className="mt-2 text-center text-sm font-semibold text-text">{deleteTarget.name}</p>
+            <p className="mt-3 text-center text-sm leading-6 text-subtitle">
+              This permanently removes the event
+              {(attendanceCounts[deleteTarget.id] ?? 0) > 0
+                ? ` and ${attendanceCounts[deleteTarget.id]} attendance record${attendanceCounts[deleteTarget.id] === 1 ? '' : 's'}`
+                : ''}
+              . This cannot be undone.
+            </p>
+            {deleteError && (
+              <p className="mt-4 rounded-2xl border border-[#f5b0b0] bg-[#fff4f4] px-4 py-3 text-center text-sm text-[#c94b4b]">
+                {deleteError}
+              </p>
+            )}
+            <div className="mt-6 flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
+              <button
+                type="button"
+                disabled={deleting}
+                onClick={closeDeleteModal}
+                className="rounded-xl border border-home-border bg-white px-4 py-2.5 text-sm font-semibold text-subtitle transition hover:border-primary/30 hover:bg-bg hover:text-text disabled:opacity-60"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                disabled={deleting}
+                onClick={() => void handleConfirmDelete()}
+                className="rounded-xl border border-[#f5b0b0] bg-[#fff4f4] px-4 py-2.5 text-sm font-semibold text-[#c94b4b] transition hover:border-[#e88a8a] hover:bg-[#ffe8e8] disabled:opacity-60"
+              >
+                {deleting ? 'Deleting…' : 'Delete Event'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {qrEvent && (
         <div

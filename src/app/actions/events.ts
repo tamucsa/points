@@ -49,6 +49,48 @@ async function requireOfficer() {
   return { supabase, error: null, member }
 }
 
+async function requireAdmin() {
+  const supabase = await createActionSupabase()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return { supabase, error: 'Not authenticated.' as const }
+
+  const { data: member } = await supabase
+    .from('members')
+    .select('role')
+    .eq('auth_uid', user.id)
+    .maybeSingle()
+
+  if (!member || member.role !== 'admin') {
+    return { supabase, error: 'Admin access required.' as const }
+  }
+
+  return { supabase, error: null }
+}
+
+export async function deleteEvent(eventId: string) {
+  if (!eventId) return { success: false, error: 'Event not found.' }
+
+  const { supabase, error: authError } = await requireAdmin()
+  if (authError) return { success: false, error: authError }
+
+  const { error: childError } = await supabase
+    .from('events')
+    .delete()
+    .eq('parent_event_id', eventId)
+
+  if (childError) {
+    return { success: false, error: 'Failed to delete linked spectator event.' }
+  }
+
+  const { error } = await supabase.from('events').delete().eq('id', eventId)
+
+  if (error) {
+    return { success: false, error: 'Failed to delete event. Please try again.' }
+  }
+
+  return { success: true, error: null }
+}
+
 export async function createEvent(input: CreateEventInput) {
   if (!input.name.trim()) return { success: false, error: 'Event name is required.' }
   if (!input.eventDate) return { success: false, error: 'Event date is required.' }
