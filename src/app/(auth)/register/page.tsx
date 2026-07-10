@@ -3,7 +3,7 @@ import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { registerMember } from '@/app/actions/members'
 import MemberAvatar from '@/app/components/MemberAvatar'
-import { parseGoogleName, validateRegistrationNames } from '@/utils/members'
+import { parseGoogleName, validateClassYear, validateRegistrationNames } from '@/utils/members'
 import { GoogleUser } from '@/utils/types'
 import { createBrowserSupabase } from '@/utils/supabase/client'
 
@@ -18,7 +18,7 @@ export default function RegisterPage() {
   const [form, setForm] = useState({
     first_name: '',
     last_name: '',
-    graduation_year: '',
+    class_year: '',
     phone: '',
   })
 
@@ -65,15 +65,9 @@ export default function RegisterPage() {
       return
     }
 
-    if (!form.graduation_year) {
-      setError('Graduation year is required.')
-      return
-    }
-
-    const year = parseInt(form.graduation_year)
-    const currentYear = new Date().getFullYear()
-    if (year < currentYear || year > currentYear + 6) {
-      setError('Please enter a valid graduation year.')
+    const classResult = validateClassYear(form.class_year)
+    if (!classResult.ok) {
+      setError(classResult.error)
       return
     }
 
@@ -82,7 +76,7 @@ export default function RegisterPage() {
     const result = await registerMember({
       firstName: form.first_name,
       lastName: form.last_name,
-      graduationYear: year,
+      classYear: classResult.year,
       phone: form.phone,
     })
 
@@ -130,9 +124,9 @@ export default function RegisterPage() {
                 </div>
               </div>
               <div className="rounded-2xl border border-home-border bg-white/85 p-4 shadow-sm">
-                <div className="text-sm font-semibold text-primary">Graduation</div>
+                <div className="text-sm font-semibold text-primary">Class</div>
                 <div className="mt-1 text-sm leading-6 text-subtitle">
-                  Set your class year so officers can organize members.
+                  Set your class so officers can organize members.
                 </div>
               </div>
               <div className="rounded-2xl border border-home-border bg-white/85 p-4 shadow-sm">
@@ -195,14 +189,14 @@ export default function RegisterPage() {
 
                 <div>
                   <label className="mb-2 block text-xs font-semibold uppercase tracking-[0.06em] text-subtitle">
-                    Graduation Year *
+                    Class *
                   </label>
                   <select
-                    value={form.graduation_year}
-                    onChange={e => setForm(f => ({ ...f, graduation_year: e.target.value }))}
+                    value={form.class_year}
+                    onChange={e => setForm(f => ({ ...f, class_year: e.target.value }))}
                     className={`${inputClassName} cursor-pointer`}
                   >
-                    <option value="">Select year…</option>
+                    <option value="">Select class…</option>
                     {Array.from({ length: 6 }, (_, i) => new Date().getFullYear() + i).map(y => (
                       <option key={y} value={y}>{y}</option>
                     ))}

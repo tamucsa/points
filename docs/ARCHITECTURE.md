@@ -42,7 +42,7 @@ Core tables (names reflect actual schema):
 `members.full_name` is the only name column — shown on the leaderboard, member lists, and profile.
 
 - **Self-registration** (`/register`): first and last name from the form are concatenated into `full_name`.
-- **Admin CSV import**: `Full Name` column maps directly to `full_name`.
+- **Admin CSV import**: roster columns map to `full_name`, email, phone, class (stored as `graduation_year`), and **Jiating** (resolved to `jt_family_id`). New rows are inserted as `active`; existing emails are updated to `active` with Jiating assigned.
 
 Registration helpers live in `src/utils/members.ts`.
 

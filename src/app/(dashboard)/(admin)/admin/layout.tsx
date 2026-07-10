@@ -1,4 +1,5 @@
 import { redirect } from 'next/navigation'
+import AdminNav from '@/app/(dashboard)/(admin)/admin/components/AdminNav'
 import { getCurrentMember } from '@/utils/supabase/auth'
 
 export default async function AdminLayout({
@@ -13,5 +14,12 @@ export default async function AdminLayout({
     redirect('/leaderboard')
   }
 
-  return <>{children}</>
+  return (
+    <>
+      <div className="mx-auto max-w-5xl px-6 pt-8 lg:px-8">
+        <AdminNav />
+      </div>
+      {children}
+    </>
+  )
 }

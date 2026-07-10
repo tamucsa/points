@@ -47,3 +47,18 @@ export function validateRegistrationNames(
     fullName: `${trimmedFirst} ${trimmedLast}`,
   }
 }
+
+export function validateClassYear(
+  value: string,
+): { ok: true; year: number } | { ok: false; error: string } {
+  const trimmed = value.trim()
+  if (!trimmed) return { ok: false, error: 'Class is required.' }
+
+  const year = parseInt(trimmed, 10)
+  const currentYear = new Date().getFullYear()
+  if (Number.isNaN(year) || year < currentYear || year > currentYear + 6) {
+    return { ok: false, error: 'Please enter a valid class year.' }
+  }
+
+  return { ok: true, year }
+}

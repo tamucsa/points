@@ -28,7 +28,31 @@ Result:
 
 ## CSV member import
 
-When bulk-importing members, the CSV needs a **Full Name** column mapped to `full_name`. Use the member's complete name as they should appear in the app.
+Bulk import is the primary way to load the full CSA roster after Jiating sorting.
+
+| Column | Required | Notes |
+|--------|----------|-------|
+| `Full Name` | Yes | Complete name as shown in the app |
+| `TAMU Email` | Yes | Must be `@tamu.edu` |
+| `Jiating` | Yes | Must match an active Jiating in `jt_families` |
+| `Phone` | Yes | Contact phone number |
+| `Class` | Yes | Graduation year, e.g. `2027` (stored as `graduation_year`) |
+
+- **New emails** → inserted as `active` with `jt_family_id` set.
+- **Existing emails** → only changed fields are updated; unchanged rows are skipped.
+- **Jiating transfers** → logged in `jt_transfer_log` with semester and import batch metadata.
+
+Use **Full roster (fall)** for the start-of-year import. Use **Spring update (partial)** after fall close for JT transfers and mid-year additions only.
+
+Members still sign in with Google once to link `auth_uid`.
+
+## Semester management
+
+Go to **Admin** → **Semesters** (`/admin/semesters`).
+
+- **Close semester** — archives points into `semester_summaries` via `close_semester` (requires `SUPABASE_SERVICE_ROLE_KEY` on the server).
+- **Start semester** — only available when no semester is active; pick name, dates, and school year.
+- Typical flow: close fall → spring partial CSV import → start spring semester.
 
 ## Role management
 
@@ -48,7 +72,8 @@ If a member was checked in incorrectly:
 - Decide whether to remove attendance, mark it unverified, or mark it `counted = false` depending on the policy.
 
 ### Semester start / close
-**Not yet available in the app.** Semester management will be added in a future admin UI. Until then, see interim database steps in `docs/OPERATIONS.md` § Semester lifecycle.
+
+Use `/admin/semesters` to close the active term and start the next one. See `docs/OPERATIONS.md` § Semester lifecycle for the full annual workflow.
 
 ## Security operations
 

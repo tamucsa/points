@@ -9,15 +9,15 @@ Living document for bugs, limitations, and planned improvements. Update this fil
 
 ---
 
-## Open issues
+## Resolved issues
 
 ### KI-001 — No admin UI for semester start/close
 - **Severity:** Medium (operational)
-- **Status:** Open — planned feature
-- **Description:** Starting or closing a semester requires manual database steps. The `close_semester(uuid)` function exists but is restricted to `service_role` and has no UI.
-- **Workaround:** See interim steps in `docs/OPERATIONS.md` § Semester lifecycle.
-- **Target:** Future admin UI.
+- **Status:** Resolved (2026-07-10)
+- **Description:** Starting or closing a semester required manual database steps.
+- **Resolution:** Admin UI at `/admin/semesters` with close and start actions.
 
+## Open issues
 ### KI-002 — No admin UI for role management
 - **Severity:** Medium (operational)
 - **Status:** Open — planned feature

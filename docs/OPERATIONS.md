@@ -8,6 +8,8 @@ Runbook for day-to-day CSA Points operations. Each section includes an **overvie
 |----------|-----|--------------|
 | Member self-registration | Member | `/register` |
 | Bulk member import | Admin | `/admin/members` → Import |
+| Spring roster update (JT transfers) | Admin | `/admin/members` → Import → Spring update |
+| Close / start semester | Admin | `/admin/semesters` |
 | Activate pending member | Admin | `/admin/members` → Pending |
 | Create event | Officer/Admin | `/officer/events/new` |
 | Officer check-in | Officer/Admin | `/officer/events/[id]/checkin` |
@@ -39,7 +41,7 @@ New members authenticate with TAMU Google (`@tamu.edu`). The auth callback links
 3. If no `members` row exists, they are redirected to `/register`.
 4. Member fills in:
    - First name and last name (required) — stored together as `full_name`
-   - Graduation year (required)
+   - Class (required)
    - Phone (optional)
 5. Member submits the form.
 6. System creates a `members` row with `status = pending_jt` and `role = member`.
@@ -51,17 +53,37 @@ Use this at the start of a semester to pre-load the roster before members sign i
 
 1. Admin signs in and goes to **Admin** → `/admin/members`.
 2. Open the **Import** tab.
-3. Prepare a CSV with these exact column headers:
-   - `Full Name` — complete name as shown in the app (required)
-   - `TAMU Email`
-   - `Phone`
-   - `Graduation Year`
+3. Prepare a CSV with these column headers (order does not matter):
+
+   | Column | Required | Notes |
+   |--------|----------|-------|
+   | `Full Name` | Yes | Complete name as shown in the app |
+   | `TAMU Email` | Yes | Must be `@tamu.edu` |
+   | `Jiating` | Yes | Must match an active Jiating name in the system |
+   | `Phone` | Yes | Contact phone number |
+   | `Class` | Yes | Graduation year, e.g. `2027` |
+
 4. Upload the CSV file.
 5. Review the import summary:
-   - **Added** — new rows created as `pending_jt`
-   - **Skipped** — email already exists
-   - **Errors** — invalid emails (must be `@tamu.edu`) or insert failures
-6. Tell imported members to sign in with Google; the auth callback will link their account by email.
+   - **Added** — new `members` rows created as `active` with Jiating assigned
+   - **Updated** — existing email matched; only changed fields are written
+   - **Unchanged** — row matched an existing member with identical data
+   - **Jiating transfers** — JT changes are logged to `jt_transfer_log`
+   - **Errors** — invalid email, unknown Jiating, missing required fields, or DB failures
+6. Tell members to sign in with Google; the auth callback links their account by email.
+
+### Step-by-step: Admin spring roster update (partial CSV)
+
+After fall semester close and Jiating re-sorting, upload only rows that changed.
+
+1. Admin goes to `/admin/members` → **Import** → **Spring update (partial)**.
+2. Prepare a CSV with the same columns as fall import, but include **only**:
+   - Members who transferred Jiating
+   - New members joining mid-year
+   - Rows where name, phone, or class needs correction
+3. Upload the CSV.
+4. Review the summary (especially **Jiating transfers**). Unlisted members are not modified.
+5. Start the new spring semester from `/admin/semesters` if not already active.
 
 ### Step-by-step: Admin activates a pending member
 
@@ -88,41 +110,31 @@ Use this at the start of a semester to pre-load the roster before members sign i
 
 Points and leaderboards are scoped to the **active semester** (`semesters.is_active = true`). Leaderboard views (`v_current_leaderboard`, `v_jt_leaderboard`) join against the active semester automatically.
 
-Closing a semester archives totals (via `close_semester` in the database) and should roll up data into `semester_summaries`.
+Closing a semester archives totals (via `close_semester` in the database) and rolls up data into `semester_summaries`.
 
-> **Planned:** Semester start and close will be implemented in a **future admin UI**. Until then, semester changes require database access (see interim steps below).
+### Step-by-step: Close the active semester
 
-### Step-by-step: Start a new semester (interim — until admin UI exists)
+1. Confirm all events for the semester are complete and attendance is finalized.
+2. Admin goes to **Admin** → **Semesters** (`/admin/semesters`).
+3. Click **Close semester** on the active term and confirm.
+4. Verify the semester appears as **Closed** in history.
 
-> **Status:** Not yet available in the app. Coordinate with a developer or Supabase admin.
+### Step-by-step: Start a new semester
 
-1. Confirm the previous semester is closed (see below).
-2. In Supabase, insert a new row into `semesters` with the new semester name and dates.
-3. Set `is_active = false` on all other semesters.
-4. Set `is_active = true` on the new semester only.
+1. Confirm no semester is currently active (close the previous one first).
+2. Admin goes to `/admin/semesters`.
+3. Fill in semester name, start/end dates, and school year.
+4. Click **Start semester**.
 5. Verify in the app:
    - Leaderboard shows data for the new semester (may be empty initially).
    - Officer event creation uses the new semester.
 6. Communicate the semester change to officers.
 
-### Step-by-step: Close a semester (interim — until admin UI exists)
+### Typical annual flow
 
-> **Status:** Not yet available in the app. The `close_semester(uuid)` function exists but is restricted to `service_role` only.
-
-1. Confirm all events for the semester are complete and attendance is finalized.
-2. A developer or Supabase admin runs `close_semester(<semester_id>)` using service-role credentials.
-3. Verify `semester_summaries` rows were created for members.
-4. Set the closing semester’s `is_active = false`.
-5. Start the new semester (see above).
-
-### Future: Semester admin UI (planned)
-
-When implemented, admins will be able to:
-- Create a new semester and mark it active
-- Close the current semester (triggering archival and summary rollups)
-- View semester history
-
-No manual database steps will be required.
+1. **Fall:** Full roster CSV import → members sign in with Google.
+2. **End of fall:** Close fall semester on `/admin/semesters`.
+3. **Spring:** Spring partial CSV (JT transfers + new members) → start spring semester.
 
 ---
 
@@ -296,7 +308,6 @@ See `docs/DEPLOYMENT.md` for full deployment steps.
 
 | Feature | Status |
 |---------|--------|
-| Semester start/close admin UI | Planned |
 | Role management admin UI | Planned |
 | Attendance correction UI | Planned |
 | Materialized leaderboard (performance at 300+ members) | Under consideration |
