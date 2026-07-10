@@ -59,6 +59,8 @@ export default function NewEventClient({
       jt_family_id: officerJtFamilyId ?? '',
       check_in_type: defaults.check_in_type,
       event_date: '',
+      start_time: '',
+      end_time: '',
       location: '',
       description: '',
       rsvp_url: '',
@@ -102,6 +104,8 @@ export default function NewEventClient({
       jtFamilyId: isJTSpecific ? form.jt_family_id : null,
       checkInType: effectiveCheckIn,
       eventDate: form.event_date,
+      startTime: form.start_time,
+      endTime: form.end_time.trim() || null,
       location: form.location.trim() || null,
       description: form.description.trim() || null,
       rsvpUrl: isRSVP && form.rsvp_url ? form.rsvp_url.trim() : null,
@@ -162,6 +166,17 @@ export default function NewEventClient({
           <div>
             <label className={labelClassName}>Date *</label>
             <input type="date" className={inputClassName} value={form.event_date} onChange={e => set('event_date', e.target.value)} />
+          </div>
+          <div>
+            <label className={labelClassName}>Start Time *</label>
+            <input type="time" className={inputClassName} value={form.start_time} onChange={e => set('start_time', e.target.value)} />
+          </div>
+        </div>
+
+        <div className="grid gap-4 sm:grid-cols-2">
+          <div>
+            <label className={labelClassName}>End Time <span className="font-normal normal-case text-subtitle">(optional)</span></label>
+            <input type="time" className={inputClassName} value={form.end_time} onChange={e => set('end_time', e.target.value)} />
           </div>
           <div>
             <label className={labelClassName}>Location</label>

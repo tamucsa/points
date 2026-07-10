@@ -21,7 +21,7 @@ export default async function OfficerCheckinPage({ params }: { params: Promise<{
 
   const { data: event } = await supabase
     .from('events')
-    .select('id, name, category, point_value, event_date, semester_id, check_in_type')
+    .select('id, name, category, point_value, starts_at, ends_at, semester_id, check_in_type')
     .eq('id', id)
     .maybeSingle()
 

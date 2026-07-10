@@ -1,6 +1,7 @@
 'use client'
 
 import { POINT_BUCKET_LABELS } from '@/utils/constants'
+import { formatEventSchedule } from '@/utils/datetime'
 import JtFamilyBadge from '@/app/(dashboard)/leaderboard/components/JtFamilyBadge'
 import MemberAvatar from '@/app/components/MemberAvatar'
 
@@ -30,7 +31,8 @@ interface AttendanceRow {
     name: string
     category: string
     point_value: number
-    event_date: string
+    starts_at: string
+    ends_at: string | null
   }
 }
 
@@ -153,7 +155,9 @@ export default function ProfileClient({ member, points, attendance, history }: P
                   </div>
                   <div className="mt-1 flex flex-wrap gap-2 text-xs text-subtitle">
                     <span>
-                      {row.events?.event_date}
+                      {row.events?.starts_at
+                        ? formatEventSchedule(row.events.starts_at, row.events.ends_at)
+                        : '—'}
                     </span>
                     <span className="rounded-md bg-primary/10 px-2 py-0.5 text-[11px] text-primary">
                       {cat}

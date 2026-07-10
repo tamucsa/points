@@ -29,7 +29,7 @@ export default async function MemberEventsPage() {
     .select('*')
     .eq('semester_id', semester?.id)
     .or(`scope.in.(org,jt_shared),and(scope.eq.jt_specific,jt_family_id.eq.${member.jt_family_id})`)
-    .order('event_date', { ascending: true })
+    .order('starts_at', { ascending: true })
 
   // Get member's attended event IDs this semester
   const { data: attended } = await supabase

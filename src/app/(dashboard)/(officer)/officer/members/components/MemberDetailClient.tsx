@@ -4,6 +4,7 @@ import { useRouter } from 'next/navigation'
 import AccountLinkBadge from '@/app/(dashboard)/(officer)/officer/members/components/AccountLinkBadge'
 import MemberAvatar from '@/app/components/MemberAvatar'
 import { CATEGORY_COLORS, CHECKIN_METHOD_LABELS, POINT_BUCKET_LABELS } from '@/utils/constants'
+import { formatEventSchedule } from '@/utils/datetime'
 
 interface Member {
   id: string
@@ -29,7 +30,8 @@ interface AttendanceRow {
     name: string
     category: string
     point_value: number
-    event_date: string
+    starts_at: string
+    ends_at: string | null
   }
 }
 
@@ -118,7 +120,7 @@ export default function MemberDetailClient({ member, attendance, history }: Prop
               <div className="min-w-0 flex-1">
                 <div className="truncate text-sm font-medium text-text">{row.events?.name}</div>
                 <div className="mt-1 flex flex-wrap gap-2 text-xs text-subtitle">
-                  <span>{row.events?.event_date}</span>
+                  <span>{row.events?.starts_at ? formatEventSchedule(row.events.starts_at, row.events.ends_at) : '—'}</span>
                   <span className="rounded-md px-2 py-0.5" style={{ background: `${catColor}15`, color: catColor }}>{row.events?.category}</span>
                   {!row.counted && <span className="rounded-md bg-red-50 px-2 py-0.5 text-red-500">Cap reached</span>}
                 </div>

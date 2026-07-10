@@ -12,7 +12,7 @@ export default async function QRPage({ params }: { params: Promise<{ id: string 
 
   const { data: event } = await supabase
     .from('events')
-    .select('id, name, event_date, point_value, check_in_code, location')
+    .select('id, name, starts_at, ends_at, point_value, check_in_code, location')
     .eq('id', id)
     .eq('check_in_type', 'self')
     .maybeSingle()

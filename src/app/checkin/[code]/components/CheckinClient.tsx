@@ -3,13 +3,15 @@
 import { useRouter } from 'next/navigation'
 import { useState } from 'react'
 import { selfCheckIn } from '@/app/actions/attendance'
+import { formatEventSchedule } from '@/utils/datetime'
 
 interface Event {
   id: string
   name: string
   category: string
   point_value: number
-  event_date: string
+  starts_at: string
+  ends_at: string | null
   location: string | null
   check_in_type: string
   semester_id: string
@@ -59,12 +61,7 @@ export default function CheckinClient({ event, code, userEmail, member, alreadyC
     setSubmitting(false)
   }
 
-  const eventDate = new Date(event.event_date).toLocaleDateString('en-US', {
-    weekday: 'long',
-    month: 'long',
-    day: 'numeric',
-    year: 'numeric',
-  })
+  const eventSchedule = formatEventSchedule(event.starts_at, event.ends_at)
 
   return (
     <div className="relative min-h-screen overflow-hidden bg-bg px-6 py-10 text-text">
@@ -81,7 +78,7 @@ export default function CheckinClient({ event, code, userEmail, member, alreadyC
               {event.name}
             </h1>
             <div className="mt-3 space-y-1 text-sm text-subtitle">
-              <div>📅 {eventDate}</div>
+              <div>🕐 {eventSchedule}</div>
               {event.location && <div>📍 {event.location}</div>}
               <div>⭐ {event.point_value} point{event.point_value !== 1 ? 's' : ''}</div>
             </div>

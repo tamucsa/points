@@ -29,7 +29,8 @@ export default async function MemberDetailPage({ params }: { params: Promise<{ i
         name,
         category,
         point_value,
-        event_date
+        starts_at,
+        ends_at
       )
     `)
     .eq('member_id', id)

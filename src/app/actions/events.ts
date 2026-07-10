@@ -2,6 +2,10 @@
 
 import { createActionSupabase } from '@/utils/supabase/action'
 import {
+  resolveCentralEventTimestamp,
+  validateEventEndAfterStart,
+} from '@/utils/event-times'
+import {
   SPECTATOR_EVENT_CATEGORY,
   getCategoryConfig,
   isSportsCategory,
@@ -17,6 +21,8 @@ export interface CreateEventInput {
   jtFamilyId: string | null
   checkInType: string
   eventDate: string
+  startTime: string
+  endTime: string | null
   location: string | null
   description: string | null
   rsvpUrl: string | null
@@ -46,6 +52,7 @@ async function requireOfficer() {
 export async function createEvent(input: CreateEventInput) {
   if (!input.name.trim()) return { success: false, error: 'Event name is required.' }
   if (!input.eventDate) return { success: false, error: 'Event date is required.' }
+  if (!input.startTime) return { success: false, error: 'Start time is required.' }
 
   const config = getCategoryConfig(input.category)
   if (!config) return { success: false, error: 'Invalid event category.' }
@@ -64,6 +71,27 @@ export async function createEvent(input: CreateEventInput) {
   const { supabase, error: authError } = await requireOfficer()
   if (authError) return { success: false, error: authError }
 
+  const { value: startsAt, error: startError } = await resolveCentralEventTimestamp(
+    supabase,
+    input.eventDate,
+    input.startTime,
+  )
+  if (!startsAt) return { success: false, error: startError ?? 'Invalid start time.' }
+
+  let endsAt: string | null = null
+  if (input.endTime) {
+    const { value, error: endError } = await resolveCentralEventTimestamp(
+      supabase,
+      input.eventDate,
+      input.endTime,
+    )
+    if (!value) return { success: false, error: endError ?? 'Invalid end time.' }
+    if (!validateEventEndAfterStart(startsAt, value)) {
+      return { success: false, error: 'End time must be after start time.' }
+    }
+    endsAt = value
+  }
+
   const isRSVP = checkInType === 'rsvp_required'
   const isJTSpecific = scope === 'jt_specific'
   const hasSpectators = config.allowSpectators === true && input.hasSpectators
@@ -78,7 +106,8 @@ export async function createEvent(input: CreateEventInput) {
       scope,
       jt_family_id: isJTSpecific ? input.jtFamilyId : null,
       check_in_type: checkInType,
-      event_date: input.eventDate,
+      starts_at: startsAt,
+      ends_at: endsAt,
       location: input.location,
       description: input.description,
       rsvp_url: isRSVP ? input.rsvpUrl : null,
@@ -101,7 +130,8 @@ export async function createEvent(input: CreateEventInput) {
       scope,
       jt_family_id: isJTSpecific ? input.jtFamilyId : null,
       check_in_type: 'self',
-      event_date: input.eventDate,
+      starts_at: startsAt,
+      ends_at: endsAt,
       location: input.location,
       created_by: input.createdBy,
       parent_event_id: event.id,

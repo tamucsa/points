@@ -6,6 +6,7 @@ import { publishJiatingStandings } from '@/app/actions/jt-standings'
 import { updateEventRsvp } from '@/app/actions/events'
 import MemberAvatar from '@/app/components/MemberAvatar'
 import { isGeneralMeetingCategory } from '@/utils/events'
+import { formatEventSchedule } from '@/utils/datetime'
 import { CHECKIN_METHOD_LABELS, inputClassName, labelClassName } from '@/utils/constants'
 
 interface Event {
@@ -14,7 +15,8 @@ interface Event {
   category: string
   point_value: number
   check_in_type: string
-  event_date: string
+  starts_at: string
+  ends_at: string | null
   location: string | null
   description: string | null
   check_in_code: string | null
@@ -122,9 +124,7 @@ export default function EventDetailClient({ event, attendance, publishedSnapshot
             <h1 className="text-2xl font-bold text-text">{event.name}</h1>
             <div className="mt-2 flex flex-wrap gap-2 text-sm text-subtitle">
               <span>
-                📅 {new Date(event.event_date).toLocaleDateString('en-US', {
-                  weekday: 'long', month: 'long', day: 'numeric', year: 'numeric',
-                })}
+                🕐 {formatEventSchedule(event.starts_at, event.ends_at)}
               </span>
               {event.location && <span>📍 {event.location}</span>}
               <span className="rounded-md bg-bg px-2 py-0.5 text-xs">{event.category}</span>

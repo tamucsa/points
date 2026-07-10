@@ -19,7 +19,7 @@ export default async function OfficerEventsPage() {
     .select('*')
     .eq('semester_id', semester?.id)
     .is('parent_event_id', null)       // hide spectator child events from main list
-    .order('event_date', { ascending: false })
+    .order('starts_at', { ascending: false })
 
   // Get attendance counts per event
   const { data: counts } = await supabase

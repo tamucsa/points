@@ -1,6 +1,7 @@
 'use client'
 import { useState } from 'react'
 import { isJiatingOlympicsCategory, isMixerCategory, isSportsRelatedCategory } from '@/utils/events'
+import { formatEventSchedule, isEventPast } from '@/utils/datetime'
 
 interface Event {
   id: string
@@ -9,7 +10,8 @@ interface Event {
   point_value: number
   scope: string
   check_in_type: string
-  event_date: string
+  starts_at: string
+  ends_at: string | null
   location: string | null
   rsvp_url: string | null
   rsvp_deadline: string | null
@@ -21,12 +23,6 @@ interface Props {
   semester: { name: string } | null
 }
 
-const POINT_COLORS: Record<number, string> = {
-  3: '#4f6ef7',
-  2: '#f7934f',
-  1: '#4fc787',
-}
-
 const CHECKIN_BADGE: Record<string, string> = {
   self:          '🔲 QR Check-in',
   officer:       '👤 Officer Check-in',
@@ -34,12 +30,9 @@ const CHECKIN_BADGE: Record<string, string> = {
 }
 
 function EventCard({ event, attended }: { event: Event, attended: boolean }) {
-  const now = new Date()
-  const eventDate = new Date(event.event_date)
-  const isPast = eventDate < now
-  const rsvpOpen = event.rsvp_url && event.rsvp_deadline && new Date(event.rsvp_deadline) > now
-  const rsvpClosed = event.rsvp_url && event.rsvp_deadline && new Date(event.rsvp_deadline) <= now
-  const pointColor = POINT_COLORS[event.point_value] ?? '#888'
+  const isPast = isEventPast(event.starts_at)
+  const rsvpOpen = event.rsvp_url && event.rsvp_deadline && new Date(event.rsvp_deadline) > new Date()
+  const rsvpClosed = event.rsvp_url && event.rsvp_deadline && new Date(event.rsvp_deadline) <= new Date()
 
   return (
     <div className="flex items-center gap-4 rounded-3xl border border-home-border bg-white px-5 py-4 shadow-sm" style={{ opacity: isPast && !attended ? 0.65 : 1 }}>
@@ -62,7 +55,7 @@ function EventCard({ event, attended }: { event: Event, attended: boolean }) {
         </div>
         <div className="mt-1 flex flex-wrap gap-2 text-xs text-subtitle">
           <span>
-            📅 {new Date(event.event_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+            🕐 {formatEventSchedule(event.starts_at, event.ends_at)}
           </span>
           {event.location && (
             <span>📍 {event.location}</span>
@@ -95,10 +88,8 @@ function EventCard({ event, attended }: { event: Event, attended: boolean }) {
 
 export default function MemberEventsClient({ events, attendedIds, semester }: Props) {
   const [showPast, setShowPast] = useState(false)
-  const now = new Date()
-
-  const upcoming = events.filter(e => new Date(e.event_date) >= now)
-  const past     = events.filter(e => new Date(e.event_date) < now)
+  const upcoming = events.filter(e => !isEventPast(e.starts_at))
+  const past     = events.filter(e => isEventPast(e.starts_at))
 
   const sections = [
     {

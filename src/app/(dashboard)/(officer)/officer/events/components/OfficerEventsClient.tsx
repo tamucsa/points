@@ -4,6 +4,7 @@ import { QRCodeSVG } from 'qrcode.react'
 import { useRouter } from 'next/navigation'
 import { useState } from 'react'
 import { CHECKIN_TYPE_LABELS, POINT_COLORS, SCOPE_LABELS } from '@/utils/constants'
+import { formatEventDate, isEventPast } from '@/utils/datetime'
 
 interface Event {
   id: string
@@ -12,7 +13,7 @@ interface Event {
   point_value: number
   scope: string
   check_in_type: string
-  event_date: string
+  starts_at: string
   location: string | null
   check_in_code: string | null
 }
@@ -57,7 +58,7 @@ export default function OfficerEventsClient({ events, attendanceCounts, semester
         )}
 
         {events.map(event => {
-          const isPast = new Date(event.event_date) < new Date()
+          const isPast = isEventPast(event.starts_at)
           const count = attendanceCounts[event.id] ?? 0
 
           return (
@@ -80,9 +81,7 @@ export default function OfficerEventsClient({ events, attendanceCounts, semester
                 </div>
                 <div className="mt-1 flex flex-wrap gap-2 text-xs text-subtitle">
                   <span>
-                    📅 {new Date(event.event_date).toLocaleDateString('en-US', {
-                      month: 'short', day: 'numeric', year: 'numeric',
-                    })}
+                    📅 {formatEventDate(event.starts_at)}
                   </span>
                   {event.location && <span>📍 {event.location}</span>}
                   <span className="rounded-md bg-bg px-2 py-0.5">{event.category}</span>
@@ -147,7 +146,7 @@ export default function OfficerEventsClient({ events, attendanceCounts, semester
               />
             </div>
             <p className="mt-4 text-sm text-subtitle">
-              📅 {new Date(qrEvent.event_date).toLocaleDateString()} · ⭐ {qrEvent.point_value} pt
+              📅 {formatEventDate(qrEvent.starts_at)} · ⭐ {qrEvent.point_value} pt
             </p>
             <div className="mt-5 flex justify-center gap-3">
               <button

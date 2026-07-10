@@ -41,7 +41,8 @@ export default async function ProfilePage() {
         name,
         category,
         point_value,
-        event_date
+        starts_at,
+        ends_at
       )
     `)
     .eq('member_id', member.id)
@@ -62,7 +63,8 @@ export default async function ProfilePage() {
           name: '',
           category: '',
           point_value: 0,
-          event_date: '',
+          starts_at: '',
+          ends_at: null,
         })
       : row.events,
   }))

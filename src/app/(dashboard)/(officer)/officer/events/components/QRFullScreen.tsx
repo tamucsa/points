@@ -1,11 +1,13 @@
 'use client'
 
 import { QRCodeSVG } from 'qrcode.react'
+import { formatEventSchedule } from '@/utils/datetime'
 
 interface Event {
   id: string
   name: string
-  event_date: string
+  starts_at: string
+  ends_at: string | null
   point_value: number
   check_in_code: string
   location: string | null
@@ -25,9 +27,7 @@ export default function QRFullScreen({ event, origin }: { event: Event; origin: 
       </div>
       <div className="flex flex-wrap items-center justify-center gap-4 text-lg text-subtitle">
         <span>
-          📅 {new Date(event.event_date).toLocaleDateString('en-US', {
-            month: 'long', day: 'numeric', year: 'numeric',
-          })}
+          🕐 {formatEventSchedule(event.starts_at, event.ends_at)}
         </span>
         <span className="font-bold text-primary">
           +{event.point_value} point{event.point_value !== 1 ? 's' : ''}

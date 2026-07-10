@@ -10,7 +10,8 @@ interface Event {
   name: string
   category: string
   point_value: number
-  event_date: string
+  starts_at: string
+  ends_at: string | null
   semester_id: string
   check_in_type: string
 }
