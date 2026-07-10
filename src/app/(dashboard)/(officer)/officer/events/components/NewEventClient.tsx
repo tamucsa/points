@@ -3,6 +3,14 @@
 import { useRouter } from 'next/navigation'
 import { useState } from 'react'
 import { createEvent } from '@/app/actions/events'
+import {
+  EVENT_CATEGORIES,
+  applyCategoryDefaults,
+  getCategoryCheckInLabel,
+  getCategoryConfig,
+  getCategoryScopeLabel,
+  type EventCategory,
+} from '@/utils/events'
 import { inputClassName, labelClassName } from '@/utils/constants'
 
 interface JTFamily {
@@ -18,10 +26,7 @@ interface Props {
   createdBy: string
 }
 
-const CATEGORIES = [
-  'GM', 'CSA', 'JT_Olympics', 'Mixer', 'Sports', 'Sports Spectator',
-  'Philanthropy', 'First Friday', 'Intern Event', 'Dance', 'Other',
-]
+const DEFAULT_CATEGORY: EventCategory = 'General Meeting'
 
 const scopeBtn = (active: boolean) =>
   `flex-1 rounded-xl border px-3 py-2.5 text-sm font-medium transition ${
@@ -40,28 +45,49 @@ export default function NewEventClient({
   const router = useRouter()
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const [form, setForm] = useState({
-    name: '',
-    category: 'GM',
-    point_value: '1',
-    scope: 'org',
-    jt_family_id: officerJtFamilyId ?? '',
-    check_in_type: 'officer',
-    event_date: '',
-    location: '',
-    description: '',
-    rsvp_url: '',
-    rsvp_deadline: '',
-    has_spectators: false,
+  const [form, setForm] = useState(() => {
+    const defaults = applyCategoryDefaults(DEFAULT_CATEGORY, {
+      scope: 'org',
+      check_in_type: 'officer',
+      has_spectators: false,
+    })
+    return {
+      name: '',
+      category: DEFAULT_CATEGORY,
+      point_value: defaults.point_value,
+      scope: defaults.scope,
+      jt_family_id: officerJtFamilyId ?? '',
+      check_in_type: defaults.check_in_type,
+      event_date: '',
+      location: '',
+      description: '',
+      rsvp_url: '',
+      rsvp_deadline: '',
+      has_spectators: defaults.has_spectators,
+    }
   })
 
   const set = (key: string, value: string | boolean) =>
     setForm(f => ({ ...f, [key]: value }))
 
-  const isSports = form.category === 'Sports'
+  const categoryConfig = getCategoryConfig(form.category)
+  const fixedCheckIn = categoryConfig?.checkInType
+  const effectiveCheckIn = fixedCheckIn ?? form.check_in_type
+  const isSports = categoryConfig?.allowSpectators === true
   const isJTSpecific = form.scope === 'jt_specific'
-  const isRSVP = form.check_in_type === 'rsvp_required'
-  const isSelf = form.check_in_type === 'self'
+  const isRSVP = effectiveCheckIn === 'rsvp_required'
+  const isSelf = effectiveCheckIn === 'self'
+
+  const handleCategoryChange = (category: string) => {
+    setForm(f => ({
+      ...f,
+      ...applyCategoryDefaults(category as EventCategory, {
+        scope: f.scope,
+        check_in_type: f.check_in_type,
+        has_spectators: f.has_spectators,
+      }),
+    }))
+  }
 
   const handleSubmit = async () => {
     setSubmitting(true)
@@ -74,7 +100,7 @@ export default function NewEventClient({
       pointValue: parseInt(form.point_value),
       scope: form.scope,
       jtFamilyId: isJTSpecific ? form.jt_family_id : null,
-      checkInType: form.check_in_type,
+      checkInType: effectiveCheckIn,
       eventDate: form.event_date,
       location: form.location.trim() || null,
       description: form.description.trim() || null,
@@ -106,21 +132,30 @@ export default function NewEventClient({
           <input className={inputClassName} placeholder="e.g. First Friday March" value={form.name} onChange={e => set('name', e.target.value)} />
         </div>
 
-        <div className="grid gap-4 sm:grid-cols-2">
-          <div>
-            <label className={labelClassName}>Category *</label>
-            <select className={`${inputClassName} cursor-pointer`} value={form.category} onChange={e => set('category', e.target.value)}>
-              {CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
-            </select>
-          </div>
-          <div>
-            <label className={labelClassName}>Point Value *</label>
-            <select className={`${inputClassName} cursor-pointer`} value={form.point_value} onChange={e => set('point_value', e.target.value)}>
-              <option value="1">1 point</option>
-              <option value="2">2 points</option>
-              <option value="3">3 points</option>
-            </select>
-          </div>
+        <div>
+          <label className={labelClassName}>Category *</label>
+          <select
+            className={`${inputClassName} cursor-pointer`}
+            value={form.category}
+            onChange={e => handleCategoryChange(e.target.value)}
+          >
+            {EVENT_CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
+          </select>
+          {categoryConfig && (
+            <div className="mt-2 flex flex-wrap gap-2 text-xs text-subtitle">
+              <span className="rounded-md bg-bg px-2 py-1">
+                {categoryConfig.pointValue} pt{categoryConfig.pointValue === 1 ? '' : 's'}
+              </span>
+              <span className="rounded-md bg-bg px-2 py-1">
+                {getCategoryScopeLabel(form.category)}
+              </span>
+              {fixedCheckIn && (
+                <span className="rounded-md bg-bg px-2 py-1">
+                  {getCategoryCheckInLabel(form.category, effectiveCheckIn as 'officer' | 'self' | 'rsvp_required')}
+                </span>
+              )}
+            </div>
+          )}
         </div>
 
         <div className="grid gap-4 sm:grid-cols-2">
@@ -134,21 +169,6 @@ export default function NewEventClient({
           </div>
         </div>
 
-        <div>
-          <label className={labelClassName}>Event Scope *</label>
-          <div className="flex flex-wrap gap-2">
-            {[
-              { value: 'org', label: '🏫 CSA-Wide' },
-              { value: 'jt_shared', label: '🏅 JT Shared' },
-              { value: 'jt_specific', label: '🏠 JT Specific' },
-            ].map(opt => (
-              <button key={opt.value} type="button" onClick={() => set('scope', opt.value)} className={scopeBtn(form.scope === opt.value)}>
-                {opt.label}
-              </button>
-            ))}
-          </div>
-        </div>
-
         {isJTSpecific && (
           <div>
             <label className={labelClassName}>JT Family *</label>
@@ -159,32 +179,41 @@ export default function NewEventClient({
           </div>
         )}
 
-        <div>
-          <label className={labelClassName}>Check-in Type *</label>
-          <div className="flex flex-wrap gap-2">
-            {[
-              { value: 'officer', label: '👤 Officer' },
-              { value: 'self', label: '🔲 QR Code' },
-              { value: 'rsvp_required', label: '📋 RSVP' },
-            ].map(opt => (
-              <button key={opt.value} type="button" onClick={() => set('check_in_type', opt.value)} className={scopeBtn(form.check_in_type === opt.value)}>
-                {opt.label}
-              </button>
-            ))}
+        {!fixedCheckIn && (
+          <div>
+            <label className={labelClassName}>Check-in Type *</label>
+            <div className="flex flex-wrap gap-2">
+              {[
+                { value: 'officer', label: '👤 Officer' },
+                { value: 'self', label: '🔲 QR Code' },
+                { value: 'rsvp_required', label: '📋 RSVP' },
+              ].map(opt => (
+                <button key={opt.value} type="button" onClick={() => set('check_in_type', opt.value)} className={scopeBtn(form.check_in_type === opt.value)}>
+                  {opt.label}
+                </button>
+              ))}
+            </div>
+            {isSelf && (
+              <p className="mt-2 text-xs text-subtitle">A QR code is generated automatically when the event is created.</p>
+            )}
           </div>
-          {isSelf && (
-            <p className="mt-2 text-xs text-subtitle">A QR code is generated automatically when the event is created.</p>
-          )}
-        </div>
+        )}
+
+        {fixedCheckIn === 'self' && (
+          <p className="text-xs text-subtitle">Members scan a QR code to check themselves in.</p>
+        )}
 
         {isRSVP && (
           <div className="space-y-4 rounded-2xl border border-home-border bg-bg p-4">
+            <p className="text-xs text-subtitle">
+              RSVP link and deadline are optional now — you can add them later from the event detail page once the form is ready.
+            </p>
             <div>
-              <label className={labelClassName}>RSVP Link</label>
+              <label className={labelClassName}>RSVP Link <span className="font-normal normal-case text-subtitle">(optional)</span></label>
               <input className={inputClassName} placeholder="https://forms.gle/..." value={form.rsvp_url} onChange={e => set('rsvp_url', e.target.value)} />
             </div>
             <div>
-              <label className={labelClassName}>RSVP Deadline</label>
+              <label className={labelClassName}>RSVP Deadline <span className="font-normal normal-case text-subtitle">(optional)</span></label>
               <input type="datetime-local" className={inputClassName} value={form.rsvp_deadline} onChange={e => set('rsvp_deadline', e.target.value)} />
             </div>
           </div>

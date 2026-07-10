@@ -3,8 +3,10 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { publishJiatingStandings } from '@/app/actions/jt-standings'
+import { updateEventRsvp } from '@/app/actions/events'
 import MemberAvatar from '@/app/components/MemberAvatar'
-import { CHECKIN_METHOD_LABELS } from '@/utils/constants'
+import { isGeneralMeetingCategory } from '@/utils/events'
+import { CHECKIN_METHOD_LABELS, inputClassName, labelClassName } from '@/utils/constants'
 
 interface Event {
   id: string
@@ -17,6 +19,7 @@ interface Event {
   description: string | null
   check_in_code: string | null
   rsvp_url: string | null
+  rsvp_deadline: string | null
 }
 
 interface AttendanceRow {
@@ -43,19 +46,43 @@ interface Props {
   publishedSnapshot: PublishedSnapshot | null
 }
 
-function isGeneralMeeting(category: string) {
-  return category.trim().toUpperCase() === 'GM'
-}
-
 export default function EventDetailClient({ event, attendance, publishedSnapshot }: Props) {
   const router = useRouter()
   const [publishing, setPublishing] = useState(false)
   const [publishError, setPublishError] = useState<string | null>(null)
   const [published, setPublished] = useState(publishedSnapshot)
-  const isGm = isGeneralMeeting(event.category)
+  const [rsvpUrl, setRsvpUrl] = useState(event.rsvp_url ?? '')
+  const [rsvpDeadline, setRsvpDeadline] = useState(
+    event.rsvp_deadline ? event.rsvp_deadline.slice(0, 16) : '',
+  )
+  const [rsvpSaving, setRsvpSaving] = useState(false)
+  const [rsvpError, setRsvpError] = useState<string | null>(null)
+  const [rsvpSaved, setRsvpSaved] = useState(false)
+  const isGm = isGeneralMeetingCategory(event.category)
+  const isRsvpEvent = event.check_in_type === 'rsvp_required'
+
+  const handleSaveRsvp = async () => {
+    setRsvpSaving(true)
+    setRsvpError(null)
+    setRsvpSaved(false)
+
+    const result = await updateEventRsvp(
+      event.id,
+      rsvpUrl.trim() || null,
+      rsvpDeadline || null,
+    )
+
+    setRsvpSaving(false)
+    if (!result.success) {
+      setRsvpError(result.error ?? 'Failed to save RSVP details.')
+      return
+    }
+    setRsvpSaved(true)
+    router.refresh()
+  }
 
   const handlePublishStandings = async () => {
-    if (!window.confirm('Publish Jiating standings from current point totals? Members will see this snapshot on the leaderboard until the next GM.')) {
+    if (!window.confirm('Publish Jiating standings from current point totals? Members will see this snapshot on the leaderboard until the next General Meeting.')) {
       return
     }
 
@@ -153,6 +180,45 @@ export default function EventDetailClient({ event, attendance, publishedSnapshot
         </div>
         {publishError && (
           <p className="mt-3 text-sm text-red-600">{publishError}</p>
+        )}
+        {isRsvpEvent && (
+          <div className="mt-5 space-y-3 rounded-2xl border border-home-border bg-bg p-4">
+            <div className="text-sm font-semibold text-text">RSVP details</div>
+            <div>
+              <label className={labelClassName}>RSVP Link</label>
+              <input
+                className={inputClassName}
+                placeholder="https://forms.gle/..."
+                value={rsvpUrl}
+                onChange={e => {
+                  setRsvpUrl(e.target.value)
+                  setRsvpSaved(false)
+                }}
+              />
+            </div>
+            <div>
+              <label className={labelClassName}>RSVP Deadline</label>
+              <input
+                type="datetime-local"
+                className={inputClassName}
+                value={rsvpDeadline}
+                onChange={e => {
+                  setRsvpDeadline(e.target.value)
+                  setRsvpSaved(false)
+                }}
+              />
+            </div>
+            {rsvpError && <p className="text-sm text-red-600">{rsvpError}</p>}
+            {rsvpSaved && <p className="text-sm text-green-700">RSVP details saved.</p>}
+            <button
+              type="button"
+              onClick={() => void handleSaveRsvp()}
+              disabled={rsvpSaving}
+              className="rounded-xl bg-primary px-4 py-2 text-sm font-semibold text-white disabled:opacity-60"
+            >
+              {rsvpSaving ? 'Saving…' : 'Save RSVP details'}
+            </button>
+          </div>
         )}
         {isGm && published && (
           <p className="mt-3 text-xs text-subtitle">

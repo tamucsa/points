@@ -1,5 +1,6 @@
 'use client'
 
+import { POINT_BUCKET_LABELS } from '@/utils/constants'
 import JtFamilyBadge from '@/app/(dashboard)/leaderboard/components/JtFamilyBadge'
 import MemberAvatar from '@/app/components/MemberAvatar'
 
@@ -48,11 +49,11 @@ interface Props {
 }
 
 const CATEGORY_COLORS: Record<string, string> = {
-  CSA:     '#4f6ef7',
-  JT:      '#f7934f',
-  Sports:  '#4fc787',
-  GM:      '#e8b84b',
-  default: '#888',
+  'CSA-Wide':          '#4f6ef7',
+  'Jiating Olympics':  '#f7934f',
+  Sports:              '#4fc787',
+  'General Meeting':   '#e8b84b',
+  default:             '#888',
 }
 
 const CHECKIN_LABELS: Record<string, string> = {
@@ -66,10 +67,10 @@ export default function ProfileClient({ member, points, attendance, history }: P
   const color = points?.jt_color ?? '#4779B8'
 
   const breakdown = [
-    { label: 'CSA Points',    value: points?.csa_points    ?? 0, color: CATEGORY_COLORS.CSA    },
-    { label: 'JT Points',     value: points?.jt_points     ?? 0, color: CATEGORY_COLORS.JT     },
-    { label: 'Sports Points', value: points?.sports_points ?? 0, color: CATEGORY_COLORS.Sports },
-    { label: 'GM Points',     value: points?.gm_points     ?? 0, color: CATEGORY_COLORS.GM     },
+    { label: `${POINT_BUCKET_LABELS.csa} Points`, value: points?.csa_points ?? 0, color: CATEGORY_COLORS['CSA-Wide'] },
+    { label: `${POINT_BUCKET_LABELS.jt} Points`, value: points?.jt_points ?? 0, color: CATEGORY_COLORS['Jiating Olympics'] },
+    { label: `${POINT_BUCKET_LABELS.sports} Points`, value: points?.sports_points ?? 0, color: CATEGORY_COLORS.Sports },
+    { label: `${POINT_BUCKET_LABELS.gm} Points`, value: points?.gm_points ?? 0, color: CATEGORY_COLORS['General Meeting'] },
   ]
 
   return (

@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation'
 import { useState } from 'react'
 import AccountLinkBadge from '@/app/(dashboard)/(officer)/officer/members/components/AccountLinkBadge'
 import MemberAvatar from '@/app/components/MemberAvatar'
-import { inputClassName, OFFICER_MEMBERS_PAGE_SIZE } from '@/utils/constants'
+import { inputClassName, OFFICER_MEMBERS_PAGE_SIZE, POINT_BUCKET_LABELS } from '@/utils/constants'
 
 interface Member {
   id: string
@@ -132,15 +132,15 @@ export default function MembersClient({
       </form>
 
       <div className="overflow-x-auto rounded-4xl border border-home-border bg-white shadow-sm">
-        <div className="grid min-w-[720px] grid-cols-[1fr_6.5rem_7rem_4rem_4rem_4rem_4rem_4rem] border-b border-home-border bg-bg px-5 py-3 text-[11px] font-semibold uppercase tracking-[0.05em] text-subtitle">
+        <div className="grid min-w-[800px] grid-cols-[1fr_6.5rem_7rem_4rem_4rem_4rem_4rem_5.5rem] border-b border-home-border bg-bg px-5 py-3 text-[11px] font-semibold uppercase tracking-[0.05em] text-subtitle">
           <div>Member</div>
           <div>Sign-in</div>
           <div>JT</div>
           <div className="text-right">Total</div>
           <div className="text-right">CSA</div>
           <div className="text-right">JT</div>
-          <div className="text-right">Sports</div>
-          <div className="text-right">GM</div>
+          <div className="text-right">{POINT_BUCKET_LABELS.sports}</div>
+          <div className="text-right">Gen. Mtg.</div>
         </div>
 
         {members.length === 0 && (
@@ -153,7 +153,7 @@ export default function MembersClient({
           <Link
             key={m.id}
             href={`/officer/members/${m.id}`}
-            className="grid min-w-[720px] grid-cols-[1fr_6.5rem_7rem_4rem_4rem_4rem_4rem_4rem] items-center border-b border-home-border px-5 py-3 transition last:border-b-0 hover:bg-bg"
+            className="grid min-w-[800px] grid-cols-[1fr_6.5rem_7rem_4rem_4rem_4rem_4rem_5.5rem] items-center border-b border-home-border px-5 py-3 transition last:border-b-0 hover:bg-bg"
           >
             <div className="flex min-w-0 items-center gap-3">
               <MemberAvatar

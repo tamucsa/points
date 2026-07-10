@@ -148,9 +148,9 @@ The semester admin page shows the active term, a collapsible **Past semesters** 
 ### Overview
 
 Officers and admins create events tied to the active semester. Each event has:
-- **Category** (e.g., GM, CSA, Sports) and **point value**
-- **Scope**: CSA-wide (`org`), JT shared (`jt_shared`), or JT-specific (`jt_specific`)
-- **Check-in type**: officer, self (QR), or RSVP required
+- **Category** (e.g., General Meeting, CSA-Wide, Sports) and **point value** (set automatically per category)
+- **Scope**: CSA-wide (`org`), JT shared (`jt_shared`), or JT-specific (`jt_specific`) — set automatically per category
+- **Check-in type**: officer, self (QR), or RSVP required — fixed for some categories; officer chooses for CSA-Wide and Sports
 
 Sports events can optionally create a linked **Spectator** child event (1 point, self check-in, capped at 10 points/semester per member via `attendance.counted`).
 
@@ -217,7 +217,7 @@ Points are earned through `attendance` rows linked to `events`. The `attendance.
 ### Step-by-step: Member views their points
 
 1. Member goes to **My Points** → `/profile`.
-2. Review total points and category breakdown (CSA, JT, Sports, GM).
+2. Review total points and category breakdown (CSA, JT, Sports, General Meeting).
 3. Scroll attendance history for the current semester.
 
 ### Step-by-step: Anyone views the leaderboard

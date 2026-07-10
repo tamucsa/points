@@ -85,7 +85,7 @@ export default function StandingsLeaderboardClient({
             hour: 'numeric',
             minute: '2-digit',
           })}
-          {' '}· Standings are not live; The secretary will publish after each GM.
+          {' '}· Standings are not live; the secretary will publish after each General Meeting.
         </p>
       )}
 

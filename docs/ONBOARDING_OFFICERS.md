@@ -44,10 +44,10 @@ Officers must have `members.role` set to `officer` (or `admin`). If you can’t 
 - Confirm attendance count on the event detail page.
 - If there are duplicates or errors, coordinate with an admin for correction policies.
 
-### 4) Publish Jiating standings (GM only)
-- On a **GM** event detail page, click **Publish Jiating standings** after check-in wraps up.
-- This freezes Jiating-vs-Jiating totals for the **Standings** leaderboard tab until the next GM.
-- You can only publish once per GM event.
+### 4) Publish Jiating standings (General Meeting only)
+- On a **General Meeting** event detail page, click **Publish Jiating standings** after check-in wraps up.
+- This freezes Jiating-vs-Jiating totals for the **Standings** leaderboard tab until the next General Meeting.
+- You can only publish once per General Meeting event.
 
 ## Member lookup
 

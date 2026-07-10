@@ -1,6 +1,12 @@
 'use server'
 
 import { createActionSupabase } from '@/utils/supabase/action'
+import {
+  SPECTATOR_EVENT_CATEGORY,
+  getCategoryConfig,
+  isSportsCategory,
+  type CheckInType,
+} from '@/utils/events'
 
 export interface CreateEventInput {
   semesterId: string
@@ -40,15 +46,27 @@ async function requireOfficer() {
 export async function createEvent(input: CreateEventInput) {
   if (!input.name.trim()) return { success: false, error: 'Event name is required.' }
   if (!input.eventDate) return { success: false, error: 'Event date is required.' }
-  if (input.scope === 'jt_specific' && !input.jtFamilyId) {
+
+  const config = getCategoryConfig(input.category)
+  if (!config) return { success: false, error: 'Invalid event category.' }
+
+  const pointValue = config.pointValue
+  const scope = config.scope
+  const checkInType: CheckInType = config.checkInType
+    ?? (['officer', 'self', 'rsvp_required'].includes(input.checkInType)
+      ? (input.checkInType as CheckInType)
+      : 'officer')
+
+  if (scope === 'jt_specific' && !input.jtFamilyId) {
     return { success: false, error: 'JT family is required for JT-specific events.' }
   }
 
   const { supabase, error: authError } = await requireOfficer()
   if (authError) return { success: false, error: authError }
 
-  const isRSVP = input.checkInType === 'rsvp_required'
-  const isJTSpecific = input.scope === 'jt_specific'
+  const isRSVP = checkInType === 'rsvp_required'
+  const isJTSpecific = scope === 'jt_specific'
+  const hasSpectators = config.allowSpectators === true && input.hasSpectators
 
   const { data: event, error: eventError } = await supabase
     .from('events')
@@ -56,10 +74,10 @@ export async function createEvent(input: CreateEventInput) {
       semester_id: input.semesterId,
       name: input.name.trim(),
       category: input.category,
-      point_value: input.pointValue,
-      scope: input.scope,
+      point_value: pointValue,
+      scope,
       jt_family_id: isJTSpecific ? input.jtFamilyId : null,
-      check_in_type: input.checkInType,
+      check_in_type: checkInType,
       event_date: input.eventDate,
       location: input.location,
       description: input.description,
@@ -74,13 +92,13 @@ export async function createEvent(input: CreateEventInput) {
     return { success: false, error: 'Failed to create event. Please try again.' }
   }
 
-  if (input.category === 'Sports' && input.hasSpectators) {
+  if (isSportsCategory(input.category) && hasSpectators) {
     const { error: spectatorError } = await supabase.from('events').insert({
       semester_id: input.semesterId,
       name: `${input.name.trim()} — Spectator`,
-      category: 'Sports Spectator',
+      category: SPECTATOR_EVENT_CATEGORY,
       point_value: 1,
-      scope: input.scope,
+      scope,
       jt_family_id: isJTSpecific ? input.jtFamilyId : null,
       check_in_type: 'self',
       event_date: input.eventDate,
@@ -94,5 +112,36 @@ export async function createEvent(input: CreateEventInput) {
     }
   }
 
+  return { success: true, error: null }
+}
+
+export async function updateEventRsvp(
+  eventId: string,
+  rsvpUrl: string | null,
+  rsvpDeadline: string | null,
+) {
+  const { supabase, error: authError } = await requireOfficer()
+  if (authError) return { success: false, error: authError }
+
+  const { data: event } = await supabase
+    .from('events')
+    .select('id, check_in_type')
+    .eq('id', eventId)
+    .maybeSingle()
+
+  if (!event) return { success: false, error: 'Event not found.' }
+  if (event.check_in_type !== 'rsvp_required') {
+    return { success: false, error: 'This event does not use RSVP check-in.' }
+  }
+
+  const { error } = await supabase
+    .from('events')
+    .update({
+      rsvp_url: rsvpUrl?.trim() || null,
+      rsvp_deadline: rsvpDeadline || null,
+    })
+    .eq('id', eventId)
+
+  if (error) return { success: false, error: 'Failed to save RSVP details.' }
   return { success: true, error: null }
 }

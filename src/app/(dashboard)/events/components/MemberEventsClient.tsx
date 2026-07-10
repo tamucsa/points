@@ -1,5 +1,6 @@
 'use client'
 import { useState } from 'react'
+import { isJiatingOlympicsCategory, isMixerCategory, isSportsRelatedCategory } from '@/utils/events'
 
 interface Event {
   id: string
@@ -110,11 +111,15 @@ export default function MemberEventsClient({ events, attendedIds, semester }: Pr
     },
     {
       label: '🏅 JT Olympics',
-      events: upcoming.filter(e => e.scope === 'jt_shared' && e.category === 'JT_Olympics'),
+      events: upcoming.filter(e => e.scope === 'jt_shared' && isJiatingOlympicsCategory(e.category)),
     },
     {
-      label: '⚽ Intramural / Sports',
-      events: upcoming.filter(e => e.category === 'Sports' || e.category === 'Sports Spectator'),
+      label: '🤝 Mixers',
+      events: upcoming.filter(e => isMixerCategory(e.category)),
+    },
+    {
+      label: '⚽ Sports & Dance',
+      events: upcoming.filter(e => isSportsRelatedCategory(e.category)),
     },
   ].filter(s => s.events.length > 0)
 

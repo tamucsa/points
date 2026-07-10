@@ -3,7 +3,7 @@
 import { useRouter } from 'next/navigation'
 import AccountLinkBadge from '@/app/(dashboard)/(officer)/officer/members/components/AccountLinkBadge'
 import MemberAvatar from '@/app/components/MemberAvatar'
-import { CATEGORY_COLORS, CHECKIN_METHOD_LABELS } from '@/utils/constants'
+import { CATEGORY_COLORS, CHECKIN_METHOD_LABELS, POINT_BUCKET_LABELS } from '@/utils/constants'
 
 interface Member {
   id: string
@@ -52,10 +52,10 @@ export default function MemberDetailClient({ member, attendance, history }: Prop
   const displayName = member.full_name
 
   const breakdown = [
-    { label: 'CSA', value: member.csa_points },
-    { label: 'JT', value: member.jt_points },
-    { label: 'Sports', value: member.sports_points },
-    { label: 'GM', value: member.gm_points },
+    { label: POINT_BUCKET_LABELS.csa, value: member.csa_points },
+    { label: POINT_BUCKET_LABELS.jt, value: member.jt_points },
+    { label: POINT_BUCKET_LABELS.sports, value: member.sports_points },
+    { label: POINT_BUCKET_LABELS.gm, value: member.gm_points },
   ]
 
   return (

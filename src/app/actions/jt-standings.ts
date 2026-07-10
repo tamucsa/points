@@ -2,6 +2,7 @@
 
 import { createActionSupabase } from '@/utils/supabase/action'
 import { createAdminSupabase } from '@/utils/supabase/admin'
+import { isGeneralMeetingCategory } from '@/utils/events'
 
 async function requireOfficer() {
   const supabase = await createActionSupabase()
@@ -21,10 +22,6 @@ async function requireOfficer() {
   return { supabase, member, error: null }
 }
 
-function isGeneralMeetingCategory(category: string) {
-  return category.trim().toUpperCase() === 'GM'
-}
-
 export async function publishJiatingStandings(eventId: string) {
   const { member, error: authError } = await requireOfficer()
   if (authError) return { success: false as const, error: authError }
@@ -39,7 +36,7 @@ export async function publishJiatingStandings(eventId: string) {
 
   if (!event) return { success: false as const, error: 'Event not found.' }
   if (!isGeneralMeetingCategory(event.category)) {
-    return { success: false as const, error: 'Standings can only be published from a GM event.' }
+    return { success: false as const, error: 'Standings can only be published from a General Meeting event.' }
   }
 
   const { data: existing } = await admin
@@ -49,7 +46,7 @@ export async function publishJiatingStandings(eventId: string) {
     .maybeSingle()
 
   if (existing) {
-    return { success: false as const, error: 'Standings were already published for this GM.' }
+    return { success: false as const, error: 'Standings were already published for this General Meeting.' }
   }
 
   const { data: standings, error: standingsError } = await admin

@@ -30,10 +30,22 @@ export const CHECKIN_METHOD_LABELS: Record<string, string> = {
   self: 'Self',
 }
 
+export const POINT_BUCKET_LABELS = {
+  csa: 'CSA',
+  jt: 'JT',
+  sports: 'Sports & Dance',
+  gm: 'General Meeting',
+} as const
+
 export const CATEGORY_COLORS: Record<string, string> = {
-  CSA: '#4779B8',
-  JT: '#f7934f',
+  'CSA-Wide': '#4779B8',
+  'Jiating Olympics': '#f7934f',
   Sports: '#4fc787',
-  GM: '#e8b84b',
+  'Sports Spectator': '#4fc787',
+  'General Meeting': '#e8b84b',
+  Mixer: '#9b6dd7',
+  Philanthropy: '#e85d8a',
+  Dance: '#5bc4d4',
+  Concessions: '#c9a227',
   default: '#888',
 }
