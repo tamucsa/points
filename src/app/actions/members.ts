@@ -175,7 +175,12 @@ export async function importMembers(rows: ImportMemberRow[], mode: ImportMode = 
 
       summary.updated++
 
-      if (jtChanged) {
+      const isJtTransfer =
+        mode === 'spring' &&
+        jtChanged &&
+        existing.jt_family_id != null
+
+      if (isJtTransfer) {
         const fromJt = resolveJtName(existing.jt_family_id, jtNameById)
         summary.jtChanged++
         summary.jtChanges.push({

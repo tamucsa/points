@@ -68,7 +68,7 @@ Use this at the start of a semester to pre-load the roster before members sign i
    - **Added** — new `members` rows created as `active` with Jiating assigned
    - **Updated** — existing email matched; only changed fields are written
    - **Unchanged** — row matched an existing member with identical data
-   - **Jiating transfers** — JT changes are logged to `jt_transfer_log`
+   - **Jiating transfers** — spring import only: existing member moved from one Jiating to another (logged to `jt_transfer_log`)
    - **Errors** — invalid email, unknown Jiating, missing required fields, or DB failures
 6. Tell members to sign in with Google; the auth callback links their account by email.
 

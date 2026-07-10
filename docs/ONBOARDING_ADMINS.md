@@ -40,7 +40,7 @@ Bulk import is the primary way to load the full CSA roster after Jiating sorting
 
 - **New emails** → inserted as `active` with `jt_family_id` set.
 - **Existing emails** → only changed fields are updated; unchanged rows are skipped.
-- **Jiating transfers** → logged in `jt_transfer_log` with semester and import batch metadata.
+- **Jiating transfers** — spring import only, when a member already had a Jiating and moves to a different one; logged in `jt_transfer_log`. Fall roster assignment and first-time Jiating assignment are not transfers.
 
 Use **Full roster (fall)** for the start-of-year import. Use **Spring update (partial)** after fall close for JT transfers and mid-year additions only.
 
