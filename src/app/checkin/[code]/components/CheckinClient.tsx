@@ -3,7 +3,9 @@
 import { useRouter } from 'next/navigation'
 import { useState } from 'react'
 import { selfCheckIn } from '@/app/actions/attendance'
+import IconLabel from '@/app/components/IconLabel'
 import { formatEventSchedule } from '@/utils/datetime'
+import { CircleCheck, Clock, MapPin, PartyPopper, Star } from 'lucide-react'
 
 interface Event {
   id: string
@@ -62,6 +64,7 @@ export default function CheckinClient({ event, code, userEmail, member, alreadyC
   }
 
   const eventSchedule = formatEventSchedule(event.starts_at, event.ends_at)
+  const pointLabel = `${event.point_value} point${event.point_value !== 1 ? 's' : ''}`
 
   return (
     <div className="relative min-h-screen overflow-hidden bg-bg px-6 py-10 text-text">
@@ -77,10 +80,10 @@ export default function CheckinClient({ event, code, userEmail, member, alreadyC
             <h1 className="text-2xl font-bold tracking-tight text-text sm:text-3xl">
               {event.name}
             </h1>
-            <div className="mt-3 space-y-1 text-sm text-subtitle">
-              <div>🕐 {eventSchedule}</div>
-              {event.location && <div>📍 {event.location}</div>}
-              <div>⭐ {event.point_value} point{event.point_value !== 1 ? 's' : ''}</div>
+            <div className="mt-3 flex flex-col gap-1.5 text-sm text-subtitle">
+              <IconLabel icon={Clock} label={eventSchedule} size="sm" />
+              {event.location && <IconLabel icon={MapPin} label={event.location} size="sm" />}
+              <IconLabel icon={Star} label={pointLabel} size="sm" iconClassName="text-primary" />
             </div>
 
             <div className="mt-8">
@@ -128,7 +131,7 @@ export default function CheckinClient({ event, code, userEmail, member, alreadyC
 
               {userEmail && member && member.status === 'active' && alreadyCheckedIn && !success && (
                 <div className="rounded-2xl border border-primary/20 bg-primary/5 p-4 text-center">
-                  <div className="text-3xl">✓</div>
+                  <CircleCheck className="mx-auto size-10 text-primary" aria-hidden />
                   <p className="mt-2 text-sm font-medium text-primary">
                     You&apos;re already checked in!
                   </p>
@@ -157,7 +160,7 @@ export default function CheckinClient({ event, code, userEmail, member, alreadyC
 
               {success && (
                 <div className="rounded-2xl border border-primary/20 bg-primary/5 p-4 text-center">
-                  <div className="text-4xl">🎉</div>
+                  <PartyPopper className="mx-auto size-10 text-primary" aria-hidden />
                   <p className="mt-2 text-base font-semibold text-text">You&apos;re checked in!</p>
                   {counted ? (
                     <p className="mt-1 text-sm text-subtitle">

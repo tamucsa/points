@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
+import BackLink from '@/app/components/BackLink'
 import { publishJiatingStandings } from '@/app/actions/jt-standings'
 import { updateEventRsvp } from '@/app/actions/events'
 import MemberAvatar from '@/app/components/MemberAvatar'
@@ -110,12 +111,7 @@ export default function EventDetailClient({ event, attendance, publishedSnapshot
 
   return (
     <div className="mx-auto max-w-3xl px-6 py-8 lg:px-8">
-      <button
-        onClick={() => router.back()}
-        className="mb-5 text-sm text-subtitle transition hover:text-primary"
-      >
-        ← Back
-      </button>
+      <BackLink onClick={() => router.back()} className="mb-5" />
 
       <div className="mb-6 rounded-4xl border border-home-border bg-white p-6 shadow-sm">
         <div className="flex gap-4">

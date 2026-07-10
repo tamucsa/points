@@ -4,15 +4,15 @@ import "@/app/globals.css";
 import { Analytics } from "@vercel/analytics/next"
 
 const bayon = Bayon({
-  // variable: "--font-bayon",
+  variable: "--font-bayon",
   subsets: ["latin"],
   weight: "400",
 });
 
 const akshar = Akshar({
-  // variable: "--font-akshar",
+  variable: "--font-akshar",
   subsets: ["latin"],
-  weight: "400"
+  weight: ["400", "500", "600", "700"],
 });
 
 export const metadata: Metadata = {
@@ -27,7 +27,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body className={`${bayon.className} ${akshar.className} antialiased bg-bg text-text`}>
+      <body className={`${bayon.variable} ${akshar.variable} font-sans antialiased bg-bg text-text`}>
         {children}
         <Analytics />
       </body>

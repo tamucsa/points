@@ -2,6 +2,7 @@
 
 import { useRouter } from 'next/navigation'
 import { useState } from 'react'
+import BackLink from '@/app/components/BackLink'
 import { createEvent } from '@/app/actions/events'
 import IconLabel, { CheckInTypeBadge, ScopeBadge } from '@/app/components/IconLabel'
 import {
@@ -124,9 +125,7 @@ export default function NewEventClient({
 
   return (
     <div className="mx-auto max-w-2xl px-6 py-8 lg:px-8">
-      <button onClick={() => router.back()} className="mb-4 text-sm text-subtitle hover:text-primary">
-        ← Back
-      </button>
+      <BackLink onClick={() => router.back()} />
       <h1 className="text-3xl font-bold text-text">New Event</h1>
       <p className="mt-1 text-sm text-subtitle">{semesterName}</p>
 

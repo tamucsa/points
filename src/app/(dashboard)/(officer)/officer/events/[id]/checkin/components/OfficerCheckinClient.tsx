@@ -3,6 +3,7 @@
 import { useRouter } from 'next/navigation'
 import { useMemo, useState } from 'react'
 import { officerCheckIn } from '@/app/actions/attendance'
+import BackLink from '@/app/components/BackLink'
 import MemberAvatar from '@/app/components/MemberAvatar'
 
 interface Event {
@@ -65,12 +66,11 @@ export default function OfficerCheckinClient({ event, members, checkedInIds }: P
 
   return (
     <div className="mx-auto max-w-3xl px-6 py-8 lg:px-8">
-      <button
+      <BackLink
         onClick={() => router.push(`/officer/events/${event.id}`)}
-        className="mb-5 text-sm text-subtitle transition hover:text-primary"
-      >
-        ← Back to Event
-      </button>
+        label="Back to Event"
+        className="mb-5"
+      />
 
       <div className="mb-6">
         <h1 className="text-3xl font-bold tracking-tight text-text">Check In Members</h1>

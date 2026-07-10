@@ -4,9 +4,8 @@ import { QRCodeSVG } from 'qrcode.react'
 import { useRouter } from 'next/navigation'
 import { useState } from 'react'
 import IconLabel, { CheckInTypeBadge, ScopeBadge } from '@/app/components/IconLabel'
-import { POINT_COLORS } from '@/utils/constants'
 import { formatEventDate, isEventPast } from '@/utils/datetime'
-import { Users } from 'lucide-react'
+import { Calendar, MapPin, Star, Users } from 'lucide-react'
 
 interface Event {
   id: string
@@ -81,11 +80,9 @@ export default function OfficerEventsClient({ events, attendanceCounts, semester
                     </span>
                   )}
                 </div>
-                <div className="mt-1 flex flex-wrap gap-2 text-xs text-subtitle">
-                  <span>
-                    📅 {formatEventDate(event.starts_at)}
-                  </span>
-                  {event.location && <span>📍 {event.location}</span>}
+                <div className="mt-1 flex flex-wrap items-center gap-2 text-xs text-subtitle">
+                  <IconLabel icon={Calendar} label={formatEventDate(event.starts_at)} size="sm" />
+                  {event.location && <IconLabel icon={MapPin} label={event.location} size="sm" />}
                   <span className="rounded-md bg-bg px-2 py-0.5">{event.category}</span>
                   <span className="rounded-md bg-bg px-2 py-0.5">
                     <ScopeBadge scope={event.scope} />
@@ -151,8 +148,14 @@ export default function OfficerEventsClient({ events, attendanceCounts, semester
                 level="H"
               />
             </div>
-            <p className="mt-4 text-sm text-subtitle">
-              📅 {formatEventDate(qrEvent.starts_at)} · ⭐ {qrEvent.point_value} pt
+            <p className="mt-4 flex flex-wrap items-center justify-center gap-3 text-sm text-subtitle">
+              <IconLabel icon={Calendar} label={formatEventDate(qrEvent.starts_at)} size="sm" />
+              <IconLabel
+                icon={Star}
+                label={`${qrEvent.point_value} pt`}
+                size="sm"
+                iconClassName="text-primary"
+              />
             </p>
             <div className="mt-5 flex justify-center gap-3">
               <button

@@ -1,6 +1,7 @@
 'use client'
 
 import { useRouter } from 'next/navigation'
+import BackLink from '@/app/components/BackLink'
 import AccountLinkBadge from '@/app/(dashboard)/(officer)/officer/members/components/AccountLinkBadge'
 import MemberAvatar from '@/app/components/MemberAvatar'
 import { CATEGORY_COLORS, CHECKIN_METHOD_LABELS, POINT_BUCKET_LABELS } from '@/utils/constants'
@@ -62,7 +63,7 @@ export default function MemberDetailClient({ member, attendance, history }: Prop
 
   return (
     <div className="mx-auto max-w-3xl px-6 py-8 lg:px-8">
-      <button onClick={() => router.back()} className="mb-5 text-sm text-subtitle hover:text-primary">← Back</button>
+      <BackLink onClick={() => router.back()} className="mb-5" />
 
       <div className="mb-6 flex flex-col gap-4 rounded-4xl border border-home-border bg-white p-6 shadow-sm sm:flex-row sm:items-center">
         <MemberAvatar

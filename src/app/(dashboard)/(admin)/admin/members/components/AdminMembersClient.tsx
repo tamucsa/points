@@ -1,5 +1,6 @@
 'use client'
 import { useRef, useState } from 'react'
+import { FileText } from 'lucide-react'
 import { activateMember, importMembers, type ImportMode, type JtChange } from '@/app/actions/members'
 import MemberAvatar from '@/app/components/MemberAvatar'
 
@@ -359,8 +360,8 @@ export default function AdminMembersClient({ pending: initialPending, jtFamilies
                   : 'border-home-border bg-bg hover:border-primary/40 hover:bg-white'
             }`}
           >
-            <div className="mb-3 flex h-12 w-12 items-center justify-center rounded-2xl bg-primary/10 text-xl">
-              📄
+            <div className="mb-3 flex h-12 w-12 items-center justify-center rounded-2xl bg-primary/10">
+              <FileText className="size-6 text-primary" aria-hidden />
             </div>
             {importing ? (
               <>
