@@ -4,8 +4,10 @@ import { useRouter } from 'next/navigation'
 import BackLink from '@/app/components/BackLink'
 import AccountLinkBadge from '@/app/(dashboard)/(officer)/officer/members/components/AccountLinkBadge'
 import MemberAvatar from '@/app/components/MemberAvatar'
+import EmptyState from '@/app/components/EmptyState'
 import { CATEGORY_COLORS, CHECKIN_METHOD_LABELS, POINT_BUCKET_LABELS } from '@/utils/constants'
 import { formatEventSchedule } from '@/utils/datetime'
+import { Calendar } from 'lucide-react'
 
 interface Member {
   id: string
@@ -109,7 +111,12 @@ export default function MemberDetailClient({ member, attendance, history }: Prop
       <h2 className="mb-3 text-lg font-bold text-text">This Semester</h2>
       <div className="mb-6 overflow-hidden rounded-4xl border border-home-border bg-white shadow-sm">
         {attendance.length === 0 && (
-          <div className="px-8 py-10 text-center text-sm text-subtitle">No events attended yet.</div>
+          <EmptyState
+            icon={Calendar}
+            title="No events attended yet"
+            description="Attendance records will show up here after this member checks in."
+            compact
+          />
         )}
         {attendance.map(row => {
           const catColor = CATEGORY_COLORS[row.events?.category] ?? CATEGORY_COLORS.default

@@ -19,8 +19,8 @@ export const SCOPE_LABELS: Record<string, string> = {
 }
 
 export const CHECKIN_TYPE_LABELS: Record<string, string> = {
-  officer: 'Officer',
-  self: 'QR Code',
+  officer: 'Officer Check-in',
+  self: 'Self Check-in',
   rsvp_required: 'RSVP',
 }
 
@@ -40,6 +40,7 @@ export const POINT_BUCKET_LABELS = {
 export const CATEGORY_COLORS: Record<string, string> = {
   'CSA-Wide': '#4779B8',
   'Jiating Olympics': '#f7934f',
+  'Jiating Event': '#6b7fd7',
   Sports: '#4fc787',
   'Sports Spectator': '#4fc787',
   'General Meeting': '#e8b84b',

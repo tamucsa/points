@@ -9,7 +9,7 @@ import {
   Shield,
   Star,
   Trophy,
-  User,
+  UserCheck,
   Users,
 } from 'lucide-react'
 
@@ -26,13 +26,13 @@ export const SCOPE_ICONS: Record<string, LucideIcon> = {
 }
 
 export const CHECKIN_TYPE_ICONS: Record<string, LucideIcon> = {
-  officer: User,
+  officer: UserCheck,
   self: QrCode,
   rsvp_required: ClipboardList,
 }
 
 export const CHECKIN_METHOD_ICONS: Record<string, LucideIcon> = {
-  officer: User,
+  officer: UserCheck,
   qr_scan: QrCode,
   self: QrCode,
 }

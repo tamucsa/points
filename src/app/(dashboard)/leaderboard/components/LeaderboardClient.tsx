@@ -2,7 +2,10 @@
 
 import JtFamilyBadge from '@/app/(dashboard)/leaderboard/components/JtFamilyBadge'
 import MemberAvatar from '@/app/components/MemberAvatar'
+import EmptyState from '@/app/components/EmptyState'
+import PageHeader from '@/app/components/PageHeader'
 import LeaderboardTabs from '@/app/(dashboard)/leaderboard/components/LeaderboardTabs'
+import { Users } from 'lucide-react'
 
 interface Member {
   id: string
@@ -21,12 +24,11 @@ interface Props {
 export default function LeaderboardClient({ members, semester }: Props) {
   return (
     <div className="mx-auto max-w-2xl px-6 py-8 lg:px-8">
-      <div className="mb-2">
-        <h1 className="text-3xl font-bold tracking-tight text-text">Leaderboard</h1>
-        <div className="mt-1 text-sm text-subtitle">
-          {semester?.name ?? 'Current Semester'} · Top 10
-        </div>
-      </div>
+      <PageHeader
+        title="Leaderboard"
+        subtitle={`${semester?.name ?? 'Current Semester'} · Top 10`}
+        className="mb-2"
+      />
 
       <LeaderboardTabs />
 
@@ -38,9 +40,13 @@ export default function LeaderboardClient({ members, semester }: Props) {
         </div>
 
         {members.length === 0 && (
-          <div className="px-10 py-12 text-center text-sm text-subtitle">
-            No active members yet.
-          </div>
+          <EmptyState
+            icon={Users}
+            title="No active members yet"
+            description="Members will appear here once they're activated for the semester."
+            compact
+            className="px-10 py-12"
+          />
         )}
 
         {members.map((m, i) => {

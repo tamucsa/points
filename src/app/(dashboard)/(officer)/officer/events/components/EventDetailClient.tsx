@@ -7,9 +7,10 @@ import { publishJiatingStandings } from '@/app/actions/jt-standings'
 import { updateEventRsvp } from '@/app/actions/events'
 import MemberAvatar from '@/app/components/MemberAvatar'
 import IconLabel, { CheckInMethodBadge } from '@/app/components/IconLabel'
+import EmptyState from '@/app/components/EmptyState'
 import { isGeneralMeetingCategory } from '@/utils/events'
 import { formatEventSchedule } from '@/utils/datetime'
-import { Clock, MapPin } from 'lucide-react'
+import { ClipboardList, Clock, MapPin } from 'lucide-react'
 import { inputClassName, labelClassName } from '@/utils/constants'
 
 interface Event {
@@ -50,6 +51,15 @@ interface Props {
   attendance: AttendanceRow[]
   publishedSnapshot: PublishedSnapshot | null
 }
+
+const btnPrimaryClassName =
+  'rounded-xl bg-primary px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-[#35679e] disabled:cursor-not-allowed disabled:opacity-60 sm:py-2'
+
+const btnPrimaryOutlineClassName =
+  'rounded-xl border border-primary/30 bg-primary/10 px-4 py-2.5 text-sm font-semibold text-primary transition hover:border-primary/50 hover:bg-primary/20 disabled:cursor-not-allowed disabled:opacity-60 sm:py-2'
+
+const btnSecondaryClassName =
+  'rounded-xl border border-home-border bg-white px-4 py-2.5 text-sm font-semibold text-subtitle transition hover:border-primary/30 hover:bg-bg hover:text-text sm:py-2'
 
 export default function EventDetailClient({ event, attendance, publishedSnapshot }: Props) {
   const router = useRouter()
@@ -134,16 +144,18 @@ export default function EventDetailClient({ event, attendance, publishedSnapshot
         <div className="mt-5 flex flex-wrap gap-2">
           {(event.check_in_type === 'officer' || event.check_in_type === 'rsvp_required') && (
             <button
+              type="button"
               onClick={() => router.push(`/officer/events/${event.id}/checkin`)}
-              className="rounded-xl bg-primary px-4 py-2 text-sm font-semibold text-white"
+              className={btnPrimaryClassName}
             >
               Check In Members
             </button>
           )}
           {event.check_in_type === 'self' && event.check_in_code && (
             <button
+              type="button"
               onClick={() => window.open(`/officer/events/${event.id}/qr`, '_blank')}
-              className="rounded-xl border border-primary/30 bg-primary/10 px-4 py-2 text-sm font-semibold text-primary"
+              className={btnPrimaryOutlineClassName}
             >
               Open QR Full Screen
             </button>
@@ -153,7 +165,7 @@ export default function EventDetailClient({ event, attendance, publishedSnapshot
               href={event.rsvp_url}
               target="_blank"
               rel="noopener noreferrer"
-              className="rounded-xl border border-home-border px-4 py-2 text-sm font-semibold text-subtitle"
+              className={btnSecondaryClassName}
             >
               View RSVP Form
             </a>
@@ -163,7 +175,7 @@ export default function EventDetailClient({ event, attendance, publishedSnapshot
               type="button"
               onClick={() => void handlePublishStandings()}
               disabled={publishing}
-              className="rounded-xl border border-primary/30 bg-primary/10 px-4 py-2 text-sm font-semibold text-primary transition hover:bg-primary/15 disabled:cursor-not-allowed disabled:opacity-60"
+              className={btnPrimaryOutlineClassName}
             >
               {publishing ? 'Publishing…' : 'Publish Jiating standings'}
             </button>
@@ -210,7 +222,7 @@ export default function EventDetailClient({ event, attendance, publishedSnapshot
               type="button"
               onClick={() => void handleSaveRsvp()}
               disabled={rsvpSaving}
-              className="rounded-xl bg-primary px-4 py-2 text-sm font-semibold text-white disabled:opacity-60"
+              className={btnPrimaryClassName}
             >
               {rsvpSaving ? 'Saving…' : 'Save RSVP details'}
             </button>
@@ -244,7 +256,12 @@ export default function EventDetailClient({ event, attendance, publishedSnapshot
 
       <div className="overflow-hidden rounded-4xl border border-home-border bg-white shadow-sm">
         {attendance.length === 0 && (
-          <div className="px-8 py-10 text-center text-sm text-subtitle">No check-ins yet.</div>
+          <EmptyState
+            icon={ClipboardList}
+            title="No check-ins yet"
+            description="Members will appear here once they check in to this event."
+            compact
+          />
         )}
         {attendance.map(row => {
           const displayName = row.members?.full_name ?? 'Unknown member'

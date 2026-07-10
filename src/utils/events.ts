@@ -3,6 +3,7 @@ export const EVENT_CATEGORIES = [
   'General Meeting',
   'CSA-Wide',
   'Jiating Olympics',
+  'Jiating Event',
   'Mixer',
   'Sports',
   'Philanthropy',
@@ -32,6 +33,7 @@ export const CATEGORY_CONFIG: Record<EventCategory, CategoryConfig> = {
   'General Meeting': { pointValue: 2, scope: 'org', checkInType: 'self' },
   'CSA-Wide': { pointValue: 3, scope: 'org' },
   'Jiating Olympics': { pointValue: 2, scope: 'jt_shared', checkInType: 'officer' },
+  'Jiating Event': { pointValue: 1, scope: 'jt_specific', checkInType: 'officer' },
   'Mixer': { pointValue: 2, scope: 'jt_shared', checkInType: 'officer' },
   'Sports': { pointValue: 1, scope: 'org', checkInType: 'officer', allowSpectators: true },
   'Philanthropy': { pointValue: 3, scope: 'org' },
@@ -49,9 +51,9 @@ const SCOPE_LABELS: Record<EventScope, string> = {
 }
 
 const CHECKIN_LABELS: Record<CheckInType, string> = {
-  officer: 'Officer check-in',
-  self: 'QR / self check-in',
-  rsvp_required: 'RSVP required',
+  officer: 'Officer Check-in',
+  self: 'Self Check-in',
+  rsvp_required: 'RSVP',
 }
 
 export function getCategoryConfig(category: string): CategoryConfig | null {

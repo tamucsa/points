@@ -5,6 +5,7 @@ import { useState } from 'react'
 import BackLink from '@/app/components/BackLink'
 import { createEvent } from '@/app/actions/events'
 import IconLabel, { CheckInTypeBadge, ScopeBadge } from '@/app/components/IconLabel'
+import PageHeader from '@/app/components/PageHeader'
 import {
   EVENT_CATEGORIES,
   applyCategoryDefaults,
@@ -29,8 +30,8 @@ interface Props {
 
 const DEFAULT_CATEGORY: EventCategory = 'General Meeting'
 
-const scopeBtn = (active: boolean) =>
-  `flex-1 rounded-xl border px-3 py-2.5 text-sm font-medium transition ${
+const checkInTypeBtn = (active: boolean) =>
+  `inline-flex min-h-11 w-full items-center justify-center rounded-xl border px-3 py-2.5 text-sm font-medium leading-none transition ${
     active
       ? 'border-primary bg-primary/10 text-primary'
       : 'border-home-border bg-white text-subtitle hover:border-primary/30'
@@ -107,7 +108,7 @@ export default function NewEventClient({
       eventDate: form.event_date,
       startTime: form.start_time,
       endTime: form.end_time.trim() || null,
-      location: form.location.trim() || null,
+      location: form.location.trim(),
       description: form.description.trim() || null,
       rsvpUrl: isRSVP && form.rsvp_url ? form.rsvp_url.trim() : null,
       rsvpDeadline: isRSVP && form.rsvp_deadline ? form.rsvp_deadline : null,
@@ -126,8 +127,7 @@ export default function NewEventClient({
   return (
     <div className="mx-auto max-w-2xl px-6 py-8 lg:px-8">
       <BackLink onClick={() => router.back()} />
-      <h1 className="text-3xl font-bold text-text">New Event</h1>
-      <p className="mt-1 text-sm text-subtitle">{semesterName}</p>
+      <PageHeader title="New Event" subtitle={semesterName} />
 
       <div className="mt-6 flex flex-col gap-5 rounded-4xl border border-home-border bg-white p-6 shadow-sm">
         <div>
@@ -178,8 +178,8 @@ export default function NewEventClient({
             <input type="time" className={inputClassName} value={form.end_time} onChange={e => set('end_time', e.target.value)} />
           </div>
           <div>
-            <label className={labelClassName}>Location</label>
-            <input className={inputClassName} placeholder="e.g. MSC 2406" value={form.location} onChange={e => set('location', e.target.value)} />
+            <label className={labelClassName}>Location *</label>
+            <input className={inputClassName} placeholder="e.g. MSC 2406" value={form.location} onChange={e => set('location', e.target.value)} required />
           </div>
         </div>
 
@@ -196,7 +196,7 @@ export default function NewEventClient({
         {!fixedCheckIn && (
           <div>
             <label className={labelClassName}>Check-in Type *</label>
-            <div className="flex flex-wrap gap-2">
+            <div className="grid gap-2 sm:grid-cols-3">
               {(
                 [
                   { value: 'officer', label: CHECKIN_TYPE_LABELS.officer, icon: CHECKIN_TYPE_ICONS.officer },
@@ -204,11 +204,17 @@ export default function NewEventClient({
                   { value: 'rsvp_required', label: CHECKIN_TYPE_LABELS.rsvp_required, icon: CHECKIN_TYPE_ICONS.rsvp_required },
                 ] as const
               ).map(opt => (
-                <button key={opt.value} type="button" onClick={() => set('check_in_type', opt.value)} className={scopeBtn(form.check_in_type === opt.value)}>
+                <button
+                  key={opt.value}
+                  type="button"
+                  onClick={() => set('check_in_type', opt.value)}
+                  className={checkInTypeBtn(form.check_in_type === opt.value)}
+                >
                   <IconLabel
                     icon={opt.icon}
                     label={opt.label}
                     size="sm"
+                    className="justify-center"
                     iconClassName={form.check_in_type === opt.value ? 'text-primary' : 'text-subtitle'}
                     labelClassName={form.check_in_type === opt.value ? 'text-primary' : ''}
                   />

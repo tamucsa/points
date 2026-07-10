@@ -188,7 +188,7 @@ export default function AdminMembersClient({ pending: initialPending, jtFamilies
       <div className="mb-6">
         <h1 className="text-3xl font-bold tracking-tight text-text">Member Admin</h1>
         <div className="mt-1 text-sm text-subtitle">
-          Admin only
+          {pending.length} pending JT assignment{pending.length === 1 ? '' : 's'} · CSV import
         </div>
       </div>
 

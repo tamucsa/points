@@ -3,6 +3,9 @@
 import { useRouter } from 'next/navigation'
 import JtFamilyBadge from '@/app/(dashboard)/leaderboard/components/JtFamilyBadge'
 import LeaderboardTabs from '@/app/(dashboard)/leaderboard/components/LeaderboardTabs'
+import EmptyState from '@/app/components/EmptyState'
+import PageHeader from '@/app/components/PageHeader'
+import { Medal } from 'lucide-react'
 
 interface Snapshot {
   id: string
@@ -45,12 +48,11 @@ export default function StandingsLeaderboardClient({
 
   return (
     <div className="mx-auto max-w-2xl px-6 py-8 lg:px-8">
-      <div className="mb-2">
-        <h1 className="text-3xl font-bold tracking-tight text-text">Leaderboard</h1>
-        <div className="mt-1 text-sm text-subtitle">
-          {semester?.name ?? 'Current Semester'} · Jiating standings after General Meeting
-        </div>
-      </div>
+      <PageHeader
+        title="Leaderboard"
+        subtitle={`${semester?.name ?? 'Current Semester'} · Jiating standings after General Meeting`}
+        className="mb-2"
+      />
 
       <LeaderboardTabs />
 
@@ -97,9 +99,13 @@ export default function StandingsLeaderboardClient({
         </div>
 
         {rows.length === 0 ? (
-          <div className="px-8 py-12 text-center text-sm leading-6 text-subtitle">
-            No standings published yet for this semester.
-          </div>
+          <EmptyState
+            icon={Medal}
+            title="No standings published yet for this semester"
+            description="Jiating standings will be published after the first general meeting after registration closes."
+            compact
+            className="px-8 py-12"
+          />
         ) : (
           rows.map(row => (
             <div

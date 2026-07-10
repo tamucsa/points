@@ -1,9 +1,12 @@
 'use client'
 import { useState } from 'react'
 import IconLabel, { CheckInTypeBadge } from '@/app/components/IconLabel'
+import EmptyState from '@/app/components/EmptyState'
+import { EventMetaChip, EventMetaItem, EventMetaRow } from '@/app/components/EventMeta'
+import PageHeader from '@/app/components/PageHeader'
 import { isJiatingOlympicsCategory, isMixerCategory, isSportsRelatedCategory } from '@/utils/events'
 import { formatEventSchedule, isEventPast } from '@/utils/datetime'
-import { Building2, Clock, Handshake, Home, MapPin, Medal, Trophy } from 'lucide-react'
+import { Building2, Calendar, Clock, Handshake, Home, MapPin, Medal, Trophy } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
 
 interface Event {
@@ -48,28 +51,28 @@ function EventCard({ event, attended }: { event: Event, attended: boolean }) {
       </div>
 
       {/* Event info */}
-      <div style={{ flex: 1 }}>
-        <div className="flex items-center gap-2">
-          <span className="text-sm font-semibold text-text">
-            {event.name}
-          </span>
+      <div className="min-w-0 flex-1">
+        <div className="flex flex-wrap items-center gap-2">
+          <span className="text-sm font-semibold text-text">{event.name}</span>
           {attended && (
-            <span className="rounded-full bg-primary/10 px-2 py-0.5 text-[11px] font-semibold text-primary">
+            <span className="inline-flex items-center rounded-full bg-primary/10 px-2 py-0.5 text-[11px] font-semibold leading-none text-primary">
               ✓ Attended
             </span>
           )}
         </div>
-        <div className="mt-1 flex flex-wrap gap-2 text-xs text-subtitle">
-          <span>
+        <EventMetaRow className="mt-2">
+          <EventMetaItem>
             <IconLabel icon={Clock} label={formatEventSchedule(event.starts_at, event.ends_at)} size="sm" />
-          </span>
+          </EventMetaItem>
           {event.location && (
-            <IconLabel icon={MapPin} label={event.location} size="sm" />
+            <EventMetaItem>
+              <IconLabel icon={MapPin} label={event.location} size="sm" />
+            </EventMetaItem>
           )}
-          <span className="rounded-md bg-bg px-2 py-0.5 text-[11px] text-subtitle">
+          <EventMetaChip>
             <CheckInTypeBadge checkInType={event.check_in_type} />
-          </span>
-        </div>
+          </EventMetaChip>
+        </EventMetaRow>
       </div>
 
       {/* RSVP button */}
@@ -128,19 +131,19 @@ export default function MemberEventsClient({ events, attendedIds, semester }: Pr
   return (
     <div className="mx-auto max-w-5xl px-6 py-8 lg:px-8">
 
-      {/* Header */}
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold tracking-tight text-text">Events</h1>
-        <div className="mt-1 text-sm text-subtitle">
-          {semester?.name ?? 'Current Semester'}
-        </div>
-      </div>
+      <PageHeader
+        title="Events"
+        subtitle={semester?.name ?? 'Current Semester'}
+        className="mb-8"
+      />
 
       {/* Upcoming sections */}
       {sections.length === 0 && (
-        <div className="rounded-4xl border border-home-border bg-white px-10 py-12 text-center text-sm text-subtitle shadow-sm">
-          No upcoming events this semester.
-        </div>
+        <EmptyState
+          icon={Calendar}
+          title="No upcoming events this semester"
+          description="Check back later — officers will post events here as they're scheduled."
+        />
       )}
 
       {sections.map(section => (

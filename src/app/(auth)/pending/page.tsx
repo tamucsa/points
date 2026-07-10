@@ -1,4 +1,6 @@
+import { Hourglass } from 'lucide-react'
 import { redirect } from 'next/navigation'
+import PublicPageShell from '@/app/(auth)/components/PublicPageShell'
 import { createServerSupabase } from '@/utils/supabase/server'
 
 export default async function PendingPage() {
@@ -21,12 +23,8 @@ export default async function PendingPage() {
   }
 
   return (
-    <div className="relative min-h-screen overflow-hidden bg-bg px-6 py-8 text-text">
-      <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(71,121,184,0.16),transparent_34%),radial-gradient(circle_at_bottom_right,rgba(240,176,195,0.22),transparent_38%)]" />
-      <div className="absolute -left-24 top-16 h-44 w-44 rounded-full bg-primary/10 blur-3xl" />
-      <div className="absolute -right-20 bottom-10 h-56 w-56 rounded-full bg-accent/20 blur-3xl" />
-
-      <div className="relative mx-auto flex min-h-[calc(100vh-4rem)] w-full max-w-4xl items-center justify-center">
+    <PublicPageShell showFooter={false}>
+      <div className="flex min-h-[calc(100vh-5rem)] items-center justify-center">
         <div className="w-full max-w-xl overflow-hidden rounded-4xl border border-home-border bg-white shadow-[0_24px_80px_rgba(15,23,42,0.08)]">
           <div className="bg-[linear-gradient(135deg,rgba(71,121,184,0.08),rgba(255,255,255,0.9)_52%,rgba(240,176,195,0.16))] p-8 sm:p-10 lg:p-12">
             <div className="mb-6 inline-flex items-center gap-2 rounded-full border border-primary/15 bg-white/80 px-4 py-2 text-xs font-semibold uppercase tracking-[0.24em] text-primary backdrop-blur">
@@ -34,7 +32,9 @@ export default async function PendingPage() {
             </div>
 
             <div className="text-center">
-              <div className="mb-5 text-5xl">⏳</div>
+              <div className="mx-auto mb-5 flex h-14 w-14 items-center justify-center rounded-2xl bg-primary/10">
+                <Hourglass className="size-7 text-primary" aria-hidden />
+              </div>
               <h1 className="text-3xl font-bold tracking-normal text-text sm:text-5xl">
                 You&apos;re registered!
               </h1>
@@ -42,7 +42,7 @@ export default async function PendingPage() {
                 This dashboard will be available to you once you join your jiating after the reveal! You&apos;ll get full access to the leaderboard and events once that&apos;s done.
               </p>
               <p className="mx-auto mt-4 max-w-lg text-base leading-7 text-subtitle sm:text-lg">
-               Note that this is not the same as the registration form. If you haven&apos;t filled out the registration form yet and payed dues, please make sure to complete that!
+                Note that this is not the same as the registration form. If you haven&apos;t filled out the registration form yet and payed dues, please make sure to complete that!
               </p>
             </div>
 
@@ -63,6 +63,6 @@ export default async function PendingPage() {
           </div>
         </div>
       </div>
-    </div>
+    </PublicPageShell>
   )
 }

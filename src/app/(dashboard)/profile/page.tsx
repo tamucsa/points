@@ -26,7 +26,7 @@ export default async function ProfilePage() {
 
   const { data: semester } = await supabase
     .from('semesters')
-    .select('id')
+    .select('id, name')
     .eq('is_active', true)
     .maybeSingle()
 
@@ -75,6 +75,7 @@ export default async function ProfilePage() {
       points={points}
       attendance={normalizedAttendance}
       history={history ?? []}
+      semesterName={semester?.name ?? null}
     />
   )
 }

@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import { useState } from 'react'
 import AccountLinkBadge from '@/app/(dashboard)/(officer)/officer/members/components/AccountLinkBadge'
 import MemberAvatar from '@/app/components/MemberAvatar'
+import PageHeader from '@/app/components/PageHeader'
 import { inputClassName, OFFICER_MEMBERS_PAGE_SIZE, POINT_BUCKET_LABELS } from '@/utils/constants'
 
 interface Member {
@@ -81,15 +82,17 @@ export default function MembersClient({
 
   return (
     <div className="mx-auto max-w-5xl px-6 py-8 lg:px-8">
-      <div className="mb-6">
-        <h1 className="text-3xl font-bold tracking-tight text-text">Members</h1>
-        <p className="mt-1 text-sm text-subtitle">
-          {semester?.name} · {totalCount} active members
-          {notSignedInCount > 0 && (
-            <> · {notSignedInCount} haven&apos;t signed in with Google yet</>
-          )}
-        </p>
-      </div>
+      <PageHeader
+        title="Members"
+        subtitle={
+          <>
+            {semester?.name} · {totalCount} active members
+            {notSignedInCount > 0 && (
+              <> · {notSignedInCount} haven&apos;t signed in with Google yet</>
+            )}
+          </>
+        }
+      />
 
       <form
         className="mb-4 flex flex-col gap-3 lg:flex-row"

@@ -23,7 +23,7 @@ export interface CreateEventInput {
   eventDate: string
   startTime: string
   endTime: string | null
-  location: string | null
+  location: string
   description: string | null
   rsvpUrl: string | null
   rsvpDeadline: string | null
@@ -53,6 +53,7 @@ export async function createEvent(input: CreateEventInput) {
   if (!input.name.trim()) return { success: false, error: 'Event name is required.' }
   if (!input.eventDate) return { success: false, error: 'Event date is required.' }
   if (!input.startTime) return { success: false, error: 'Start time is required.' }
+  if (!input.location.trim()) return { success: false, error: 'Location is required.' }
 
   const config = getCategoryConfig(input.category)
   if (!config) return { success: false, error: 'Invalid event category.' }
@@ -95,6 +96,7 @@ export async function createEvent(input: CreateEventInput) {
   const isRSVP = checkInType === 'rsvp_required'
   const isJTSpecific = scope === 'jt_specific'
   const hasSpectators = config.allowSpectators === true && input.hasSpectators
+  const location = input.location.trim()
 
   const { data: event, error: eventError } = await supabase
     .from('events')
@@ -108,7 +110,7 @@ export async function createEvent(input: CreateEventInput) {
       check_in_type: checkInType,
       starts_at: startsAt,
       ends_at: endsAt,
-      location: input.location,
+      location,
       description: input.description,
       rsvp_url: isRSVP ? input.rsvpUrl : null,
       rsvp_deadline: isRSVP ? input.rsvpDeadline : null,
@@ -132,7 +134,7 @@ export async function createEvent(input: CreateEventInput) {
       check_in_type: 'self',
       starts_at: startsAt,
       ends_at: endsAt,
-      location: input.location,
+      location,
       created_by: input.createdBy,
       parent_event_id: event.id,
     })

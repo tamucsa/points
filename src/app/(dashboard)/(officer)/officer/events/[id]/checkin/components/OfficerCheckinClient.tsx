@@ -4,7 +4,10 @@ import { useRouter } from 'next/navigation'
 import { useMemo, useState } from 'react'
 import { officerCheckIn } from '@/app/actions/attendance'
 import BackLink from '@/app/components/BackLink'
+import EmptyState from '@/app/components/EmptyState'
+import PageHeader from '@/app/components/PageHeader'
 import MemberAvatar from '@/app/components/MemberAvatar'
+import { Users } from 'lucide-react'
 
 interface Event {
   id: string
@@ -72,10 +75,10 @@ export default function OfficerCheckinClient({ event, members, checkedInIds }: P
         className="mb-5"
       />
 
-      <div className="mb-6">
-        <h1 className="text-3xl font-bold tracking-tight text-text">Check In Members</h1>
-        <p className="mt-1 text-sm text-subtitle">{event.name} · {checkedIn.size} checked in</p>
-      </div>
+      <PageHeader
+        title="Check In Members"
+        subtitle={`${event.name} · ${checkedIn.size} checked in`}
+      />
 
       <input
         placeholder="Search by name or email…"
@@ -92,7 +95,12 @@ export default function OfficerCheckinClient({ event, members, checkedInIds }: P
 
       <div className="overflow-hidden rounded-4xl border border-home-border bg-white shadow-sm">
         {filtered.length === 0 && (
-          <div className="px-8 py-10 text-center text-sm text-subtitle">No members found.</div>
+          <EmptyState
+            icon={Users}
+            title="No members found"
+            description={search ? 'Try a different name or email.' : 'No active members to check in.'}
+            compact
+          />
         )}
         {filtered.map(m => {
           const isCheckedIn = checkedIn.has(m.id)

@@ -31,7 +31,7 @@ export default function IconLabel({
   labelClassName = '',
 }: IconLabelProps) {
   return (
-    <span className={`inline-flex items-center gap-1.5 ${className}`}>
+    <span className={`inline-flex items-center gap-1.5 leading-none ${className}`}>
       <Icon className={`shrink-0 ${ICON_SIZES[size]} ${iconClassName}`} aria-hidden />
       <span className={labelClassName}>{label}</span>
     </span>
@@ -50,7 +50,7 @@ export function ScopeBadge({ scope, className = '' }: { scope: string; className
   const label = SCOPE_LABELS[scope] ?? scope
   if (!Icon) return <span className={className}>{label}</span>
   return (
-    <span className={className}>
+    <span className={`inline-flex items-center leading-none ${className}`}>
       <IconLabel icon={Icon} label={label} size="sm" />
     </span>
   )
@@ -61,7 +61,7 @@ export function CheckInTypeBadge({ checkInType, className = '' }: BadgeProps) {
   const label = CHECKIN_TYPE_LABELS[checkInType ?? ''] ?? checkInType
   if (!Icon || !label) return null
   return (
-    <span className={className}>
+    <span className={`inline-flex items-center leading-none ${className}`}>
       <IconLabel icon={Icon} label={label} size="sm" />
     </span>
   )
@@ -72,7 +72,7 @@ export function CheckInMethodBadge({ checkInMethod, className = '' }: BadgeProps
   const label = CHECKIN_METHOD_LABELS[checkInMethod ?? ''] ?? checkInMethod
   if (!Icon || !label) return <span className={className}>{label}</span>
   return (
-    <span className={className}>
+    <span className={`inline-flex items-center leading-none ${className}`}>
       <IconLabel icon={Icon} label={label} size="sm" />
     </span>
   )

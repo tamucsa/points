@@ -4,6 +4,9 @@ import { POINT_BUCKET_LABELS } from '@/utils/constants'
 import { formatEventSchedule } from '@/utils/datetime'
 import JtFamilyBadge from '@/app/(dashboard)/leaderboard/components/JtFamilyBadge'
 import MemberAvatar from '@/app/components/MemberAvatar'
+import EmptyState from '@/app/components/EmptyState'
+import PageHeader from '@/app/components/PageHeader'
+import { Calendar } from 'lucide-react'
 
 interface Member {
   id: string
@@ -48,6 +51,7 @@ interface Props {
   points: Points | null
   attendance: AttendanceRow[]
   history: SemmarySummary[]
+  semesterName: string | null
 }
 
 const CATEGORY_COLORS: Record<string, string> = {
@@ -64,7 +68,7 @@ const CHECKIN_LABELS: Record<string, string> = {
   self:    'Self',
 }
 
-export default function ProfileClient({ member, points, attendance, history }: Props) {
+export default function ProfileClient({ member, points, attendance, history, semesterName }: Props) {
   const displayName = member.full_name
   const color = points?.jt_color ?? '#4779B8'
 
@@ -77,8 +81,13 @@ export default function ProfileClient({ member, points, attendance, history }: P
 
   return (
     <div className="mx-auto max-w-5xl px-6 py-8 lg:px-8">
+      <PageHeader
+        title="My Points"
+        subtitle={semesterName ?? 'Current Semester'}
+        className="mb-6"
+      />
 
-      {/* Header */}
+      {/* Profile card */}
       <div className="mb-8 flex flex-col gap-5 rounded-4xl border border-home-border bg-white p-6 shadow-sm sm:flex-row sm:items-center">
         <MemberAvatar
           name={displayName}
@@ -134,9 +143,12 @@ export default function ProfileClient({ member, points, attendance, history }: P
         </h2>
         <div className="overflow-hidden rounded-4xl border border-home-border bg-white shadow-sm">
           {attendance.length === 0 && (
-            <div className="px-8 py-10 text-center text-sm text-subtitle">
-              No events attended yet this semester.
-            </div>
+            <EmptyState
+              icon={Calendar}
+              title="No events attended yet this semester"
+              description="Attend CSA events to start earning points."
+              compact
+            />
           )}
           {attendance.map((row, i) => {
             const cat = row.events?.category ?? 'default'
