@@ -1,13 +1,12 @@
 'use client'
 
-import { useRouter } from 'next/navigation'
 import { useMemo, useState } from 'react'
-import { officerCheckIn } from '@/app/actions/attendance'
+import { officerCheckIn, officerRemoveCheckIn } from '@/app/actions/attendance'
 import BackLink from '@/app/components/BackLink'
 import EmptyState from '@/app/components/EmptyState'
 import PageHeader from '@/app/components/PageHeader'
 import MemberAvatar from '@/app/components/MemberAvatar'
-import { Users } from 'lucide-react'
+import { UserX, Users } from 'lucide-react'
 
 interface Event {
   id: string
@@ -18,6 +17,8 @@ interface Event {
   ends_at: string | null
   semester_id: string
   check_in_type: string
+  scope: string
+  jt_family_name: string | null
 }
 
 interface Member {
@@ -25,8 +26,8 @@ interface Member {
   full_name: string
   email: string
   profile_image_url: string | null
-  jt_family: string | null
   jt_color: string | null
+  role_label: 'Member' | 'Officer'
 }
 
 interface Props {
@@ -36,11 +37,13 @@ interface Props {
 }
 
 export default function OfficerCheckinClient({ event, members, checkedInIds }: Props) {
-  const router = useRouter()
   const [search, setSearch] = useState('')
   const [checkedIn, setCheckedIn] = useState(checkedInIds)
   const [saving, setSaving] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
+  const [uncheckTarget, setUncheckTarget] = useState<Member | null>(null)
+  const [uncheckError, setUncheckError] = useState<string | null>(null)
+  const isJtSpecific = event.scope === 'jt_specific'
 
   const filtered = useMemo(() => {
     const q = search.toLowerCase()
@@ -49,6 +52,12 @@ export default function OfficerCheckinClient({ event, members, checkedInIds }: P
       m.email.toLowerCase().includes(q)
     )
   }, [members, search])
+
+  const closeUncheckModal = () => {
+    if (saving) return
+    setUncheckTarget(null)
+    setUncheckError(null)
+  }
 
   const checkInMember = async (memberId: string) => {
     if (checkedIn.has(memberId)) return
@@ -67,17 +76,44 @@ export default function OfficerCheckinClient({ event, members, checkedInIds }: P
     setSaving(null)
   }
 
+  const confirmRemoveCheckIn = async () => {
+    if (!uncheckTarget) return
+
+    setUncheckError(null)
+    setSaving(uncheckTarget.id)
+
+    const result = await officerRemoveCheckIn(event.id, uncheckTarget.id)
+
+    setSaving(null)
+    if (!result.success) {
+      setUncheckError(result.error ?? 'Failed to remove check-in.')
+      return
+    }
+
+    setCheckedIn(prev => {
+      const next = new Set(prev)
+      next.delete(uncheckTarget.id)
+      return next
+    })
+    setUncheckTarget(null)
+    setUncheckError(null)
+  }
+
   return (
     <div className="mx-auto max-w-3xl px-6 py-8 lg:px-8">
       <BackLink
-        onClick={() => router.push(`/officer/events/${event.id}`)}
+        href={`/officer/events/${event.id}`}
         label="Back to Event"
         className="mb-5"
       />
 
       <PageHeader
         title="Check In Members"
-        subtitle={`${event.name} · ${checkedIn.size} checked in`}
+        subtitle={
+          isJtSpecific && event.jt_family_name
+            ? `${event.name} · ${event.jt_family_name} only · ${checkedIn.size} checked in`
+            : `${event.name} · ${checkedIn.size} checked in`
+        }
       />
 
       <input
@@ -98,13 +134,20 @@ export default function OfficerCheckinClient({ event, members, checkedInIds }: P
           <EmptyState
             icon={Users}
             title="No members found"
-            description={search ? 'Try a different name or email.' : 'No active members to check in.'}
+            description={
+              search
+                ? 'Try a different name or email.'
+                : isJtSpecific && event.jt_family_name
+                  ? `No active members in ${event.jt_family_name}.`
+                  : 'No active members to check in.'
+            }
             compact
           />
         )}
         {filtered.map(m => {
           const isCheckedIn = checkedIn.has(m.id)
           const displayName = m.full_name
+          const isSaving = saving === m.id
           return (
             <div
               key={m.id}
@@ -120,26 +163,84 @@ export default function OfficerCheckinClient({ event, members, checkedInIds }: P
                   {displayName}
                 </div>
                 <div className="truncate text-xs text-subtitle">
-                  {m.email}{m.jt_family ? ` · ${m.jt_family}` : ''}
+                  {m.email} · {m.role_label}
                 </div>
               </div>
-              {isCheckedIn ? (
-                <span className="shrink-0 rounded-full bg-primary/10 px-3 py-1 text-xs font-semibold text-primary">
-                  ✓ Checked in
-                </span>
-              ) : (
-                <button
-                  onClick={() => checkInMember(m.id)}
-                  disabled={saving === m.id}
-                  className="shrink-0 rounded-xl bg-primary px-4 py-2 text-sm font-semibold text-white transition disabled:bg-[#9cb8d8]"
-                >
-                  {saving === m.id ? 'Saving…' : 'Check In'}
-                </button>
-              )}
+              <button
+                type="button"
+                onClick={() => {
+                  if (isCheckedIn) {
+                    setUncheckError(null)
+                    setUncheckTarget(m)
+                    return
+                  }
+                  void checkInMember(m.id)
+                }}
+                disabled={isSaving}
+                className={
+                  isCheckedIn
+                    ? 'shrink-0 rounded-xl border border-primary/30 bg-primary/10 px-4 py-2 text-sm font-semibold text-primary transition hover:border-primary/50 hover:bg-primary/20 disabled:opacity-60'
+                    : 'shrink-0 rounded-xl bg-primary px-4 py-2 text-sm font-semibold text-white transition hover:bg-[#35679e] disabled:bg-[#9cb8d8]'
+                }
+              >
+                {isSaving ? 'Saving…' : isCheckedIn ? '✓ Checked In' : 'Check In'}
+              </button>
             </div>
           )
         })}
       </div>
+
+      {uncheckTarget && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4"
+          onClick={closeUncheckModal}
+        >
+          <div
+            className="w-full max-w-md rounded-4xl border border-home-border bg-white p-6 shadow-xl sm:p-8"
+            onClick={e => e.stopPropagation()}
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="remove-checkin-title"
+          >
+            <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-2xl bg-[#fff4f4]">
+              <UserX className="size-5 text-[#c94b4b]" aria-hidden />
+            </div>
+            <h2 id="remove-checkin-title" className="text-center text-lg font-bold text-text">
+              Remove check-in?
+            </h2>
+            <p className="mt-2 text-center text-sm font-semibold text-text">
+              {uncheckTarget.full_name}
+            </p>
+            <p className="mt-3 text-center text-sm leading-6 text-subtitle">
+              This removes their attendance for {event.name} and deducts{' '}
+              {event.point_value} point{event.point_value === 1 ? '' : 's'} from their total.
+            </p>
+            {uncheckError && (
+              <p className="mt-4 rounded-2xl border border-[#f5b0b0] bg-[#fff4f4] px-4 py-3 text-center text-sm text-[#c94b4b]">
+                {uncheckError}
+              </p>
+            )}
+            <div className="mt-6 flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
+              <button
+                type="button"
+                disabled={!!saving}
+                onClick={closeUncheckModal}
+                className="rounded-xl border border-home-border bg-white px-4 py-2.5 text-sm font-semibold text-subtitle transition hover:border-primary/30 hover:bg-bg hover:text-text disabled:opacity-60"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                disabled={!!saving}
+                onClick={() => void confirmRemoveCheckIn()}
+                className="rounded-xl border border-[#f5b0b0] bg-[#fff4f4] px-4 py-2.5 text-sm font-semibold text-[#c94b4b] transition hover:border-[#e88a8a] hover:bg-[#ffe8e8] disabled:opacity-60"
+              >
+                {saving ? 'Removing…' : 'Remove Check-In'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

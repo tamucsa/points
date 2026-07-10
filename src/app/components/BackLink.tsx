@@ -8,12 +8,16 @@ interface Props {
   className?: string
 }
 
+const baseClassName =
+  'inline-flex items-center gap-1.5 text-sm text-subtitle transition hover:text-primary'
+
 export default function BackLink({
   href,
   onClick,
   label = 'Back',
-  className = 'mb-4 inline-flex items-center gap-1 text-sm text-subtitle transition hover:text-primary',
+  className = 'mb-4',
 }: Props) {
+  const combinedClassName = `${baseClassName} ${className}`
   const content = (
     <>
       <ChevronLeft className="size-4 shrink-0" aria-hidden />
@@ -23,14 +27,14 @@ export default function BackLink({
 
   if (href) {
     return (
-      <Link href={href} className={className}>
+      <Link href={href} className={combinedClassName}>
         {content}
       </Link>
     )
   }
 
   return (
-    <button type="button" onClick={onClick} className={className}>
+    <button type="button" onClick={onClick} className={combinedClassName}>
       {content}
     </button>
   )
