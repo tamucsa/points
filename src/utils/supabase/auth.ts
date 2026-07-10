@@ -20,7 +20,15 @@ export const getCurrentMember = cache(async () => {
     .eq('auth_uid', user.id)
     .maybeSingle()
 
-  return { supabase, user, member }
+  const avatarFromAuth = user.user_metadata?.avatar_url as string | undefined
+  const memberWithAvatar = member
+    ? {
+        ...member,
+        profile_image_url: member.profile_image_url ?? avatarFromAuth ?? null,
+      }
+    : null
+
+  return { supabase, user, member: memberWithAvatar }
 })
 
 export const getActiveSemester = cache(async () => {

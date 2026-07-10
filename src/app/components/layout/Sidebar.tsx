@@ -4,6 +4,7 @@ import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { useEffect, useState } from 'react'
 import MemberAvatar from '@/app/components/MemberAvatar'
+import { createBrowserSupabase } from '@/utils/supabase/client'
 
 interface Member {
   id: string
@@ -36,8 +37,28 @@ export default function Sidebar({ member }: { member: Member }) {
   const pathname = usePathname()
   const [collapsed, setCollapsed] = useState(false)
   const [mobileOpen, setMobileOpen] = useState(false)
+  const [profileImageUrl, setProfileImageUrl] = useState(member.profile_image_url)
   const isOfficer = ['officer', 'admin'].includes(member.role)
   const isAdmin = member.role === 'admin'
+
+  useEffect(() => {
+    setProfileImageUrl(member.profile_image_url)
+  }, [member.profile_image_url])
+
+  // Layout props can be stale across client navigations; refresh from DB.
+  useEffect(() => {
+    const supabase = createBrowserSupabase()
+    void supabase
+      .from('members')
+      .select('profile_image_url')
+      .eq('id', member.id)
+      .single()
+      .then(({ data }) => {
+        if (data?.profile_image_url) {
+          setProfileImageUrl(data.profile_image_url)
+        }
+      })
+  }, [member.id])
 
   useEffect(() => {
     const stored = localStorage.getItem('sidebar-collapsed')
@@ -132,7 +153,7 @@ export default function Sidebar({ member }: { member: Member }) {
           <div className={`flex items-center ${collapsed ? 'justify-center' : 'gap-3'}`}>
             <MemberAvatar
               name={displayName}
-              profileImageUrl={member.profile_image_url}
+              profileImageUrl={profileImageUrl}
             />
             {!collapsed && (
               <div className="min-w-0">
