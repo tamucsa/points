@@ -5,6 +5,13 @@ import { listSemesters } from '@/app/actions/semesters'
 export default async function AdminSemestersPage() {
   const { semesters, years, error } = await listSemesters()
   if (error === 'Not authenticated.') redirect('/')
+  if (error) {
+    return (
+      <div className="mx-auto max-w-5xl px-6 py-8 text-sm text-red-600 lg:px-8">
+        {error}
+      </div>
+    )
+  }
 
   return <SemesterAdminClient semesters={semesters} years={years} />
 }

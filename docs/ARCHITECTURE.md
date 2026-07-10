@@ -16,12 +16,13 @@ This document explains how the system is structured, how requests flow through t
   - `(auth)/`: public homepage (`/`), sign-in, registration, pending onboarding, and legal pages (`/privacy`, `/terms`). `/login` redirects to `/` for backward compatibility.
   - `(dashboard)/`: authenticated app shell + pages (leaderboard/events/profile)
   - `(dashboard)/(officer)/officer`: officer tools
-  - `(dashboard)/(admin)/admin`: admin tools
+  - `(dashboard)/(admin)/admin`: admin tools (`/admin/members`, `/admin/semesters`)
   - `api/auth/*`: Supabase session exchange + signout
   - `checkin/[code]`: QR/self check-in entry
 - `src/utils/supabase/`: Supabase client factories for different runtime contexts
   - `server.ts`: Server Components (read-only cookies)
   - `action.ts`: Server Actions (writable cookies)
+  - `admin.ts`: Service-role client for admin-only operations (semester close, roster import inserts, JT transfer logging)
   - `client.ts`: Browser client
   - `auth.ts`: cached helpers to deduplicate auth/member lookups in a single request
 - `supabase/migrations/`: SQL migrations for schema/views/security/indexes.
@@ -35,6 +36,7 @@ Core tables (names reflect actual schema):
 - `semesters`: identifies the active semester
 - `jt_families`: Jiating / family grouping
 - `semester_summaries`: optional historical rollups per member per semester
+- `jt_transfer_log`: audit log of Jiating changes from spring CSV imports
 - `years`, `semester_families`: configuration/support tables
 
 ### Member name field
@@ -42,12 +44,12 @@ Core tables (names reflect actual schema):
 `members.full_name` is the only name column — shown on the leaderboard, member lists, and profile.
 
 - **Self-registration** (`/register`): first and last name from the form are concatenated into `full_name`.
-- **Admin CSV import**: roster columns map to `full_name`, email, phone, class (stored as `graduation_year`), and **Jiating** (resolved to `jt_family_id`). New rows are inserted as `active`; existing emails are updated to `active` with Jiating assigned.
+- **Admin CSV import**: roster columns map to `full_name`, email, phone, class (stored as `graduation_year`), and **Jiating** (resolved to `jt_family_id`). New rows are inserted as `active`; existing emails get diff-based updates only. Jiating transfers are logged to `jt_transfer_log`. Inserts use the service-role client after an admin server-action check.
 
 Registration helpers live in `src/utils/members.ts`.
 
 Derived views (used by UI):
-- `v_current_leaderboard`: active members + points breakdown for the active semester
+- `v_current_leaderboard`: active members + points breakdown for the active semester; includes `account_linked` (`auth_uid IS NOT NULL`) for officer sign-in status (not shown on public leaderboard UI)
 - `v_jt_leaderboard`: per-jiating aggregation for the active semester
 
 ## Request flow

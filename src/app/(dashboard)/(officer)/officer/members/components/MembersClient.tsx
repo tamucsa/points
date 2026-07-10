@@ -3,6 +3,7 @@
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { useState } from 'react'
+import AccountLinkBadge from '@/app/(dashboard)/(officer)/officer/members/components/AccountLinkBadge'
 import MemberAvatar from '@/app/components/MemberAvatar'
 import { inputClassName, OFFICER_MEMBERS_PAGE_SIZE } from '@/utils/constants'
 
@@ -11,6 +12,7 @@ interface Member {
   full_name: string
   email: string
   profile_image_url: string | null
+  account_linked: boolean
   jt_family: string | null
   jt_color: string | null
   total_points: number
@@ -27,15 +29,23 @@ interface Props {
   page: number
   totalPages: number
   totalCount: number
+  notSignedInCount: number
   query: string
   filterJT: string
+  filterLinked: 'all' | 'connected' | 'pending'
 }
 
-function buildMembersUrl(page: number, query: string, filterJT: string) {
+function buildMembersUrl(
+  page: number,
+  query: string,
+  filterJT: string,
+  filterLinked: string,
+) {
   const params = new URLSearchParams()
   if (page > 1) params.set('page', String(page))
   if (query) params.set('q', query)
   if (filterJT !== 'all') params.set('jt', filterJT)
+  if (filterLinked !== 'all') params.set('linked', filterLinked)
   const qs = params.toString()
   return qs ? `/officer/members?${qs}` : '/officer/members'
 }
@@ -47,8 +57,10 @@ export default function MembersClient({
   page,
   totalPages,
   totalCount,
+  notSignedInCount,
   query,
   filterJT,
+  filterLinked,
 }: Props) {
   const router = useRouter()
   const [searchInput, setSearchInput] = useState(query)
@@ -56,12 +68,13 @@ export default function MembersClient({
   const rangeStart = totalCount === 0 ? 0 : (page - 1) * OFFICER_MEMBERS_PAGE_SIZE + 1
   const rangeEnd = Math.min(page * OFFICER_MEMBERS_PAGE_SIZE, totalCount)
 
-  const applyFilters = (next: { page?: number; q?: string; jt?: string }) => {
+  const applyFilters = (next: { page?: number; q?: string; jt?: string; linked?: string }) => {
     router.push(
       buildMembersUrl(
         next.page ?? 1,
         next.q ?? searchInput,
         next.jt ?? filterJT,
+        next.linked ?? filterLinked,
       ),
     )
   }
@@ -72,11 +85,14 @@ export default function MembersClient({
         <h1 className="text-3xl font-bold tracking-tight text-text">Members</h1>
         <p className="mt-1 text-sm text-subtitle">
           {semester?.name} · {totalCount} active members
+          {notSignedInCount > 0 && (
+            <> · {notSignedInCount} haven&apos;t signed in with Google yet</>
+          )}
         </p>
       </div>
 
       <form
-        className="mb-4 flex flex-col gap-3 sm:flex-row"
+        className="mb-4 flex flex-col gap-3 lg:flex-row"
         onSubmit={e => {
           e.preventDefault()
           applyFilters({ page: 1, q: searchInput })
@@ -91,12 +107,21 @@ export default function MembersClient({
         <select
           value={filterJT}
           onChange={e => applyFilters({ page: 1, jt: e.target.value })}
-          className={`${inputClassName} cursor-pointer sm:max-w-[10rem]`}
+          className={`${inputClassName} cursor-pointer lg:max-w-[10rem]`}
         >
           <option value="all">All JTs</option>
           {jtFamilies.map(jt => (
             <option key={jt} value={jt}>{jt}</option>
           ))}
+        </select>
+        <select
+          value={filterLinked}
+          onChange={e => applyFilters({ page: 1, linked: e.target.value })}
+          className={`${inputClassName} cursor-pointer lg:max-w-[11rem]`}
+        >
+          <option value="all">All sign-in status</option>
+          <option value="connected">Signed in</option>
+          <option value="pending">Not signed in</option>
         </select>
         <button
           type="submit"
@@ -107,8 +132,9 @@ export default function MembersClient({
       </form>
 
       <div className="overflow-x-auto rounded-4xl border border-home-border bg-white shadow-sm">
-        <div className="grid min-w-[640px] grid-cols-[1fr_7rem_4rem_4rem_4rem_4rem_4rem] border-b border-home-border bg-bg px-5 py-3 text-[11px] font-semibold uppercase tracking-[0.05em] text-subtitle">
+        <div className="grid min-w-[720px] grid-cols-[1fr_6.5rem_7rem_4rem_4rem_4rem_4rem_4rem] border-b border-home-border bg-bg px-5 py-3 text-[11px] font-semibold uppercase tracking-[0.05em] text-subtitle">
           <div>Member</div>
+          <div>Sign-in</div>
           <div>JT</div>
           <div className="text-right">Total</div>
           <div className="text-right">CSA</div>
@@ -127,7 +153,7 @@ export default function MembersClient({
           <Link
             key={m.id}
             href={`/officer/members/${m.id}`}
-            className="grid min-w-[640px] grid-cols-[1fr_7rem_4rem_4rem_4rem_4rem_4rem] items-center border-b border-home-border px-5 py-3 transition last:border-b-0 hover:bg-bg"
+            className="grid min-w-[720px] grid-cols-[1fr_6.5rem_7rem_4rem_4rem_4rem_4rem_4rem] items-center border-b border-home-border px-5 py-3 transition last:border-b-0 hover:bg-bg"
           >
             <div className="flex min-w-0 items-center gap-3">
               <MemberAvatar
@@ -139,6 +165,9 @@ export default function MembersClient({
                 <div className="truncate text-sm font-medium text-text">{displayName}</div>
                 <div className="truncate text-xs text-subtitle">{m.email}</div>
               </div>
+            </div>
+            <div>
+              <AccountLinkBadge linked={m.account_linked} compact />
             </div>
             <div>
               {m.jt_family && (
@@ -168,7 +197,7 @@ export default function MembersClient({
           <div className="flex items-center gap-2">
             {page > 1 ? (
               <Link
-                href={buildMembersUrl(page - 1, query, filterJT)}
+                href={buildMembersUrl(page - 1, query, filterJT, filterLinked)}
                 className="rounded-xl border border-home-border bg-white px-4 py-2 text-sm font-medium text-subtitle transition hover:border-primary/30 hover:text-primary"
               >
                 Previous
@@ -183,7 +212,7 @@ export default function MembersClient({
             </span>
             {page < totalPages ? (
               <Link
-                href={buildMembersUrl(page + 1, query, filterJT)}
+                href={buildMembersUrl(page + 1, query, filterJT, filterLinked)}
                 className="rounded-xl border border-home-border bg-white px-4 py-2 text-sm font-medium text-subtitle transition hover:border-primary/30 hover:text-primary"
               >
                 Next

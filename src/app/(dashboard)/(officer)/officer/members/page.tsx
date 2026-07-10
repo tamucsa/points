@@ -4,12 +4,13 @@ import { getActiveSemester } from '@/utils/supabase/auth'
 import { createServerSupabase } from '@/utils/supabase/server'
 
 const MEMBER_COLUMNS =
-  'id, full_name, email, profile_image_url, jt_family, jt_color, total_points, csa_points, jt_points, sports_points, gm_points'
+  'id, full_name, email, profile_image_url, account_linked, jt_family, jt_color, total_points, csa_points, jt_points, sports_points, gm_points'
 
 interface SearchParams {
   page?: string
   q?: string
   jt?: string
+  linked?: string
 }
 
 export default async function MembersPage({
@@ -17,9 +18,10 @@ export default async function MembersPage({
 }: {
   searchParams: Promise<SearchParams>
 }) {
-  const { page: pageParam, q = '', jt = 'all' } = await searchParams
+  const { page: pageParam, q = '', jt = 'all', linked = 'all' } = await searchParams
   const page = Math.max(1, Number(pageParam) || 1)
   const query = q.trim()
+  const linkedFilter = linked === 'connected' || linked === 'pending' ? linked : 'all'
   const from = (page - 1) * OFFICER_MEMBERS_PAGE_SIZE
   const to = from + OFFICER_MEMBERS_PAGE_SIZE - 1
 
@@ -41,10 +43,25 @@ export default async function MembersPage({
     membersQuery = membersQuery.eq('jt_family', jt)
   }
 
-  const [{ data: members, count }, semester, { data: jtFamilies }] = await Promise.all([
+  if (linkedFilter === 'connected') {
+    membersQuery = membersQuery.eq('account_linked', true)
+  } else if (linkedFilter === 'pending') {
+    membersQuery = membersQuery.eq('account_linked', false)
+  }
+
+  const [
+    { data: members, count },
+    semester,
+    { data: jtFamilies },
+    { count: notSignedInCount },
+  ] = await Promise.all([
     membersQuery.range(from, to),
     getActiveSemester(),
     supabase.from('jt_families').select('name').eq('is_active', true).order('name'),
+    supabase
+      .from('v_current_leaderboard')
+      .select('id', { count: 'exact', head: true })
+      .eq('account_linked', false),
   ])
 
   const totalCount = count ?? 0
@@ -58,8 +75,10 @@ export default async function MembersPage({
       page={page}
       totalPages={totalPages}
       totalCount={totalCount}
+      notSignedInCount={notSignedInCount ?? 0}
       query={query}
       filterJT={jt}
+      filterLinked={linkedFilter}
     />
   )
 }

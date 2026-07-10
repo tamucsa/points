@@ -13,6 +13,8 @@ This guide is for CSA members using the points system.
    - **Events**
    - **My Points**
 
+If you were added to the roster by an admin before signing in, you still need to **sign in with Google once** so your account links to your roster row. Until then, officers will see you as **Not signed in** on the member list.
+
 ## Registration form (name fields)
 
 The registration form asks for **first name** and **last name** separately (both required). They are combined and stored as your **full name** — this is what appears on the leaderboard and member lists.

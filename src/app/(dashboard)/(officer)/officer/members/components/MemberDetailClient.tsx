@@ -1,6 +1,7 @@
 'use client'
 
 import { useRouter } from 'next/navigation'
+import AccountLinkBadge from '@/app/(dashboard)/(officer)/officer/members/components/AccountLinkBadge'
 import MemberAvatar from '@/app/components/MemberAvatar'
 import { CATEGORY_COLORS, CHECKIN_METHOD_LABELS } from '@/utils/constants'
 
@@ -9,6 +10,7 @@ interface Member {
   full_name: string
   email: string
   profile_image_url: string | null
+  account_linked: boolean
   jt_family: string | null
   jt_color: string | null
   total_points: number
@@ -69,8 +71,17 @@ export default function MemberDetailClient({ member, attendance, history }: Prop
           bordered
         />
         <div className="min-w-0 flex-1">
-          <h1 className="text-2xl font-bold text-text">{displayName}</h1>
+          <div className="mb-2 flex flex-wrap items-center gap-2">
+            <h1 className="text-2xl font-bold text-text">{displayName}</h1>
+            <AccountLinkBadge linked={member.account_linked} />
+          </div>
           <p className="text-sm text-subtitle">{member.email}</p>
+          {!member.account_linked && (
+            <p className="mt-2 text-xs leading-5 text-amber-800">
+              This member was imported on the roster but hasn&apos;t signed in with Google yet.
+              They need to sign in once to link their account.
+            </p>
+          )}
           {member.jt_family && (
             <span className="mt-2 inline-block rounded-full px-3 py-1 text-xs font-semibold" style={{ background: `${color}20`, color }}>
               {member.jt_family}

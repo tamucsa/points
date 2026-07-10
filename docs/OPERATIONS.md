@@ -17,7 +17,7 @@ Runbook for day-to-day CSA Points operations. Each section includes an **overvie
 | View leaderboard | Member | `/leaderboard`, `/leaderboard/jiatings` |
 | View own points | Member | `/profile` |
 | Browse events | Member | `/events` |
-| Look up member points | Officer/Admin | `/officer/members` |
+| Look up member points / sign-in status | Officer/Admin | `/officer/members` |
 
 Related docs:
 - User guides: `docs/ONBOARDING_MEMBERS.md`, `docs/ONBOARDING_OFFICERS.md`, `docs/ONBOARDING_ADMINS.md`
@@ -52,7 +52,7 @@ New members authenticate with TAMU Google (`@tamu.edu`). The auth callback links
 Use this at the start of a semester to pre-load the roster before members sign in.
 
 1. Admin signs in and goes to **Admin** → `/admin/members`.
-2. Open the **Import** tab.
+2. Open the **Import** tab and select **Full roster (fall)**.
 3. Prepare a CSV with these column headers (order does not matter):
 
    | Column | Required | Notes |
@@ -100,6 +100,7 @@ After fall semester close and Jiating re-sorting, upload only rows that changed.
 |---------|--------------|--------|
 | Member stuck on `/pending` | Not activated or no Jiating assigned | Admin activates in `/admin/members` |
 | Member sent to `/register` after login | No member row and not imported | Member completes registration, or admin imports them |
+| Imported member shows "Not signed in" | CSV row exists but `auth_uid` not linked yet | Member signs in once with Google; auth callback links by email |
 | Non-TAMU email rejected | Domain enforcement in auth callback | Member must use `@tamu.edu` |
 
 ---
@@ -135,6 +136,10 @@ Closing a semester archives totals (via `close_semester` in the database) and ro
 1. **Fall:** Full roster CSV import → members sign in with Google.
 2. **End of fall:** Close fall semester on `/admin/semesters`.
 3. **Spring:** Spring partial CSV (JT transfers + new members) → start spring semester.
+
+> **Note:** Do not pre-create inactive semester rows for a future term. Use **Start semester** on `/admin/semesters` when the term actually begins; pre-created rows can duplicate when you start the term from the UI.
+
+The semester admin page shows the active term, a collapsible **Past semesters** list, and per-semester details (school year, dates, Jiatings, event count, archived member count for closed terms).
 
 ---
 
@@ -224,9 +229,13 @@ Points are earned through `attendance` rows linked to `events`. The `attendance.
 ### Step-by-step: Officer looks up a member’s points
 
 1. Officer goes to **Members** → `/officer/members`.
-2. Use search (name/email) or JT filter.
-3. Navigate pages (25 members per page).
-4. Click a member row → `/officer/members/[id]` for full breakdown and attendance history.
+2. Use search (name/email), **JT filter**, or **sign-in status filter** (Signed in / Not signed in).
+3. Review the **Sign-in** column:
+   - **Signed in** — member has linked their Google account (`auth_uid` set)
+   - **Not signed in** — roster-imported member who has not logged in yet
+4. The page header shows how many active members have not signed in.
+5. Navigate pages (25 members per page).
+6. Click a member row → `/officer/members/[id]` for full breakdown, sign-in status, and attendance history.
 
 ---
 

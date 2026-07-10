@@ -198,7 +198,7 @@ export async function importMembers(rows: ImportMemberRow[], mode: ImportMode = 
       continue
     }
 
-    const { error } = await supabase.from('members').insert({
+    const { error } = await admin.from('members').insert({
       email,
       full_name: fullName,
       phone,

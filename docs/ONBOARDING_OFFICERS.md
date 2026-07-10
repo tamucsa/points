@@ -46,7 +46,15 @@ Officers must have `members.role` set to `officer` (or `admin`). If you can’t 
 
 ## Member lookup
 
-Officer Members is paginated (25 per page). Use search + JT filter for fast lookup.
+Officer Members is paginated (25 per page). Use search, JT filter, and **sign-in status filter** for fast lookup.
+
+Each row shows whether the member has **signed in with Google**:
+- **Signed in** — `auth_uid` is linked (normal for self-registered or post-import login)
+- **Not signed in** — on the roster via CSV import but has not completed first Google login yet
+
+Roster-imported members can still be officer-checked-in before they sign in, but they should sign in once so their account links and profile photo syncs.
+
+The member detail page repeats sign-in status and explains when a member still needs to log in.
 
 ## Common issues
 

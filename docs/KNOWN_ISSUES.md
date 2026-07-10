@@ -104,6 +104,16 @@ Living document for bugs, limitations, and planned improvements. Update this fil
 - **Description:** `/leaderboard/jiatings` fetched all members and filtered top 3 in JS.
 - **Fix:** Per-JT query with `limit(3)`.
 
+### KI-R008 — CSV roster import blocked by RLS
+- **Status:** Resolved (2026-07-10)
+- **Description:** Admin CSV import failed for new members with `new row violates row-level security policy` because RLS only allowed `pending_jt` inserts.
+- **Fix:** RLS policy updated for active roster imports; inserts also use service-role client after admin check.
+
+### KI-R009 — No officer view of Google sign-in status
+- **Status:** Resolved (2026-07-10)
+- **Description:** Officers could not tell which roster members had linked their Google account.
+- **Fix:** `account_linked` on `v_current_leaderboard`; sign-in column and filter on `/officer/members`.
+
 ---
 
 ## Adding a new issue
