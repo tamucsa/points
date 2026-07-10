@@ -5,9 +5,11 @@ import { useRouter } from 'next/navigation'
 import { publishJiatingStandings } from '@/app/actions/jt-standings'
 import { updateEventRsvp } from '@/app/actions/events'
 import MemberAvatar from '@/app/components/MemberAvatar'
+import IconLabel, { CheckInMethodBadge } from '@/app/components/IconLabel'
 import { isGeneralMeetingCategory } from '@/utils/events'
 import { formatEventSchedule } from '@/utils/datetime'
-import { CHECKIN_METHOD_LABELS, inputClassName, labelClassName } from '@/utils/constants'
+import { Clock, MapPin } from 'lucide-react'
+import { inputClassName, labelClassName } from '@/utils/constants'
 
 interface Event {
   id: string
@@ -123,10 +125,8 @@ export default function EventDetailClient({ event, attendance, publishedSnapshot
           <div className="min-w-0 flex-1">
             <h1 className="text-2xl font-bold text-text">{event.name}</h1>
             <div className="mt-2 flex flex-wrap gap-2 text-sm text-subtitle">
-              <span>
-                🕐 {formatEventSchedule(event.starts_at, event.ends_at)}
-              </span>
-              {event.location && <span>📍 {event.location}</span>}
+              <IconLabel icon={Clock} label={formatEventSchedule(event.starts_at, event.ends_at)} size="sm" />
+              {event.location && <IconLabel icon={MapPin} label={event.location} size="sm" />}
               <span className="rounded-md bg-bg px-2 py-0.5 text-xs">{event.category}</span>
             </div>
             {event.description && (
@@ -270,7 +270,7 @@ export default function EventDetailClient({ event, attendance, publishedSnapshot
             </div>
             <div className="flex shrink-0 flex-wrap gap-1">
               <span className="rounded-md bg-bg px-2 py-0.5 text-[11px] text-subtitle">
-                {CHECKIN_METHOD_LABELS[row.check_in_method] ?? row.check_in_method}
+                <CheckInMethodBadge checkInMethod={row.check_in_method} />
               </span>
               {!row.verified && (
                 <span className="rounded-md bg-orange-50 px-2 py-0.5 text-[11px] text-orange-600">Unverified</span>

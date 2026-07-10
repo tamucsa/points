@@ -13,15 +13,15 @@ export const POINT_COLORS: Record<number, string> = {
 }
 
 export const SCOPE_LABELS: Record<string, string> = {
-  org: '🏫 CSA-Wide',
-  jt_shared: '🏅 JT Shared',
-  jt_specific: '🏠 JT Specific',
+  org: 'CSA-Wide',
+  jt_shared: 'JT Shared',
+  jt_specific: 'JT Specific',
 }
 
 export const CHECKIN_TYPE_LABELS: Record<string, string> = {
-  officer: '👤 Officer',
-  self: '🔲 QR Code',
-  rsvp_required: '📋 RSVP',
+  officer: 'Officer',
+  self: 'QR Code',
+  rsvp_required: 'RSVP',
 }
 
 export const CHECKIN_METHOD_LABELS: Record<string, string> = {

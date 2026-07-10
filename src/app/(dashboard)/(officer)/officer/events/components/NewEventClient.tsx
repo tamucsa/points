@@ -3,15 +3,15 @@
 import { useRouter } from 'next/navigation'
 import { useState } from 'react'
 import { createEvent } from '@/app/actions/events'
+import IconLabel, { CheckInTypeBadge, ScopeBadge } from '@/app/components/IconLabel'
 import {
   EVENT_CATEGORIES,
   applyCategoryDefaults,
-  getCategoryCheckInLabel,
   getCategoryConfig,
-  getCategoryScopeLabel,
   type EventCategory,
 } from '@/utils/events'
-import { inputClassName, labelClassName } from '@/utils/constants'
+import { CHECKIN_TYPE_LABELS, inputClassName, labelClassName } from '@/utils/constants'
+import { CHECKIN_TYPE_ICONS } from '@/utils/icons'
 
 interface JTFamily {
   id: string
@@ -151,11 +151,11 @@ export default function NewEventClient({
                 {categoryConfig.pointValue} pt{categoryConfig.pointValue === 1 ? '' : 's'}
               </span>
               <span className="rounded-md bg-bg px-2 py-1">
-                {getCategoryScopeLabel(form.category)}
+                <ScopeBadge scope={categoryConfig.scope} />
               </span>
               {fixedCheckIn && (
                 <span className="rounded-md bg-bg px-2 py-1">
-                  {getCategoryCheckInLabel(form.category, effectiveCheckIn as 'officer' | 'self' | 'rsvp_required')}
+                  <CheckInTypeBadge checkInType={effectiveCheckIn} />
                 </span>
               )}
             </div>
@@ -198,13 +198,21 @@ export default function NewEventClient({
           <div>
             <label className={labelClassName}>Check-in Type *</label>
             <div className="flex flex-wrap gap-2">
-              {[
-                { value: 'officer', label: '👤 Officer' },
-                { value: 'self', label: '🔲 QR Code' },
-                { value: 'rsvp_required', label: '📋 RSVP' },
-              ].map(opt => (
+              {(
+                [
+                  { value: 'officer', label: CHECKIN_TYPE_LABELS.officer, icon: CHECKIN_TYPE_ICONS.officer },
+                  { value: 'self', label: CHECKIN_TYPE_LABELS.self, icon: CHECKIN_TYPE_ICONS.self },
+                  { value: 'rsvp_required', label: CHECKIN_TYPE_LABELS.rsvp_required, icon: CHECKIN_TYPE_ICONS.rsvp_required },
+                ] as const
+              ).map(opt => (
                 <button key={opt.value} type="button" onClick={() => set('check_in_type', opt.value)} className={scopeBtn(form.check_in_type === opt.value)}>
-                  {opt.label}
+                  <IconLabel
+                    icon={opt.icon}
+                    label={opt.label}
+                    size="sm"
+                    iconClassName={form.check_in_type === opt.value ? 'text-primary' : 'text-subtitle'}
+                    labelClassName={form.check_in_type === opt.value ? 'text-primary' : ''}
+                  />
                 </button>
               ))}
             </div>

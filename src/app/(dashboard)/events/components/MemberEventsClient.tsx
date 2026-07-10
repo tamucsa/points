@@ -1,7 +1,10 @@
 'use client'
 import { useState } from 'react'
+import IconLabel, { CheckInTypeBadge } from '@/app/components/IconLabel'
 import { isJiatingOlympicsCategory, isMixerCategory, isSportsRelatedCategory } from '@/utils/events'
 import { formatEventSchedule, isEventPast } from '@/utils/datetime'
+import { Building2, Clock, Handshake, Home, MapPin, Medal, Trophy } from 'lucide-react'
+import type { LucideIcon } from 'lucide-react'
 
 interface Event {
   id: string
@@ -23,10 +26,13 @@ interface Props {
   semester: { name: string } | null
 }
 
-const CHECKIN_BADGE: Record<string, string> = {
-  self:          '🔲 QR Check-in',
-  officer:       '👤 Officer Check-in',
-  rsvp_required: '📋 RSVP Required',
+function SectionHeader({ icon: Icon, label }: { icon: LucideIcon; label: string }) {
+  return (
+    <h2 className="mb-3 flex items-center gap-2 text-xs font-bold uppercase tracking-[0.08em] text-subtitle">
+      <Icon className="size-3.5 text-primary" aria-hidden />
+      {label}
+    </h2>
+  )
 }
 
 function EventCard({ event, attended }: { event: Event, attended: boolean }) {
@@ -55,13 +61,13 @@ function EventCard({ event, attended }: { event: Event, attended: boolean }) {
         </div>
         <div className="mt-1 flex flex-wrap gap-2 text-xs text-subtitle">
           <span>
-            🕐 {formatEventSchedule(event.starts_at, event.ends_at)}
+            <IconLabel icon={Clock} label={formatEventSchedule(event.starts_at, event.ends_at)} size="sm" />
           </span>
           {event.location && (
-            <span>📍 {event.location}</span>
+            <IconLabel icon={MapPin} label={event.location} size="sm" />
           )}
           <span className="rounded-md bg-bg px-2 py-0.5 text-[11px] text-subtitle">
-            {CHECKIN_BADGE[event.check_in_type]}
+            <CheckInTypeBadge checkInType={event.check_in_type} />
           </span>
         </div>
       </div>
@@ -91,25 +97,30 @@ export default function MemberEventsClient({ events, attendedIds, semester }: Pr
   const upcoming = events.filter(e => !isEventPast(e.starts_at))
   const past     = events.filter(e => isEventPast(e.starts_at))
 
-  const sections = [
+  const sections: { label: string; icon: LucideIcon; events: Event[] }[] = [
     {
-      label: '🏫 CSA-Wide',
+      label: 'CSA-Wide',
+      icon: Building2,
       events: upcoming.filter(e => e.scope === 'org'),
     },
     {
-      label: '🏠 Your JT Events',
+      label: 'Your JT Events',
+      icon: Home,
       events: upcoming.filter(e => e.scope === 'jt_specific'),
     },
     {
-      label: '🏅 JT Olympics',
+      label: 'JT Olympics',
+      icon: Medal,
       events: upcoming.filter(e => e.scope === 'jt_shared' && isJiatingOlympicsCategory(e.category)),
     },
     {
-      label: '🤝 Mixers',
+      label: 'Mixers',
+      icon: Handshake,
       events: upcoming.filter(e => isMixerCategory(e.category)),
     },
     {
-      label: '⚽ Sports & Dance',
+      label: 'Sports & Dance',
+      icon: Trophy,
       events: upcoming.filter(e => isSportsRelatedCategory(e.category)),
     },
   ].filter(s => s.events.length > 0)
@@ -134,9 +145,7 @@ export default function MemberEventsClient({ events, attendedIds, semester }: Pr
 
       {sections.map(section => (
         <div key={section.label} className="mb-8">
-          <h2 className="mb-3 text-xs font-bold uppercase tracking-[0.08em] text-subtitle">
-            {section.label}
-          </h2>
+          <SectionHeader icon={section.icon} label={section.label} />
           <div className="flex flex-col gap-3">
             {section.events.map(event => (
               <EventCard

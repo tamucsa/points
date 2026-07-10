@@ -3,8 +3,10 @@
 import { QRCodeSVG } from 'qrcode.react'
 import { useRouter } from 'next/navigation'
 import { useState } from 'react'
-import { CHECKIN_TYPE_LABELS, POINT_COLORS, SCOPE_LABELS } from '@/utils/constants'
+import IconLabel, { CheckInTypeBadge, ScopeBadge } from '@/app/components/IconLabel'
+import { POINT_COLORS } from '@/utils/constants'
 import { formatEventDate, isEventPast } from '@/utils/datetime'
+import { Users } from 'lucide-react'
 
 interface Event {
   id: string
@@ -85,9 +87,13 @@ export default function OfficerEventsClient({ events, attendanceCounts, semester
                   </span>
                   {event.location && <span>📍 {event.location}</span>}
                   <span className="rounded-md bg-bg px-2 py-0.5">{event.category}</span>
-                  <span className="rounded-md bg-bg px-2 py-0.5">{SCOPE_LABELS[event.scope]}</span>
-                  <span className="rounded-md bg-bg px-2 py-0.5">{CHECKIN_TYPE_LABELS[event.check_in_type]}</span>
-                  <span>👥 {count} attended</span>
+                  <span className="rounded-md bg-bg px-2 py-0.5">
+                    <ScopeBadge scope={event.scope} />
+                  </span>
+                  <span className="rounded-md bg-bg px-2 py-0.5">
+                    <CheckInTypeBadge checkInType={event.check_in_type} />
+                  </span>
+                  <IconLabel icon={Users} label={`${count} attended`} size="sm" />
                 </div>
               </div>
 
