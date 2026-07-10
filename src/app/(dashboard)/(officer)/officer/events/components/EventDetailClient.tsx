@@ -1,6 +1,8 @@
 'use client'
 
+import { useState } from 'react'
 import { useRouter } from 'next/navigation'
+import { publishJiatingStandings } from '@/app/actions/jt-standings'
 import MemberAvatar from '@/app/components/MemberAvatar'
 import { CHECKIN_METHOD_LABELS } from '@/utils/constants'
 
@@ -29,13 +31,51 @@ interface AttendanceRow {
   }
 }
 
+interface PublishedSnapshot {
+  id: string
+  snapshot_at: string
+  label: string | null
+}
+
 interface Props {
   event: Event
   attendance: AttendanceRow[]
+  publishedSnapshot: PublishedSnapshot | null
 }
 
-export default function EventDetailClient({ event, attendance }: Props) {
+function isGeneralMeeting(category: string) {
+  return category.trim().toUpperCase() === 'GM'
+}
+
+export default function EventDetailClient({ event, attendance, publishedSnapshot }: Props) {
   const router = useRouter()
+  const [publishing, setPublishing] = useState(false)
+  const [publishError, setPublishError] = useState<string | null>(null)
+  const [published, setPublished] = useState(publishedSnapshot)
+  const isGm = isGeneralMeeting(event.category)
+
+  const handlePublishStandings = async () => {
+    if (!window.confirm('Publish Jiating standings from current point totals? Members will see this snapshot on the leaderboard until the next GM.')) {
+      return
+    }
+
+    setPublishing(true)
+    setPublishError(null)
+
+    const result = await publishJiatingStandings(event.id)
+    setPublishing(false)
+
+    if (!result.success) {
+      setPublishError(result.error ?? 'Failed to publish standings.')
+      return
+    }
+
+    setPublished({
+      id: result.snapshotId,
+      snapshot_at: new Date().toISOString(),
+      label: event.name,
+    })
+  }
 
   return (
     <div className="mx-auto max-w-3xl px-6 py-8 lg:px-8">
@@ -95,7 +135,44 @@ export default function EventDetailClient({ event, attendance }: Props) {
               View RSVP Form
             </a>
           )}
+          {isGm && !published && (
+            <button
+              type="button"
+              onClick={() => void handlePublishStandings()}
+              disabled={publishing}
+              className="rounded-xl border border-primary/30 bg-primary/10 px-4 py-2 text-sm font-semibold text-primary transition hover:bg-primary/15 disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              {publishing ? 'Publishing…' : 'Publish Jiating standings'}
+            </button>
+          )}
+          {isGm && published && (
+            <span className="inline-flex items-center rounded-xl border border-green-200 bg-green-50 px-4 py-2 text-sm font-medium text-green-700">
+              Standings published
+            </span>
+          )}
         </div>
+        {publishError && (
+          <p className="mt-3 text-sm text-red-600">{publishError}</p>
+        )}
+        {isGm && published && (
+          <p className="mt-3 text-xs text-subtitle">
+            Published {new Date(published.snapshot_at).toLocaleString('en-US', {
+              month: 'short',
+              day: 'numeric',
+              year: 'numeric',
+              hour: 'numeric',
+              minute: '2-digit',
+            })}
+            {' · '}
+            <button
+              type="button"
+              onClick={() => router.push('/leaderboard/standings')}
+              className="font-medium text-primary hover:underline"
+            >
+              View on leaderboard
+            </button>
+          </p>
+        )}
       </div>
 
       <div className="mb-3 flex items-center justify-between">

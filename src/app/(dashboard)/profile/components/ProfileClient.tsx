@@ -1,5 +1,6 @@
 'use client'
 
+import JtFamilyBadge from '@/app/(dashboard)/leaderboard/components/JtFamilyBadge'
 import MemberAvatar from '@/app/components/MemberAvatar'
 
 interface Member {
@@ -62,7 +63,7 @@ const CHECKIN_LABELS: Record<string, string> = {
 
 export default function ProfileClient({ member, points, attendance, history }: Props) {
   const displayName = member.full_name
-  const color = points?.jt_color ?? '#4f6ef7'
+  const color = points?.jt_color ?? '#4779B8'
 
   const breakdown = [
     { label: 'CSA Points',    value: points?.csa_points    ?? 0, color: CATEGORY_COLORS.CSA    },
@@ -86,9 +87,9 @@ export default function ProfileClient({ member, points, attendance, history }: P
         <div className="flex-1">
           <div className="text-2xl font-bold text-text">{displayName}</div>
           {points?.jt_family && (
-            <span className="mt-2 inline-block rounded-full bg-accent/15 px-3 py-1 text-xs font-semibold text-accent">
-              {points.jt_family}
-            </span>
+            <div className="mt-2">
+              <JtFamilyBadge name={points.jt_family} color={points.jt_color} />
+            </div>
           )}
           {member.graduation_year && (
             <div className="mt-2 text-sm text-subtitle">

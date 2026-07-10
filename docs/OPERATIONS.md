@@ -14,7 +14,7 @@ Runbook for day-to-day CSA Points operations. Each section includes an **overvie
 | Create event | Officer/Admin | `/officer/events/new` |
 | Officer check-in | Officer/Admin | `/officer/events/[id]/checkin` |
 | QR / self check-in | Officer + Member | `/officer/events/[id]/qr` + `/checkin/[code]` |
-| View leaderboard | Member | `/leaderboard`, `/leaderboard/jiatings` |
+| View leaderboard | Member | `/leaderboard`, `/leaderboard/jiatings`, `/leaderboard/standings` |
 | View own points | Member | `/profile` |
 | Browse events | Member | `/events` |
 | Look up member points / sign-in status | Officer/Admin | `/officer/members` |
@@ -225,6 +225,15 @@ Points are earned through `attendance` rows linked to `events`. The `attendance.
 1. Go to **Leaderboard** → `/leaderboard`.
 2. **Overall** tab shows top 10 members (rank, name, avatar, Jiating badge, total points).
 3. **Jiatings** tab → `/leaderboard/jiatings` shows top 3 per Jiating card.
+4. **Standings** tab → `/leaderboard/standings` shows Jiating-vs-Jiating rankings from snapshots published after each GM (not live).
+
+### Step-by-step: Officer publishes Jiating standings after GM
+
+1. Officer opens the **GM** event from `/officer/events`.
+2. After check-in is complete, click **Publish Jiating standings**.
+3. System captures current `v_jt_leaderboard` totals into a snapshot.
+4. Members see the new standings on **Leaderboard → Standings** until the next GM publish.
+5. Each GM event can only be published once (duplicate publishes are blocked).
 
 ### Step-by-step: Officer looks up a member’s points
 

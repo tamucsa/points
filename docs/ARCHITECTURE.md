@@ -37,6 +37,7 @@ Core tables (names reflect actual schema):
 - `jt_families`: Jiating / family grouping
 - `semester_summaries`: optional historical rollups per member per semester
 - `jt_transfer_log`: audit log of Jiating changes from spring CSV imports
+- `jt_leaderboard_snapshots` / `jt_leaderboard_snapshot_rows`: frozen Jiating standings published after GM
 - `years`, `semester_families`: configuration/support tables
 
 ### Member name field
@@ -50,7 +51,7 @@ Registration helpers live in `src/utils/members.ts`.
 
 Derived views (used by UI):
 - `v_current_leaderboard`: active members + points breakdown for the active semester; includes `account_linked` (`auth_uid IS NOT NULL`) for officer sign-in status (not shown on public leaderboard UI)
-- `v_jt_leaderboard`: per-jiating aggregation for the active semester
+- `v_jt_leaderboard`: per-jiating aggregation for the active semester (source for GM snapshot publish)
 
 ## Request flow
 

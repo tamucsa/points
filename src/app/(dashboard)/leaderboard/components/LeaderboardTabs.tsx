@@ -4,17 +4,18 @@ import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 
 const TABS = [
-  { label: 'Overall', path: '/leaderboard' },
-  { label: 'Jiatings', path: '/leaderboard/jiatings' },
+  { label: 'Overall', path: '/leaderboard', exact: true },
+  { label: 'Jiatings', path: '/leaderboard/jiatings', exact: false },
+  { label: 'Standings', path: '/leaderboard/standings', exact: false },
 ] as const
 
 export default function LeaderboardTabs() {
   const pathname = usePathname()
 
   return (
-    <div className="mb-6 flex gap-2">
+    <div className="mb-6 flex flex-wrap gap-2">
       {TABS.map(tab => {
-        const active = pathname === tab.path
+        const active = tab.exact ? pathname === tab.path : pathname.startsWith(tab.path)
         return (
           <Link
             key={tab.path}

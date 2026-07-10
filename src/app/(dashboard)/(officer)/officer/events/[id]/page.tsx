@@ -1,5 +1,6 @@
 import { notFound, redirect } from 'next/navigation'
 import EventDetailClient from '@/app/(dashboard)/(officer)/officer/events/components/EventDetailClient'
+import { getSnapshotForEvent } from '@/app/actions/jt-standings'
 import { createServerSupabase } from '@/utils/supabase/server'
 
 export default async function EventDetailPage({ params }: { params: Promise<{ id: string }> }) {
@@ -40,10 +41,13 @@ export default async function EventDetailPage({ params }: { params: Promise<{ id
     members: Array.isArray(row.members) ? row.members[0] : row.members,
   }))
 
+  const publishedSnapshot = await getSnapshotForEvent(id)
+
   return (
     <EventDetailClient
       event={event}
       attendance={normalizedAttendance}
+      publishedSnapshot={publishedSnapshot}
     />
   )
 }
