@@ -1,23 +1,12 @@
-import { createServerClient } from '@supabase/ssr'
-import { cookies } from 'next/headers'
 import { redirect } from 'next/navigation'
 import MemberEventsClient from '@/app/(dashboard)/events/components/MemberEventsClient'
+import { createServerSupabase } from '@/utils/supabase/server'
 
 export default async function MemberEventsPage() {
-  const cookieStore = await cookies()
-  const supabase = createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-    {
-      cookies: {
-        getAll() { return cookieStore.getAll() },
-        setAll() {},
-      },
-    }
-  )
+  const supabase = await createServerSupabase()
 
   const { data: { user } } = await supabase.auth.getUser()
-  if (!user) redirect('/login')
+  if (!user) redirect('/')
 
   const { data: member } = await supabase
     .from('members')
@@ -25,7 +14,7 @@ export default async function MemberEventsPage() {
     .eq('auth_uid', user.id)
     .single()
 
-  if (!member) redirect('/login')
+  if (!member) redirect('/')
 
   // Get active semester
   const { data: semester } = await supabase
@@ -40,7 +29,7 @@ export default async function MemberEventsPage() {
     .select('*')
     .eq('semester_id', semester?.id)
     .or(`scope.in.(org,jt_shared),and(scope.eq.jt_specific,jt_family_id.eq.${member.jt_family_id})`)
-    .order('event_date', { ascending: true })
+    .order('starts_at', { ascending: true })
 
   // Get member's attended event IDs this semester
   const { data: attended } = await supabase

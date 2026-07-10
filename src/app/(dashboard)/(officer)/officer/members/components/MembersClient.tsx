@@ -1,13 +1,18 @@
 'use client'
-import { useState } from 'react'
+
+import Link from 'next/link'
 import { useRouter } from 'next/navigation'
+import { useState } from 'react'
+import AccountLinkBadge from '@/app/(dashboard)/(officer)/officer/members/components/AccountLinkBadge'
+import MemberAvatar from '@/app/components/MemberAvatar'
+import { inputClassName, OFFICER_MEMBERS_PAGE_SIZE, POINT_BUCKET_LABELS } from '@/utils/constants'
 
 interface Member {
   id: string
   full_name: string
-  preferred_name: string | null
   email: string
   profile_image_url: string | null
+  account_linked: boolean
   jt_family: string | null
   jt_color: string | null
   total_points: number
@@ -20,160 +25,206 @@ interface Member {
 interface Props {
   members: Member[]
   semester: { name: string } | null
+  jtFamilies: string[]
+  page: number
+  totalPages: number
+  totalCount: number
+  notSignedInCount: number
+  query: string
+  filterJT: string
+  filterLinked: 'all' | 'connected' | 'pending'
 }
 
-export default function MembersClient({ members, semester }: Props) {
+function buildMembersUrl(
+  page: number,
+  query: string,
+  filterJT: string,
+  filterLinked: string,
+) {
+  const params = new URLSearchParams()
+  if (page > 1) params.set('page', String(page))
+  if (query) params.set('q', query)
+  if (filterJT !== 'all') params.set('jt', filterJT)
+  if (filterLinked !== 'all') params.set('linked', filterLinked)
+  const qs = params.toString()
+  return qs ? `/officer/members?${qs}` : '/officer/members'
+}
+
+export default function MembersClient({
+  members,
+  semester,
+  jtFamilies,
+  page,
+  totalPages,
+  totalCount,
+  notSignedInCount,
+  query,
+  filterJT,
+  filterLinked,
+}: Props) {
   const router = useRouter()
-  const [search, setSearch] = useState('')
-  const [filterJT, setFilterJT] = useState('all')
+  const [searchInput, setSearchInput] = useState(query)
 
-  const jtFamilies = [...new Set(members.map(m => m.jt_family).filter(Boolean))]
+  const rangeStart = totalCount === 0 ? 0 : (page - 1) * OFFICER_MEMBERS_PAGE_SIZE + 1
+  const rangeEnd = Math.min(page * OFFICER_MEMBERS_PAGE_SIZE, totalCount)
 
-  const filtered = members.filter(m => {
-    const matchesSearch =
-      m.full_name.toLowerCase().includes(search.toLowerCase()) ||
-      (m.preferred_name?.toLowerCase().includes(search.toLowerCase())) ||
-      m.email.toLowerCase().includes(search.toLowerCase())
-    const matchesJT = filterJT === 'all' || m.jt_family === filterJT
-    return matchesSearch && matchesJT
-  })
+  const applyFilters = (next: { page?: number; q?: string; jt?: string; linked?: string }) => {
+    router.push(
+      buildMembersUrl(
+        next.page ?? 1,
+        next.q ?? searchInput,
+        next.jt ?? filterJT,
+        next.linked ?? filterLinked,
+      ),
+    )
+  }
 
   return (
-    <div style={{ padding: 28, maxWidth: 900, margin: '0 auto' }}>
-
-      {/* Header */}
-      <div style={{ marginBottom: 24 }}>
-        <h1 style={{ fontSize: 22, fontWeight: 700, color: '#fff' }}>Members</h1>
-        <div style={{ fontSize: 13, color: '#555', marginTop: 2 }}>
-          {semester?.name} · {members.length} active members
-        </div>
+    <div className="mx-auto max-w-5xl px-6 py-8 lg:px-8">
+      <div className="mb-6">
+        <h1 className="text-3xl font-bold tracking-tight text-text">Members</h1>
+        <p className="mt-1 text-sm text-subtitle">
+          {semester?.name} · {totalCount} active members
+          {notSignedInCount > 0 && (
+            <> · {notSignedInCount} haven&apos;t signed in with Google yet</>
+          )}
+        </p>
       </div>
 
-      {/* Search + filter */}
-      <div style={{ display: 'flex', gap: 10, marginBottom: 16 }}>
+      <form
+        className="mb-4 flex flex-col gap-3 lg:flex-row"
+        onSubmit={e => {
+          e.preventDefault()
+          applyFilters({ page: 1, q: searchInput })
+        }}
+      >
         <input
           placeholder="Search by name or email…"
-          value={search}
-          onChange={e => setSearch(e.target.value)}
-          style={{
-            flex: 1, padding: '10px 14px',
-            background: '#161a27', border: '1px solid #2a2f45',
-            borderRadius: 8, color: '#ddd', fontSize: 14,
-            fontFamily: 'inherit', outline: 'none',
-          }}
+          value={searchInput}
+          onChange={e => setSearchInput(e.target.value)}
+          className={inputClassName}
         />
         <select
           value={filterJT}
-          onChange={e => setFilterJT(e.target.value)}
-          style={{
-            padding: '10px 14px',
-            background: '#161a27', border: '1px solid #2a2f45',
-            borderRadius: 8, color: '#ddd', fontSize: 14,
-            fontFamily: 'inherit', outline: 'none', cursor: 'pointer',
-          }}
+          onChange={e => applyFilters({ page: 1, jt: e.target.value })}
+          className={`${inputClassName} cursor-pointer lg:max-w-[10rem]`}
         >
           <option value="all">All JTs</option>
           {jtFamilies.map(jt => (
-            <option key={jt} value={jt!}>{jt}</option>
+            <option key={jt} value={jt}>{jt}</option>
           ))}
         </select>
-      </div>
+        <select
+          value={filterLinked}
+          onChange={e => applyFilters({ page: 1, linked: e.target.value })}
+          className={`${inputClassName} cursor-pointer lg:max-w-[11rem]`}
+        >
+          <option value="all">All sign-in status</option>
+          <option value="connected">Signed in</option>
+          <option value="pending">Not signed in</option>
+        </select>
+        <button
+          type="submit"
+          className="rounded-xl bg-primary px-4 py-3 text-sm font-semibold text-white transition hover:bg-primary/90 sm:shrink-0"
+        >
+          Search
+        </button>
+      </form>
 
-      {/* Members table */}
-      <div style={{
-        background: '#161a27', borderRadius: 14,
-        border: '1px solid #1e2337', overflow: 'hidden',
-      }}>
-        {/* Column headers */}
-        <div style={{
-          display: 'grid',
-          gridTemplateColumns: '1fr 120px 80px 80px 80px 80px 80px',
-          padding: '10px 20px',
-          borderBottom: '1px solid #1a1e2e',
-          fontSize: 11, color: '#444', fontWeight: 600,
-          textTransform: 'uppercase', letterSpacing: '0.05em',
-        }}>
+      <div className="overflow-x-auto rounded-4xl border border-home-border bg-white shadow-sm">
+        <div className="grid min-w-[800px] grid-cols-[1fr_6.5rem_7rem_4rem_4rem_4rem_4rem_5.5rem] border-b border-home-border bg-bg px-5 py-3 text-[11px] font-semibold uppercase tracking-[0.05em] text-subtitle">
           <div>Member</div>
-          <div>JT Family</div>
-          <div style={{ textAlign: 'right' }}>Total</div>
-          <div style={{ textAlign: 'right' }}>CSA</div>
-          <div style={{ textAlign: 'right' }}>JT</div>
-          <div style={{ textAlign: 'right' }}>Sports</div>
-          <div style={{ textAlign: 'right' }}>GM</div>
+          <div>Sign-in</div>
+          <div>JT</div>
+          <div className="text-right">Total</div>
+          <div className="text-right">CSA</div>
+          <div className="text-right">JT</div>
+          <div className="text-right">{POINT_BUCKET_LABELS.sports}</div>
+          <div className="text-right">Gen. Mtg.</div>
         </div>
 
-        {filtered.length === 0 && (
-          <div style={{ padding: 32, textAlign: 'center', color: '#444', fontSize: 14 }}>
-            No members found.
-          </div>
+        {members.length === 0 && (
+          <div className="px-8 py-10 text-center text-sm text-subtitle">No members found.</div>
         )}
 
-        {filtered.map((m, i) => (
-          <div
+        {members.map(m => {
+          const displayName = m.full_name
+          return (
+          <Link
             key={m.id}
-            onClick={() => router.push(`/officer/members/${m.id}`)}
-            style={{
-              display: 'grid',
-              gridTemplateColumns: '1fr 120px 80px 80px 80px 80px 80px',
-              padding: '12px 20px',
-              borderBottom: i < filtered.length - 1 ? '1px solid #0f1117' : 'none',
-              alignItems: 'center',
-              cursor: 'pointer',
-              transition: 'background 0.1s',
-            }}
-            onMouseEnter={e => (e.currentTarget.style.background = '#1a1e2e')}
-            onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
+            href={`/officer/members/${m.id}`}
+            className="grid min-w-[800px] grid-cols-[1fr_6.5rem_7rem_4rem_4rem_4rem_4rem_5.5rem] items-center border-b border-home-border px-5 py-3 transition last:border-b-0 hover:bg-bg"
           >
-            {/* Member info */}
-            <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-              {m.profile_image_url ? (
-                <img
-                  src={m.profile_image_url}
-                  style={{ width: 32, height: 32, borderRadius: '50%', flexShrink: 0 }}
-                />
-              ) : (
-                <div style={{
-                  width: 32, height: 32, borderRadius: '50%', flexShrink: 0,
-                  background: (m.jt_color ?? '#4f6ef7') + '30',
-                  display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  fontSize: 12, fontWeight: 700, color: m.jt_color ?? '#4f6ef7',
-                }}>
-                  {(m.preferred_name || m.full_name)[0]}
-                </div>
-              )}
-              <div>
-                <div style={{ fontSize: 13, fontWeight: 500, color: '#ddd' }}>
-                  {m.preferred_name || m.full_name}
-                </div>
-                <div style={{ fontSize: 11, color: '#555' }}>{m.email}</div>
+            <div className="flex min-w-0 items-center gap-3">
+              <MemberAvatar
+                name={displayName}
+                profileImageUrl={m.profile_image_url}
+                color={m.jt_color}
+              />
+              <div className="min-w-0">
+                <div className="truncate text-sm font-medium text-text">{displayName}</div>
+                <div className="truncate text-xs text-subtitle">{m.email}</div>
               </div>
             </div>
-
-            {/* JT */}
+            <div>
+              <AccountLinkBadge linked={m.account_linked} compact />
+            </div>
             <div>
               {m.jt_family && (
-                <span style={{
-                  fontSize: 11, padding: '2px 8px', borderRadius: 20,
-                  fontWeight: 600,
-                  background: (m.jt_color ?? '#4f6ef7') + '20',
-                  color: m.jt_color ?? '#4f6ef7',
-                }}>
+                <span
+                  className="inline-block rounded-full px-2 py-0.5 text-[11px] font-semibold"
+                  style={{ background: `${m.jt_color ?? '#4779B8'}20`, color: m.jt_color ?? '#4779B8' }}
+                >
                   {m.jt_family}
                 </span>
               )}
             </div>
-
-            {/* Points */}
-            <div style={{ textAlign: 'right', fontSize: 14, fontWeight: 700, color: '#fff' }}>
-              {m.total_points}
-            </div>
-            <div style={{ textAlign: 'right', fontSize: 13, color: '#666' }}>{m.csa_points}</div>
-            <div style={{ textAlign: 'right', fontSize: 13, color: '#666' }}>{m.jt_points}</div>
-            <div style={{ textAlign: 'right', fontSize: 13, color: '#666' }}>{m.sports_points}</div>
-            <div style={{ textAlign: 'right', fontSize: 13, color: '#666' }}>{m.gm_points}</div>
-          </div>
-        ))}
+            <div className="text-right text-sm font-bold text-text">{m.total_points}</div>
+            <div className="text-right text-sm text-subtitle">{m.csa_points}</div>
+            <div className="text-right text-sm text-subtitle">{m.jt_points}</div>
+            <div className="text-right text-sm text-subtitle">{m.sports_points}</div>
+            <div className="text-right text-sm text-subtitle">{m.gm_points}</div>
+          </Link>
+          )
+        })}
       </div>
+
+      {totalCount > 0 && (
+        <div className="mt-4 flex flex-col items-center justify-between gap-3 sm:flex-row">
+          <p className="text-sm text-subtitle">
+            Showing {rangeStart}–{rangeEnd} of {totalCount}
+          </p>
+          <div className="flex items-center gap-2">
+            {page > 1 ? (
+              <Link
+                href={buildMembersUrl(page - 1, query, filterJT, filterLinked)}
+                className="rounded-xl border border-home-border bg-white px-4 py-2 text-sm font-medium text-subtitle transition hover:border-primary/30 hover:text-primary"
+              >
+                Previous
+              </Link>
+            ) : (
+              <span className="rounded-xl border border-home-border px-4 py-2 text-sm text-subtitle/40">
+                Previous
+              </span>
+            )}
+            <span className="px-2 text-sm text-subtitle">
+              Page {page} of {totalPages}
+            </span>
+            {page < totalPages ? (
+              <Link
+                href={buildMembersUrl(page + 1, query, filterJT, filterLinked)}
+                className="rounded-xl border border-home-border bg-white px-4 py-2 text-sm font-medium text-subtitle transition hover:border-primary/30 hover:text-primary"
+              >
+                Next
+              </Link>
+            ) : (
+              <span className="rounded-xl border border-home-border px-4 py-2 text-sm text-subtitle/40">
+                Next
+              </span>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   )
 }

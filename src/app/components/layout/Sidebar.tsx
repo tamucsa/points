@@ -1,10 +1,13 @@
 'use client'
-import { usePathname, useRouter } from 'next/navigation'
-import { createBrowserClient } from '@supabase/ssr'
+
+import Link from 'next/link'
+import { usePathname } from 'next/navigation'
+import { useEffect, useState } from 'react'
+import MemberAvatar from '@/app/components/MemberAvatar'
+import { createBrowserSupabase } from '@/utils/supabase/client'
 
 interface Member {
   id: string
-  preferred_name: string | null
   full_name: string
   role: string
   profile_image_url: string | null
@@ -19,228 +22,194 @@ interface NavItem {
 }
 
 const NAV_ITEMS: NavItem[] = [
-  { label: 'Leaderboard',     path: '/leaderboard',        emoji: '🏆' },
-  { label: 'Events',          path: '/events',             emoji: '📅' },
-  { label: 'My Points',       path: '/profile',            emoji: '⭐' },
-  { label: 'Members',         path: '/officer/members',    emoji: '👥', officerOnly: true },
-  { label: 'Officer Events',  path: '/officer/events',     emoji: '📋', officerOnly: true },
-  // { label: 'Semester',        path: '/officer/semester',   emoji: '📊', officerOnly: true },
-  { label: 'Admin',           path: '/admin/members',      emoji: '🔐', adminOnly: true },
+  { label: 'Leaderboard', path: '/leaderboard', emoji: '🏆' },
+  { label: 'Events', path: '/events', emoji: '📅' },
+  { label: 'My Points', path: '/profile', emoji: '⭐' },
+  { label: 'Members', path: '/officer/members', emoji: '👥', officerOnly: true },
+  { label: 'Officer Events', path: '/officer/events', emoji: '📋', officerOnly: true },
+  { label: 'Admin', path: '/admin/members', emoji: '🔐', adminOnly: true },
 ]
+
+const EXPANDED_WIDTH = '16rem'
+const COLLAPSED_WIDTH = '4.5rem'
 
 export default function Sidebar({ member }: { member: Member }) {
   const pathname = usePathname()
-  const router = useRouter()
+  const [collapsed, setCollapsed] = useState(false)
+  const [mobileOpen, setMobileOpen] = useState(false)
+  const [profileImageUrl, setProfileImageUrl] = useState(member.profile_image_url)
   const isOfficer = ['officer', 'admin'].includes(member.role)
   const isAdmin = member.role === 'admin'
 
-  const supabase = createBrowserClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-  )
+  useEffect(() => {
+    setProfileImageUrl(member.profile_image_url)
+  }, [member.profile_image_url])
 
-  const signOut = async () => {
-    await supabase.auth.signOut()
-    router.push('/login')
+  // Layout props can be stale across client navigations; refresh from DB.
+  useEffect(() => {
+    const supabase = createBrowserSupabase()
+    void supabase
+      .from('members')
+      .select('profile_image_url')
+      .eq('id', member.id)
+      .single()
+      .then(({ data }) => {
+        if (data?.profile_image_url) {
+          setProfileImageUrl(data.profile_image_url)
+        }
+      })
+  }, [member.id])
+
+  useEffect(() => {
+    const stored = localStorage.getItem('sidebar-collapsed')
+    if (stored === 'true') setCollapsed(true)
+  }, [])
+
+  const toggleCollapsed = () => {
+    setCollapsed(prev => {
+      const next = !prev
+      localStorage.setItem('sidebar-collapsed', String(next))
+      return next
+    })
   }
-
-  const visibleNav = NAV_ITEMS.filter(item => 
-  (!item.officerOnly || isOfficer) && (!item.adminOnly || isAdmin)
-)
 
   const generalNav = NAV_ITEMS.filter(item => !item.officerOnly && !item.adminOnly)
   const officerNav = NAV_ITEMS.filter(item => item.officerOnly)
   const adminNav = NAV_ITEMS.filter(item => item.adminOnly)
 
-  return (
-    <div style={{
-      width: 220,
-      background: '#0c0f1a',
-      borderRight: '1px solid #1a1e2e',
-      display: 'flex',
-      flexDirection: 'column',
-      padding: '24px 12px',
-      gap: 4,
-      flexShrink: 0,
-    }}>
-      {/* Logo */}
-      <div style={{ padding: '8px 12px 24px' }}>
-        <div style={{ fontSize: 18, fontWeight: 700, color: '#fff', letterSpacing: '-0.5px' }}>
-          CSA Points
-        </div>
-        <div style={{ fontSize: 12, color: '#555', marginTop: 2 }}>
-          {isOfficer ? member.role.charAt(0).toUpperCase() + member.role.slice(1) : 'Member'}
-        </div>
-      </div>
+  const displayName = member.full_name
 
-      {/* Top-level Nav items */}
-      {generalNav.map(item => {
-        const active = pathname.startsWith(item.path)
-        return (
-          <button
-            key={item.path}
-            onClick={() => router.push(item.path)}
-            style={{
-              background: active ? '#1e2130' : 'none',
-              border: 'none',
-              cursor: 'pointer',
-              padding: '8px 12px',
-              borderRadius: 8,
-              fontFamily: 'inherit',
-              fontSize: 14,
-              fontWeight: 500,
-              color: active ? '#fff' : '#666',
-              textAlign: 'left',
-              transition: 'all 0.15s',
-              display: 'flex',
-              alignItems: 'center',
-              gap: 8,
-            }}
-          >
-            <span>{item.emoji}</span>
-            <span>{item.label}</span>
-          </button>
-        )
-      })}
+  const navLink = (item: NavItem) => {
+    const active = pathname.startsWith(item.path)
+    return (
+      <Link
+        key={item.path}
+        href={item.path}
+        title={collapsed ? item.label : undefined}
+        onClick={() => setMobileOpen(false)}
+        className={`mb-1 flex items-center rounded-2xl text-sm font-medium transition ${
+          collapsed ? 'justify-center px-2 py-3' : 'gap-3 px-3 py-3'
+        } ${active ? 'bg-primary/10 text-primary shadow-sm' : 'text-subtitle hover:bg-bg hover:text-text'}`}
+      >
+        <span className="shrink-0 text-base">{item.emoji}</span>
+        {!collapsed && <span className="truncate">{item.label}</span>}
+      </Link>
+    )
+  }
 
-      {/* Officer section */}
-      {isOfficer && (
-        <>
-          <div style={{
-            fontSize: 11,
-            color: '#333',
-            fontWeight: 600,
-            textTransform: 'uppercase',
-            letterSpacing: '0.08em',
-            padding: '16px 12px 4px',
-          }}>
-            Officer
-          </div>
-          {officerNav.map(item => {
-            const active = pathname.startsWith(item.path)
-            return (
-              <button
-                key={item.path}
-                onClick={() => router.push(item.path)}
-                style={{
-                  background: active ? '#1e2130' : 'none',
-                  border: 'none',
-                  cursor: 'pointer',
-                  padding: '8px 12px',
-                  borderRadius: 8,
-                  fontFamily: 'inherit',
-                  fontSize: 14,
-                  fontWeight: 500,
-                  color: active ? '#fff' : '#666',
-                  textAlign: 'left',
-                  transition: 'all 0.15s',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: 8,
-                }}
-              >
-                <span>{item.emoji}</span>
-                <span>{item.label}</span>
-              </button>
-            )
-          })}
-        </>
-      )}
-
-      {/* Admin section */}
-      {isAdmin && (
-        <>
-          <div style={{
-            fontSize: 11,
-            color: '#333',
-            fontWeight: 600,
-            textTransform: 'uppercase',
-            letterSpacing: '0.08em',
-            padding: '16px 12px 4px',
-          }}>
-            Admin
-          </div>
-          {adminNav.map(item => {
-            const active = pathname.startsWith(item.path)
-            return (
-              <button
-                key={item.path}
-                onClick={() => router.push(item.path)}
-                style={{
-                  background: active ? '#1e2130' : 'none',
-                  border: 'none',
-                  cursor: 'pointer',
-                  padding: '8px 12px',
-                  borderRadius: 8,
-                  fontFamily: 'inherit',
-                  fontSize: 14,
-                  fontWeight: 500,
-                  color: active ? '#fff' : '#666',
-                  textAlign: 'left',
-                  transition: 'all 0.15s',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: 8,
-                }}
-              >
-                <span>{item.emoji}</span>
-                <span>{item.label}</span>
-              </button>
-            )
-          })}
-        </>
-      )}
-
-      {/* User info + sign out */}
-      <div style={{ marginTop: 'auto' }}>
-        <div style={{
-          padding: 12,
-          background: '#161a27',
-          borderRadius: 10,
-          border: '1px solid #1e2337',
-        }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 10 }}>
-            {member.profile_image_url ? (
-              <img
-                src={member.profile_image_url}
-                style={{ width: 32, height: 32, borderRadius: '50%' }}
-              />
-            ) : (
-              <div style={{
-                width: 32, height: 32, borderRadius: '50%',
-                background: '#4f6ef720',
-                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                fontSize: 13, fontWeight: 700, color: '#4f6ef7',
-              }}>
-                {(member.preferred_name || member.full_name)[0]}
-              </div>
-            )}
-            <div>
-              <div style={{ fontSize: 13, fontWeight: 500, color: '#ccc' }}>
-                {member.preferred_name || member.full_name}
-              </div>
-              <div style={{ fontSize: 11, color: '#555' }}>{member.role}</div>
+  const sidebarContent = (
+    <>
+      <div className={`flex items-center border-b border-home-border pb-5 ${collapsed ? 'justify-center px-2' : 'justify-between px-2'}`}>
+        {!collapsed && (
+          <div className="min-w-0">
+            <div className="truncate text-[1.15rem] font-bold tracking-[-0.04em] text-text">
+              CSA Points
+            </div>
+            <div className="mt-1 text-xs text-subtitle">
+              {isOfficer ? member.role.charAt(0).toUpperCase() + member.role.slice(1) : 'Member'}
             </div>
           </div>
+        )}
+        <button
+          type="button"
+          onClick={toggleCollapsed}
+          aria-label={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+          className="hidden shrink-0 rounded-xl border border-home-border bg-white p-2 text-subtitle transition hover:border-primary/30 hover:text-primary lg:flex"
+        >
+          {collapsed ? '→' : '←'}
+        </button>
+      </div>
+
+      <nav className="flex-1 overflow-y-auto py-4">
+        {generalNav.map(navLink)}
+
+        {isOfficer && (
+          <>
+            {!collapsed && (
+              <div className="px-3 pt-5 pb-2 text-[0.7rem] font-semibold uppercase tracking-[0.12em] text-subtitle">
+                Officer
+              </div>
+            )}
+            {collapsed && <div className="my-2 border-t border-home-border" />}
+            {officerNav.map(navLink)}
+          </>
+        )}
+
+        {isAdmin && (
+          <>
+            {!collapsed && (
+              <div className="px-3 pt-5 pb-2 text-[0.7rem] font-semibold uppercase tracking-[0.12em] text-subtitle">
+                Admin
+              </div>
+            )}
+            {collapsed && <div className="my-2 border-t border-home-border" />}
+            {adminNav.map(navLink)}
+          </>
+        )}
+      </nav>
+
+      <div className="shrink-0 border-t border-home-border pt-4">
+        <div className={`rounded-3xl border border-home-border bg-bg shadow-sm ${collapsed ? 'p-2' : 'p-4'}`}>
+          <div className={`flex items-center ${collapsed ? 'justify-center' : 'gap-3'}`}>
+            <MemberAvatar
+              name={displayName}
+              profileImageUrl={profileImageUrl}
+            />
+            {!collapsed && (
+              <div className="min-w-0">
+                <div className="truncate text-sm font-medium text-text">{displayName}</div>
+                <div className="text-xs text-subtitle">{member.role}</div>
+              </div>
+            )}
+          </div>
           <button
-            onClick={signOut}
-            style={{
-              width: '100%',
-              padding: '6px 0',
-              background: 'transparent',
-              border: '1px solid #2a2f45',
-              borderRadius: 6,
-              color: '#555',
-              fontSize: 12,
-              fontFamily: 'inherit',
-              cursor: 'pointer',
-              transition: 'all 0.15s',
-            }}
+            type="button"
+            onClick={() => { window.location.href = '/api/auth/signout' }}
+            className={`mt-3 w-full rounded-xl border border-home-border bg-white text-sm text-subtitle transition hover:border-primary/30 hover:text-primary ${collapsed ? 'px-2 py-2' : 'px-3 py-2'}`}
+            title={collapsed ? 'Sign out' : undefined}
           >
-            Sign out
+            {collapsed ? '⎋' : 'Sign out'}
           </button>
         </div>
       </div>
-    </div>
+    </>
+  )
+
+  return (
+    <>
+      {/* Mobile top bar */}
+      <div className="fixed inset-x-0 top-0 z-40 flex h-14 items-center gap-3 border-b border-home-border bg-white px-4 lg:hidden">
+        <button
+          type="button"
+          onClick={() => setMobileOpen(true)}
+          aria-label="Open menu"
+          className="rounded-xl border border-home-border px-3 py-2 text-sm text-subtitle"
+        >
+          ☰
+        </button>
+        <span className="font-bold text-text">CSA Points</span>
+      </div>
+
+      {/* Mobile overlay */}
+      {mobileOpen && (
+        <button
+          type="button"
+          aria-label="Close menu"
+          className="fixed inset-0 z-40 bg-black/40 lg:hidden"
+          onClick={() => setMobileOpen(false)}
+        />
+      )}
+
+      {/* Sidebar */}
+      <aside
+        style={{ width: collapsed ? COLLAPSED_WIDTH : EXPANDED_WIDTH }}
+        className={`fixed inset-y-0 left-0 z-50 flex shrink-0 flex-col border-r border-home-border bg-white px-3 py-5 shadow-[8px_0_40px_rgba(15,23,42,0.04)] transition-[width] duration-200 lg:sticky lg:top-0 lg:z-auto lg:h-screen ${
+          mobileOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'
+        }`}
+      >
+        {sidebarContent}
+      </aside>
+
+    </>
   )
 }

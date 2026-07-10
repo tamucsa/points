@@ -1,14 +1,22 @@
 'use client'
+
+import { useState } from 'react'
 import { useRouter } from 'next/navigation'
+import { publishJiatingStandings } from '@/app/actions/jt-standings'
+import { updateEventRsvp } from '@/app/actions/events'
+import MemberAvatar from '@/app/components/MemberAvatar'
+import { isGeneralMeetingCategory } from '@/utils/events'
+import { formatEventSchedule } from '@/utils/datetime'
+import { CHECKIN_METHOD_LABELS, inputClassName, labelClassName } from '@/utils/constants'
 
 interface Event {
   id: string
   name: string
   category: string
   point_value: number
-  scope: string
   check_in_type: string
-  event_date: string
+  starts_at: string
+  ends_at: string | null
   location: string | null
   description: string | null
   check_in_code: string | null
@@ -23,99 +31,115 @@ interface AttendanceRow {
   counted: boolean
   recorded_at: string
   members: {
-    id: string
     full_name: string
-    preferred_name: string | null
     profile_image_url: string | null
-  }
+  } | null
+}
+
+interface PublishedSnapshot {
+  id: string
+  snapshot_at: string
+  label: string | null
 }
 
 interface Props {
   event: Event
   attendance: AttendanceRow[]
+  publishedSnapshot: PublishedSnapshot | null
 }
 
-const POINT_COLORS: Record<number, string> = {
-  3: '#4f6ef7',
-  2: '#f7934f',
-  1: '#4fc787',
-}
-
-const CHECKIN_LABELS: Record<string, string> = {
-  officer: '👤 Officer',
-  qr_scan: '🔲 QR Scan',
-  self:    '🔲 Self',
-}
-
-export default function EventDetailClient({ event, attendance }: Props) {
+export default function EventDetailClient({ event, attendance, publishedSnapshot }: Props) {
   const router = useRouter()
-  const pointColor = POINT_COLORS[event.point_value] ?? '#888'
+  const [publishing, setPublishing] = useState(false)
+  const [publishError, setPublishError] = useState<string | null>(null)
+  const [published, setPublished] = useState(publishedSnapshot)
+  const [rsvpUrl, setRsvpUrl] = useState(event.rsvp_url ?? '')
+  const [rsvpDeadline, setRsvpDeadline] = useState(
+    event.rsvp_deadline ? event.rsvp_deadline.slice(0, 16) : '',
+  )
+  const [rsvpSaving, setRsvpSaving] = useState(false)
+  const [rsvpError, setRsvpError] = useState<string | null>(null)
+  const [rsvpSaved, setRsvpSaved] = useState(false)
+  const isGm = isGeneralMeetingCategory(event.category)
+  const isRsvpEvent = event.check_in_type === 'rsvp_required'
+
+  const handleSaveRsvp = async () => {
+    setRsvpSaving(true)
+    setRsvpError(null)
+    setRsvpSaved(false)
+
+    const result = await updateEventRsvp(
+      event.id,
+      rsvpUrl.trim() || null,
+      rsvpDeadline || null,
+    )
+
+    setRsvpSaving(false)
+    if (!result.success) {
+      setRsvpError(result.error ?? 'Failed to save RSVP details.')
+      return
+    }
+    setRsvpSaved(true)
+    router.refresh()
+  }
+
+  const handlePublishStandings = async () => {
+    if (!window.confirm('Publish Jiating standings from current point totals? Members will see this snapshot on the leaderboard until the next General Meeting.')) {
+      return
+    }
+
+    setPublishing(true)
+    setPublishError(null)
+
+    const result = await publishJiatingStandings(event.id)
+    setPublishing(false)
+
+    if (!result.success) {
+      setPublishError(result.error ?? 'Failed to publish standings.')
+      return
+    }
+
+    setPublished({
+      id: result.snapshotId,
+      snapshot_at: new Date().toISOString(),
+      label: event.name,
+    })
+  }
 
   return (
-    <div style={{ padding: 28, maxWidth: 800, margin: '0 auto' }}>
-
-      {/* Back button */}
+    <div className="mx-auto max-w-3xl px-6 py-8 lg:px-8">
       <button
         onClick={() => router.back()}
-        style={{
-          background: 'none', border: 'none', color: '#555',
-          cursor: 'pointer', fontFamily: 'inherit',
-          fontSize: 13, padding: 0, marginBottom: 20,
-        }}
+        className="mb-5 text-sm text-subtitle transition hover:text-primary"
       >
         ← Back
       </button>
 
-      {/* Event header */}
-      <div style={{
-        padding: 24, background: '#161a27',
-        borderRadius: 14, border: '1px solid #1e2337',
-        marginBottom: 24,
-      }}>
-        <div style={{ display: 'flex', alignItems: 'flex-start', gap: 16 }}>
-          <div style={{
-            width: 52, height: 52, borderRadius: 12, flexShrink: 0,
-            background: pointColor + '20',
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-            fontSize: 22, fontWeight: 800, color: pointColor,
-          }}>
+      <div className="mb-6 rounded-4xl border border-home-border bg-white p-6 shadow-sm">
+        <div className="flex gap-4">
+          <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-primary/10 text-2xl font-extrabold text-primary">
             {event.point_value}
           </div>
-          <div style={{ flex: 1 }}>
-            <h1 style={{ fontSize: 20, fontWeight: 700, color: '#fff', marginBottom: 8 }}>
-              {event.name}
-            </h1>
-            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 12, fontSize: 13, color: '#666' }}>
-              <span>📅 {new Date(event.event_date).toLocaleDateString('en-US', {
-                weekday: 'long', month: 'long', day: 'numeric', year: 'numeric'
-              })}</span>
-              {event.location && <span>📍 {event.location}</span>}
-              <span style={{
-                padding: '1px 8px', borderRadius: 4,
-                background: '#ffffff10', color: '#666',
-              }}>
-                {event.category}
+          <div className="min-w-0 flex-1">
+            <h1 className="text-2xl font-bold text-text">{event.name}</h1>
+            <div className="mt-2 flex flex-wrap gap-2 text-sm text-subtitle">
+              <span>
+                🕐 {formatEventSchedule(event.starts_at, event.ends_at)}
               </span>
+              {event.location && <span>📍 {event.location}</span>}
+              <span className="rounded-md bg-bg px-2 py-0.5 text-xs">{event.category}</span>
             </div>
             {event.description && (
-              <p style={{ fontSize: 13, color: '#555', marginTop: 10 }}>
-                {event.description}
-              </p>
+              <p className="mt-3 text-sm leading-6 text-subtitle">{event.description}</p>
             )}
           </div>
         </div>
 
-        {/* Action buttons */}
-        <div style={{ display: 'flex', gap: 10, marginTop: 20 }}>
-          {event.check_in_type === 'officer' && (
+        <div className="mt-5 flex flex-wrap gap-2">
+          {(event.check_in_type === 'officer' || event.check_in_type === 'rsvp_required') && (
             <button
               onClick={() => router.push(`/officer/events/${event.id}/checkin`)}
-              style={{
-                padding: '8px 16px', background: '#4fc78720',
-                border: '1px solid #4fc78740', color: '#4fc787',
-                borderRadius: 8, fontSize: 13, fontWeight: 600,
-                cursor: 'pointer', fontFamily: 'inherit',
-              }}
+              className="rounded-xl bg-primary px-4 py-2 text-sm font-semibold text-white"
             >
               Check In Members
             </button>
@@ -123,12 +147,7 @@ export default function EventDetailClient({ event, attendance }: Props) {
           {event.check_in_type === 'self' && event.check_in_code && (
             <button
               onClick={() => window.open(`/officer/events/${event.id}/qr`, '_blank')}
-              style={{
-                padding: '8px 16px', background: '#4f6ef720',
-                border: '1px solid #4f6ef740', color: '#4f6ef7',
-                borderRadius: 8, fontSize: 13, fontWeight: 600,
-                cursor: 'pointer', fontFamily: 'inherit',
-              }}
+              className="rounded-xl border border-primary/30 bg-primary/10 px-4 py-2 text-sm font-semibold text-primary"
             >
               Open QR Full Screen
             </button>
@@ -138,100 +157,131 @@ export default function EventDetailClient({ event, attendance }: Props) {
               href={event.rsvp_url}
               target="_blank"
               rel="noopener noreferrer"
-              style={{
-                padding: '8px 16px', background: '#f7934f20',
-                border: '1px solid #f7934f40', color: '#f7934f',
-                borderRadius: 8, fontSize: 13, fontWeight: 600,
-                textDecoration: 'none', display: 'inline-block',
-              }}
+              className="rounded-xl border border-home-border px-4 py-2 text-sm font-semibold text-subtitle"
             >
               View RSVP Form
             </a>
           )}
+          {isGm && !published && (
+            <button
+              type="button"
+              onClick={() => void handlePublishStandings()}
+              disabled={publishing}
+              className="rounded-xl border border-primary/30 bg-primary/10 px-4 py-2 text-sm font-semibold text-primary transition hover:bg-primary/15 disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              {publishing ? 'Publishing…' : 'Publish Jiating standings'}
+            </button>
+          )}
+          {isGm && published && (
+            <span className="inline-flex items-center rounded-xl border border-green-200 bg-green-50 px-4 py-2 text-sm font-medium text-green-700">
+              Standings published
+            </span>
+          )}
         </div>
+        {publishError && (
+          <p className="mt-3 text-sm text-red-600">{publishError}</p>
+        )}
+        {isRsvpEvent && (
+          <div className="mt-5 space-y-3 rounded-2xl border border-home-border bg-bg p-4">
+            <div className="text-sm font-semibold text-text">RSVP details</div>
+            <div>
+              <label className={labelClassName}>RSVP Link</label>
+              <input
+                className={inputClassName}
+                placeholder="https://forms.gle/..."
+                value={rsvpUrl}
+                onChange={e => {
+                  setRsvpUrl(e.target.value)
+                  setRsvpSaved(false)
+                }}
+              />
+            </div>
+            <div>
+              <label className={labelClassName}>RSVP Deadline</label>
+              <input
+                type="datetime-local"
+                className={inputClassName}
+                value={rsvpDeadline}
+                onChange={e => {
+                  setRsvpDeadline(e.target.value)
+                  setRsvpSaved(false)
+                }}
+              />
+            </div>
+            {rsvpError && <p className="text-sm text-red-600">{rsvpError}</p>}
+            {rsvpSaved && <p className="text-sm text-green-700">RSVP details saved.</p>}
+            <button
+              type="button"
+              onClick={() => void handleSaveRsvp()}
+              disabled={rsvpSaving}
+              className="rounded-xl bg-primary px-4 py-2 text-sm font-semibold text-white disabled:opacity-60"
+            >
+              {rsvpSaving ? 'Saving…' : 'Save RSVP details'}
+            </button>
+          </div>
+        )}
+        {isGm && published && (
+          <p className="mt-3 text-xs text-subtitle">
+            Published {new Date(published.snapshot_at).toLocaleString('en-US', {
+              month: 'short',
+              day: 'numeric',
+              year: 'numeric',
+              hour: 'numeric',
+              minute: '2-digit',
+            })}
+            {' · '}
+            <button
+              type="button"
+              onClick={() => router.push('/leaderboard/standings')}
+              className="font-medium text-primary hover:underline"
+            >
+              View on leaderboard
+            </button>
+          </p>
+        )}
       </div>
 
-      {/* Attendance list */}
-      <div>
-        <div style={{
-          display: 'flex', alignItems: 'center',
-          justifyContent: 'space-between', marginBottom: 12,
-        }}>
-          <h2 style={{ fontSize: 16, fontWeight: 700, color: '#fff' }}>
-            Attendance
-          </h2>
-          <span style={{ fontSize: 13, color: '#555' }}>
-            {attendance.length} checked in
-          </span>
-        </div>
+      <div className="mb-3 flex items-center justify-between">
+        <h2 className="text-lg font-bold text-text">Attendance</h2>
+        <span className="text-sm text-subtitle">{attendance.length} checked in</span>
+      </div>
 
-        <div style={{
-          background: '#161a27', borderRadius: 14,
-          border: '1px solid #1e2337', overflow: 'hidden',
-        }}>
-          {attendance.length === 0 && (
-            <div style={{ padding: 32, textAlign: 'center', color: '#444', fontSize: 14 }}>
-              No check-ins yet.
+      <div className="overflow-hidden rounded-4xl border border-home-border bg-white shadow-sm">
+        {attendance.length === 0 && (
+          <div className="px-8 py-10 text-center text-sm text-subtitle">No check-ins yet.</div>
+        )}
+        {attendance.map(row => {
+          const displayName = row.members?.full_name ?? 'Unknown member'
+          return (
+          <div key={row.id} className="flex items-center gap-4 border-b border-home-border px-5 py-3 last:border-b-0">
+            <MemberAvatar
+              name={displayName}
+              profileImageUrl={row.members?.profile_image_url ?? null}
+            />
+            <div className="min-w-0 flex-1">
+              <div className="truncate text-sm font-medium text-text">
+                {displayName}
+              </div>
+              <div className="text-xs text-subtitle">
+                {new Date(row.recorded_at).toLocaleTimeString('en-US', {
+                  hour: 'numeric', minute: '2-digit',
+                })}
+              </div>
             </div>
-          )}
-          {attendance.map((row, i) => (
-            <div key={row.id} style={{
-              display: 'flex', alignItems: 'center', gap: 14,
-              padding: '12px 20px',
-              borderBottom: i < attendance.length - 1 ? '1px solid #0f1117' : 'none',
-            }}>
-              {row.members.profile_image_url ? (
-                <img
-                  src={row.members.profile_image_url}
-                  style={{ width: 32, height: 32, borderRadius: '50%', flexShrink: 0 }}
-                />
-              ) : (
-                <div style={{
-                  width: 32, height: 32, borderRadius: '50%',
-                  background: '#4f6ef720', flexShrink: 0,
-                  display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  fontSize: 12, fontWeight: 700, color: '#4f6ef7',
-                }}>
-                  {(row.members.preferred_name || row.members.full_name)[0]}
-                </div>
+            <div className="flex shrink-0 flex-wrap gap-1">
+              <span className="rounded-md bg-bg px-2 py-0.5 text-[11px] text-subtitle">
+                {CHECKIN_METHOD_LABELS[row.check_in_method] ?? row.check_in_method}
+              </span>
+              {!row.verified && (
+                <span className="rounded-md bg-orange-50 px-2 py-0.5 text-[11px] text-orange-600">Unverified</span>
               )}
-              <div style={{ flex: 1 }}>
-                <div style={{ fontSize: 13, fontWeight: 500, color: '#ddd' }}>
-                  {row.members.preferred_name || row.members.full_name}
-                </div>
-                <div style={{ fontSize: 11, color: '#555', marginTop: 2 }}>
-                  {new Date(row.recorded_at).toLocaleTimeString('en-US', {
-                    hour: 'numeric', minute: '2-digit'
-                  })}
-                </div>
-              </div>
-              <div style={{ display: 'flex', gap: 6 }}>
-                <span style={{
-                  fontSize: 11, padding: '2px 7px', borderRadius: 4,
-                  background: '#ffffff08', color: '#555',
-                }}>
-                  {CHECKIN_LABELS[row.check_in_method] ?? row.check_in_method}
-                </span>
-                {!row.verified && (
-                  <span style={{
-                    fontSize: 11, padding: '2px 7px', borderRadius: 4,
-                    background: '#f7934f15', color: '#f7934f',
-                  }}>
-                    Unverified
-                  </span>
-                )}
-                {!row.counted && (
-                  <span style={{
-                    fontSize: 11, padding: '2px 7px', borderRadius: 4,
-                    background: '#e74c3c15', color: '#e74c3c',
-                  }}>
-                    Cap reached
-                  </span>
-                )}
-              </div>
+              {!row.counted && (
+                <span className="rounded-md bg-red-50 px-2 py-0.5 text-[11px] text-red-500">Cap reached</span>
+              )}
             </div>
-          ))}
-        </div>
+          </div>
+          )
+        })}
       </div>
     </div>
   )

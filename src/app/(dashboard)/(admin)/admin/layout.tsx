@@ -1,37 +1,25 @@
-import { createServerClient } from '@supabase/ssr'
-import { cookies } from 'next/headers'
 import { redirect } from 'next/navigation'
+import AdminNav from '@/app/(dashboard)/(admin)/admin/components/AdminNav'
+import { getCurrentMember } from '@/utils/supabase/auth'
 
 export default async function AdminLayout({
   children,
 }: {
   children: React.ReactNode
 }) {
-  const cookieStore = await cookies()
-  const supabase = createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-    {
-      cookies: {
-        getAll() { return cookieStore.getAll() },
-        setAll() {},
-      },
-    }
-  )
+  const { user, member } = await getCurrentMember()
 
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) redirect('/login')
-
-  const { data: member } = await supabase
-    .from('members')
-    .select('role')
-    .eq('auth_uid', user.id)
-    .single()
-
-  // Admin only — officers get redirected
+  if (!user) redirect('/')
   if (!member || member.role !== 'admin') {
     redirect('/leaderboard')
   }
 
-  return <>{children}</>
+  return (
+    <>
+      <div className="mx-auto max-w-5xl px-6 pt-8 lg:px-8">
+        <AdminNav />
+      </div>
+      {children}
+    </>
+  )
 }

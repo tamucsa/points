@@ -1,23 +1,12 @@
-import { createServerClient } from '@supabase/ssr'
-import { cookies } from 'next/headers'
 import { redirect } from 'next/navigation'
 import OfficerEventsClient from '@/app/(dashboard)/(officer)/officer/events/components/OfficerEventsClient'
+import { createServerSupabase } from '@/utils/supabase/server'
 
 export default async function OfficerEventsPage() {
-  const cookieStore = await cookies()
-  const supabase = createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-    {
-      cookies: {
-        getAll() { return cookieStore.getAll() },
-        setAll() {},
-      },
-    }
-  )
+  const supabase = await createServerSupabase()
 
   const { data: { user } } = await supabase.auth.getUser()
-  if (!user) redirect('/login')
+  if (!user) redirect('/')
 
   const { data: semester } = await supabase
     .from('semesters')
@@ -30,7 +19,7 @@ export default async function OfficerEventsPage() {
     .select('*')
     .eq('semester_id', semester?.id)
     .is('parent_event_id', null)       // hide spectator child events from main list
-    .order('event_date', { ascending: false })
+    .order('starts_at', { ascending: false })
 
   // Get attendance counts per event
   const { data: counts } = await supabase

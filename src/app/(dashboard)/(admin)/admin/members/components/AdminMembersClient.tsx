@@ -1,11 +1,11 @@
 'use client'
-import { useState } from 'react'
-import { createBrowserClient } from '@supabase/ssr'
+import { useRef, useState } from 'react'
+import { activateMember, importMembers, type ImportMode, type JtChange } from '@/app/actions/members'
+import MemberAvatar from '@/app/components/MemberAvatar'
 
 interface PendingMember {
   id: string
   full_name: string
-  preferred_name: string | null
   email: string
   graduation_year: number | null
   created_at: string
@@ -23,16 +23,38 @@ interface Props {
 
 interface CSVRow {
   'Full Name': string
-  'Preferred Name': string
   'TAMU Email': string
+  'Jiating': string
   'Phone': string
-  'Graduation Year': string
+  'Class': string
 }
 
 interface ImportResult {
   added: number
-  skipped: number
+  updated: number
+  unchanged: number
+  jtChanged: number
+  jtChanges: JtChange[]
   errors: string[]
+}
+
+function buildMemberImportTemplate(jtFamilies: JTFamily[]) {
+  const jt1 = jtFamilies[0]?.name ?? 'Jiating A'
+  const jt2 = jtFamilies[1]?.name ?? jt1
+  return `Full Name,TAMU Email,Jiating,Phone,Class
+John Smith,john.smith@tamu.edu,${jt1},(979) 555-0101,2027
+Jane Doe,jane.doe@tamu.edu,${jt2},(979) 555-0102,2028
+Alex Chen,alex.chen@tamu.edu,${jt1},979-555-0199,2026`
+}
+
+function downloadMemberImportTemplate(jtFamilies: JTFamily[]) {
+  const blob = new Blob([buildMemberImportTemplate(jtFamilies)], { type: 'text/csv;charset=utf-8' })
+  const url = URL.createObjectURL(blob)
+  const link = document.createElement('a')
+  link.href = url
+  link.download = 'csa-member-import-template.csv'
+  link.click()
+  URL.revokeObjectURL(url)
 }
 
 function parseCSV(text: string): CSVRow[] {
@@ -58,17 +80,16 @@ function parseCSV(text: string): CSVRow[] {
 }
 
 export default function AdminMembersClient({ pending: initialPending, jtFamilies }: Props) {
-  const supabase = createBrowserClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-  )
-
   const [pending, setPending] = useState(initialPending)
   const [assignments, setAssignments] = useState<Record<string, string>>({})
   const [saving, setSaving] = useState<string | null>(null)
   const [importResult, setImportResult] = useState<ImportResult | null>(null)
   const [importing, setImporting] = useState(false)
+  const [dragActive, setDragActive] = useState(false)
+  const [selectedFile, setSelectedFile] = useState<File | null>(null)
   const [tab, setTab] = useState<'pending' | 'import'>('pending')
+  const [importMode, setImportMode] = useState<ImportMode>('full')
+  const fileInputRef = useRef<HTMLInputElement>(null)
 
   const assignJT = async (memberId: string) => {
     const jtFamilyId = assignments[memberId]
@@ -76,92 +97,107 @@ export default function AdminMembersClient({ pending: initialPending, jtFamilies
 
     setSaving(memberId)
 
-    await supabase
-      .from('members')
-      .update({ jt_family_id: jtFamilyId, status: 'active' })
-      .eq('id', memberId)
+    const result = await activateMember(memberId, jtFamilyId)
+    setSaving(null)
+
+    if (!result.success) return
 
     setPending(p => p.filter(m => m.id !== memberId))
-    setSaving(null)
   }
 
-  const handleCSV = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0]
-    if (!file) return
+  const processCsvFile = async (file: File) => {
+    if (!file.name.toLowerCase().endsWith('.csv')) return
+
+    setSelectedFile(file)
+    setImportResult(null)
     setImporting(true)
 
-    file.text().then(async (text) => {
-      const summary: ImportResult = { added: 0, skipped: 0, errors: [] }
+    try {
+      const text = await file.text()
       const rows = parseCSV(text)
+      const result = await importMembers(rows.map(row => ({
+        fullName: row['Full Name'],
+        email: row['TAMU Email'],
+        jtFamily: row['Jiating'],
+        phone: row['Phone'],
+        classYear: row['Class'],
+      })), importMode)
 
-      for (const row of rows) {
-        const email = row['TAMU Email']?.trim().toLowerCase()
-
-        if (!email?.endsWith('@tamu.edu')) {
-          summary.errors.push(`${email} — not a @tamu.edu address`)
-          continue
-        }
-
-        const { data: existing } = await supabase
-          .from('members')
-          .select('id')
-          .eq('email', email)
-          .single()
-
-        if (existing) {
-          summary.skipped++
-          continue
-        }
-
-        const { error } = await supabase.from('members').insert({
-          email,
-          full_name:       row['Full Name']?.trim(),
-          preferred_name:  row['Preferred Name']?.trim() || null,
-          phone:           row['Phone']?.trim() || null,
-          graduation_year: parseInt(row['Graduation Year']) || null,
-          status:          'pending_jt',
-          role:            'member',
+      if (result.success) {
+        setImportResult({
+          added: result.added,
+          updated: result.updated,
+          unchanged: result.unchanged,
+          jtChanged: result.jtChanged,
+          jtChanges: result.jtChanges,
+          errors: result.errors,
         })
-
-        if (error) {
-          summary.errors.push(`${email} — ${error.message}`)
-        } else {
-          summary.added++
-        }
-
+      } else {
+        setImportResult({
+          added: 0,
+          updated: 0,
+          unchanged: 0,
+          jtChanged: 0,
+          jtChanges: [],
+          errors: result.errors,
+        })
       }
+    } catch {
+      setImportResult({
+        added: 0,
+        updated: 0,
+        unchanged: 0,
+        jtChanged: 0,
+        jtChanges: [],
+        errors: ['Failed to read the CSV file.'],
+      })
+    } finally {
+      setImporting(false)
+    }
+  }
 
-      setImportResult(summary)
-      setImporting(false)
-    }).catch(() => {
-      setImporting(false)
-    })
+  const handleFileInput = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (file) void processCsvFile(file)
+    e.target.value = ''
+  }
+
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault()
+    setDragActive(false)
+    const file = e.dataTransfer.files?.[0]
+    if (file) void processCsvFile(file)
+  }
+
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault()
+    if (!importing) setDragActive(true)
+  }
+
+  const handleDragLeave = (e: React.DragEvent) => {
+    e.preventDefault()
+    if (e.currentTarget.contains(e.relatedTarget as Node)) return
+    setDragActive(false)
   }
 
   return (
-    <div style={{ padding: 28, maxWidth: 800, margin: '0 auto' }}>
+    <div className="mx-auto max-w-5xl px-6 py-8 lg:px-8">
 
       {/* Header */}
-      <div style={{ marginBottom: 24 }}>
-        <h1 style={{ fontSize: 22, fontWeight: 700, color: '#fff' }}>Member Admin</h1>
-        <div style={{ fontSize: 13, color: '#555', marginTop: 2 }}>
+      <div className="mb-6">
+        <h1 className="text-3xl font-bold tracking-tight text-text">Member Admin</h1>
+        <div className="mt-1 text-sm text-subtitle">
           Admin only
         </div>
       </div>
 
       {/* Tabs */}
-      <div style={{ display: 'flex', gap: 4, marginBottom: 24, background: '#0f1117', padding: 4, borderRadius: 8, width: 'fit-content' }}>
+      <div className="mb-6 inline-flex rounded-2xl border border-home-border bg-white p-1 shadow-sm">
         {(['pending', 'import'] as const).map(t => (
           <button
             key={t}
             onClick={() => setTab(t)}
-            style={{
-              padding: '6px 16px', borderRadius: 6, border: 'none',
-              fontFamily: 'inherit', fontSize: 13, fontWeight: 500,
-              cursor: 'pointer',
-              background: tab === t ? '#1e2337' : 'transparent',
-              color: tab === t ? '#fff' : '#555',
-            }}
+            className={`rounded-xl px-4 py-2 text-sm font-medium transition ${tab === t ? 'bg-primary text-white shadow-sm' : 'text-subtitle hover:bg-bg hover:text-text'}`}
           >
             {t === 'pending' ? `Pending JT (${pending.length})` : 'CSV Import'}
           </button>
@@ -170,47 +206,28 @@ export default function AdminMembersClient({ pending: initialPending, jtFamilies
 
       {/* Pending tab */}
       {tab === 'pending' && (
-        <div style={{
-          background: '#161a27', borderRadius: 14,
-          border: '1px solid #1e2337', overflow: 'hidden',
-        }}>
+        <div className="overflow-hidden rounded-4xl border border-home-border bg-white shadow-sm">
           {pending.length === 0 && (
-            <div style={{ padding: 32, textAlign: 'center', color: '#444', fontSize: 14 }}>
+            <div className="px-8 py-10 text-center text-sm text-subtitle">
               No members pending JT assignment.
             </div>
           )}
-          {pending.map((m, i) => (
-            <div key={m.id} style={{
-              display: 'flex', alignItems: 'center', gap: 14,
-              padding: '14px 20px',
-              borderBottom: i < pending.length - 1 ? '1px solid #0f1117' : 'none',
-            }}>
-              <div style={{
-                width: 36, height: 36, borderRadius: '50%',
-                background: '#f7934f20', flexShrink: 0,
-                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                fontSize: 13, fontWeight: 700, color: '#f7934f',
-              }}>
-                {(m.preferred_name || m.full_name)[0]}
-              </div>
-              <div style={{ flex: 1 }}>
-                <div style={{ fontSize: 13, fontWeight: 500, color: '#ddd' }}>
-                  {m.preferred_name || m.full_name}
+          {pending.map(m => (
+            <div key={m.id} className="flex items-center gap-4 border-b border-home-border px-5 py-4 last:border-b-0">
+              <MemberAvatar name={m.full_name} />
+              <div className="flex-1">
+                <div className="text-sm font-medium text-text">
+                  {m.full_name}
                 </div>
-                <div style={{ fontSize: 11, color: '#555' }}>{m.email}</div>
+                <div className="text-xs text-subtitle">{m.email}</div>
                 {m.graduation_year && (
-                  <div style={{ fontSize: 11, color: '#444' }}>Class of {m.graduation_year}</div>
+                  <div className="text-xs text-subtitle/80">Class of {m.graduation_year}</div>
                 )}
               </div>
               <select
                 value={assignments[m.id] ?? ''}
                 onChange={e => setAssignments(a => ({ ...a, [m.id]: e.target.value }))}
-                style={{
-                  padding: '7px 10px',
-                  background: '#0f1117', border: '1px solid #2a2f45',
-                  borderRadius: 7, color: '#ddd', fontSize: 13,
-                  fontFamily: 'inherit', cursor: 'pointer',
-                }}
+                className="rounded-xl border border-home-border bg-white px-3 py-2 text-sm text-text shadow-sm"
               >
                 <option value="">Assign JT…</option>
                 {jtFamilies.map(jt => (
@@ -220,15 +237,7 @@ export default function AdminMembersClient({ pending: initialPending, jtFamilies
               <button
                 onClick={() => assignJT(m.id)}
                 disabled={!assignments[m.id] || saving === m.id}
-                style={{
-                  padding: '7px 14px',
-                  background: assignments[m.id] ? '#4f6ef7' : '#2a2f45',
-                  color: assignments[m.id] ? '#fff' : '#555',
-                  border: 'none', borderRadius: 7,
-                  fontSize: 13, fontWeight: 600,
-                  cursor: assignments[m.id] ? 'pointer' : 'not-allowed',
-                  fontFamily: 'inherit',
-                }}
+                className="rounded-xl bg-primary px-4 py-2 text-sm font-semibold text-white transition disabled:cursor-not-allowed disabled:bg-[#9cb8d8]"
               >
                 {saving === m.id ? 'Saving…' : 'Activate'}
               </button>
@@ -239,61 +248,190 @@ export default function AdminMembersClient({ pending: initialPending, jtFamilies
 
       {/* Import tab */}
       {tab === 'import' && (
-        <div style={{
-          background: '#161a27', borderRadius: 14,
-          border: '1px solid #1e2337', padding: 28,
-        }}>
-          <div style={{ fontSize: 15, fontWeight: 600, color: '#ddd', marginBottom: 8 }}>
-            Import from Google Form CSV
-          </div>
-          <div style={{ fontSize: 13, color: '#555', marginBottom: 20, lineHeight: 1.6 }}>
-            Export responses from Google Forms as a CSV file. The form should collect:
-            Full Name, Preferred Name, TAMU Email, Graduation Year, and Phone (optional).
+        <div className="rounded-4xl border border-home-border bg-white p-7 shadow-sm">
+          <div className="mb-2 text-base font-semibold text-text">
+            Import from CSV
           </div>
 
-          <input
-            type="file"
-            accept=".csv"
-            onChange={handleCSV}
-            disabled={importing}
-            style={{
-              display: 'block', marginBottom: 20,
-              color: '#888', fontSize: 13, fontFamily: 'inherit',
-            }}
-          />
+          <div className="mb-4 inline-flex rounded-2xl border border-home-border bg-bg p-1">
+            {([
+              { id: 'full' as const, label: 'Full roster (fall)' },
+              { id: 'spring' as const, label: 'Spring update (partial)' },
+            ]).map(option => (
+              <button
+                key={option.id}
+                type="button"
+                onClick={() => setImportMode(option.id)}
+                className={`rounded-xl px-3 py-1.5 text-xs font-medium transition ${
+                  importMode === option.id
+                    ? 'bg-white text-text shadow-sm'
+                    : 'text-subtitle hover:text-text'
+                }`}
+              >
+                {option.label}
+              </button>
+            ))}
+          </div>
 
-          {importing && (
-            <div style={{ fontSize: 13, color: '#555' }}>Importing…</div>
+          <p className="mb-4 text-sm leading-6 text-subtitle">
+            {importMode === 'full'
+              ? 'Upload the full CSA roster at the start of fall. New members are created; existing emails are updated only where CSV values differ.'
+              : 'Upload only changed rows for spring (JT transfers, new members, or profile fixes). Unlisted members are left unchanged.'}
+          </p>
+
+          <div className="mb-4 overflow-hidden rounded-2xl border border-home-border bg-bg text-sm">
+            <div className="border-b border-home-border px-4 py-2.5 text-xs font-semibold uppercase tracking-[0.06em] text-subtitle">
+              CSV columns
+            </div>
+            <ul className="divide-y divide-home-border">
+              {[
+                { name: 'Full Name', required: true, note: 'Complete name as shown in the app' },
+                { name: 'TAMU Email', required: true, note: 'Must be a @tamu.edu address' },
+                { name: 'Jiating', required: true, note: 'Must match an active Jiating name (see below)' },
+                { name: 'Phone', required: true, note: 'Contact phone number' },
+                { name: 'Class', required: true, note: 'Graduation year, e.g. 2027' },
+              ].map(col => (
+                <li key={col.name} className="flex flex-col gap-0.5 px-4 py-3 sm:flex-row sm:items-baseline sm:justify-between">
+                  <div className="flex items-center gap-2">
+                    <span className="font-medium text-text">{col.name}</span>
+                    <span
+                      className={`rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide ${
+                        col.required
+                          ? 'bg-primary/10 text-primary'
+                          : 'bg-home-border/60 text-subtitle'
+                      }`}
+                    >
+                      {col.required ? 'Required' : 'Optional'}
+                    </span>
+                  </div>
+                  <span className="text-xs text-subtitle sm:text-right">{col.note}</span>
+                </li>
+              ))}
+            </ul>
+          </div>
+
+          {jtFamilies.length > 0 && (
+            <p className="mb-4 text-xs leading-5 text-subtitle">
+              Active Jiatings: {jtFamilies.map(jt => jt.name).join(', ')}
+            </p>
           )}
 
+          <button
+            type="button"
+            onClick={() => downloadMemberImportTemplate(jtFamilies)}
+            className="mb-5 inline-flex items-center gap-2 rounded-xl border border-home-border bg-bg px-4 py-2.5 text-sm font-medium text-primary transition hover:border-primary/30 hover:bg-white"
+          >
+            <span aria-hidden>↓</span>
+            Download example CSV
+          </button>
+
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept=".csv,text/csv"
+            onChange={handleFileInput}
+            disabled={importing}
+            className="sr-only"
+            id="member-csv-upload"
+          />
+
+          <div
+            role="button"
+            tabIndex={importing ? -1 : 0}
+            aria-label="Upload member CSV file"
+            aria-disabled={importing}
+            onKeyDown={e => {
+              if (importing) return
+              if (e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault()
+                fileInputRef.current?.click()
+              }
+            }}
+            onClick={() => !importing && fileInputRef.current?.click()}
+            onDrop={handleDrop}
+            onDragOver={handleDragOver}
+            onDragLeave={handleDragLeave}
+            className={`mb-5 flex cursor-pointer flex-col items-center justify-center rounded-3xl border-2 border-dashed px-6 py-10 text-center transition ${
+              importing
+                ? 'cursor-not-allowed border-home-border bg-bg opacity-70'
+                : dragActive
+                  ? 'border-primary bg-primary/5'
+                  : 'border-home-border bg-bg hover:border-primary/40 hover:bg-white'
+            }`}
+          >
+            <div className="mb-3 flex h-12 w-12 items-center justify-center rounded-2xl bg-primary/10 text-xl">
+              📄
+            </div>
+            {importing ? (
+              <>
+                <p className="text-sm font-medium text-text">Importing…</p>
+                {selectedFile && (
+                  <p className="mt-1 text-xs text-subtitle">{selectedFile.name}</p>
+                )}
+              </>
+            ) : selectedFile ? (
+              <>
+                <p className="text-sm font-medium text-text">{selectedFile.name}</p>
+                <p className="mt-1 text-xs text-subtitle">Drop another file or click to replace</p>
+              </>
+            ) : (
+              <>
+                <p className="text-sm font-medium text-text">
+                  Drag and drop your CSV here
+                </p>
+                <p className="mt-1 text-xs text-subtitle">
+                  or <span className="font-medium text-primary">browse files</span>
+                </p>
+              </>
+            )}
+          </div>
+
           {importResult && (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-              <div style={{
-                padding: 12, background: '#4fc78715',
-                borderRadius: 8, border: '1px solid #4fc78730',
-                fontSize: 13, color: '#4fc787',
-              }}>
-                ✅ {importResult.added} members added
-              </div>
-              {importResult.skipped > 0 && (
-                <div style={{
-                  padding: 12, background: '#ffffff08',
-                  borderRadius: 8, border: '1px solid #2a2f45',
-                  fontSize: 13, color: '#666',
-                }}>
-                  ⏭️ {importResult.skipped} already existed, skipped
+            <div className="flex flex-col gap-3">
+              {importResult.added > 0 && (
+                <div className="rounded-2xl border border-green-200 bg-green-50 p-3 text-sm text-green-700">
+                  ✅ {importResult.added} members added
+                </div>
+              )}
+              {importResult.updated > 0 && (
+                <div className="rounded-2xl border border-home-border bg-bg p-3 text-sm text-subtitle">
+                  ↻ {importResult.updated} members updated
+                </div>
+              )}
+              {importResult.unchanged > 0 && (
+                <div className="rounded-2xl border border-home-border bg-bg p-3 text-sm text-subtitle">
+                  — {importResult.unchanged} rows matched with no changes
+                </div>
+              )}
+              {importResult.jtChanged > 0 && (
+                <div className="rounded-2xl border border-amber-200 bg-amber-50 p-3 text-sm text-amber-800">
+                  <div className="mb-2 font-medium">
+                    ↔ {importResult.jtChanged} Jiating transfer{importResult.jtChanged === 1 ? '' : 's'}
+                  </div>
+                  <ul className="space-y-1 text-xs">
+                    {importResult.jtChanges.map(change => (
+                      <li key={change.email}>
+                        {change.fullName} ({change.email}): {change.fromJt ?? 'none'} → {change.toJt}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+              {importResult.added === 0 &&
+                importResult.updated === 0 &&
+                importResult.unchanged === 0 &&
+                importResult.errors.length === 0 && (
+                <div className="rounded-2xl border border-home-border bg-bg p-3 text-sm text-subtitle">
+                  No rows processed.
                 </div>
               )}
               {importResult.errors.length > 0 && (
-                <div style={{
-                  padding: 12, background: '#e74c3c15',
-                  borderRadius: 8, border: '1px solid #e74c3c30',
-                }}>
-                  <div style={{ fontSize: 13, color: '#e74c3c', marginBottom: 6 }}>
+                <div className="rounded-2xl border border-red-200 bg-red-50 p-3">
+                  <div className="mb-2 text-sm text-red-500">
                     ⚠️ {importResult.errors.length} errors
                   </div>
                   {importResult.errors.map((err, i) => (
-                    <div key={i} style={{ fontSize: 12, color: '#e74c3c80' }}>{err}</div>
+                    <div key={i} className="text-xs text-red-400">{err}</div>
                   ))}
                 </div>
               )}

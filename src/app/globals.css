@@ -9,7 +9,9 @@
   --color-secondary: #d0cccc;
   --color-accent: #F0B0C3;
   --color-text: #000000;
+  --color-subtitle: #666666;
   --color-bg: #ffffff;
+  --color-home-border: #e0e0e0;
 
   --animation-fade-in: fadeIn 0.5s ease-in-out;
   --animation-slide-up: slideUp 0.5s ease-in-out;

@@ -1,5 +1,7 @@
 'use client'
 import { useState } from 'react'
+import { isJiatingOlympicsCategory, isMixerCategory, isSportsRelatedCategory } from '@/utils/events'
+import { formatEventSchedule, isEventPast } from '@/utils/datetime'
 
 interface Event {
   id: string
@@ -8,7 +10,8 @@ interface Event {
   point_value: number
   scope: string
   check_in_type: string
-  event_date: string
+  starts_at: string
+  ends_at: string | null
   location: string | null
   rsvp_url: string | null
   rsvp_deadline: string | null
@@ -20,12 +23,6 @@ interface Props {
   semester: { name: string } | null
 }
 
-const POINT_COLORS: Record<number, string> = {
-  3: '#4f6ef7',
-  2: '#f7934f',
-  1: '#4fc787',
-}
-
 const CHECKIN_BADGE: Record<string, string> = {
   self:          '🔲 QR Check-in',
   officer:       '👤 Officer Check-in',
@@ -33,60 +30,37 @@ const CHECKIN_BADGE: Record<string, string> = {
 }
 
 function EventCard({ event, attended }: { event: Event, attended: boolean }) {
-  const now = new Date()
-  const eventDate = new Date(event.event_date)
-  const isPast = eventDate < now
-  const rsvpOpen = event.rsvp_url && event.rsvp_deadline && new Date(event.rsvp_deadline) > now
-  const rsvpClosed = event.rsvp_url && event.rsvp_deadline && new Date(event.rsvp_deadline) <= now
-  const pointColor = POINT_COLORS[event.point_value] ?? '#888'
+  const isPast = isEventPast(event.starts_at)
+  const rsvpOpen = event.rsvp_url && event.rsvp_deadline && new Date(event.rsvp_deadline) > new Date()
+  const rsvpClosed = event.rsvp_url && event.rsvp_deadline && new Date(event.rsvp_deadline) <= new Date()
 
   return (
-    <div style={{
-      padding: '16px 20px',
-      background: '#161a27',
-      borderRadius: 12,
-      border: `1px solid ${attended ? pointColor + '40' : '#1e2337'}`,
-      display: 'flex',
-      alignItems: 'center',
-      gap: 16,
-      opacity: isPast && !attended ? 0.6 : 1,
-    }}>
+    <div className="flex items-center gap-4 rounded-3xl border border-home-border bg-white px-5 py-4 shadow-sm" style={{ opacity: isPast && !attended ? 0.65 : 1 }}>
       {/* Point badge */}
-      <div style={{
-        width: 44, height: 44, borderRadius: 10, flexShrink: 0,
-        background: pointColor + '20',
-        display: 'flex', alignItems: 'center', justifyContent: 'center',
-        fontSize: 18, fontWeight: 800, color: pointColor,
-      }}>
+      <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-primary/10 text-lg font-extrabold text-primary">
         {event.point_value}
       </div>
 
       {/* Event info */}
       <div style={{ flex: 1 }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-          <span style={{ fontSize: 14, fontWeight: 600, color: '#ddd' }}>
+        <div className="flex items-center gap-2">
+          <span className="text-sm font-semibold text-text">
             {event.name}
           </span>
           {attended && (
-            <span style={{
-              fontSize: 11, padding: '1px 7px', borderRadius: 20,
-              background: pointColor + '20', color: pointColor, fontWeight: 600,
-            }}>
+            <span className="rounded-full bg-primary/10 px-2 py-0.5 text-[11px] font-semibold text-primary">
               ✓ Attended
             </span>
           )}
         </div>
-        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginTop: 5 }}>
-          <span style={{ fontSize: 12, color: '#555' }}>
-            📅 {new Date(event.event_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+        <div className="mt-1 flex flex-wrap gap-2 text-xs text-subtitle">
+          <span>
+            🕐 {formatEventSchedule(event.starts_at, event.ends_at)}
           </span>
           {event.location && (
-            <span style={{ fontSize: 12, color: '#555' }}>📍 {event.location}</span>
+            <span>📍 {event.location}</span>
           )}
-          <span style={{
-            fontSize: 11, padding: '1px 7px', borderRadius: 4,
-            background: '#ffffff10', color: '#666',
-          }}>
+          <span className="rounded-md bg-bg px-2 py-0.5 text-[11px] text-subtitle">
             {CHECKIN_BADGE[event.check_in_type]}
           </span>
         </div>
@@ -98,23 +72,13 @@ function EventCard({ event, attended }: { event: Event, attended: boolean }) {
           href={event.rsvp_url!}
           target="_blank"
           rel="noopener noreferrer"
-          style={{
-            padding: '7px 16px', borderRadius: 8, flexShrink: 0,
-            background: '#4f6ef7', color: '#fff',
-            fontSize: 13, fontWeight: 600,
-            textDecoration: 'none', whiteSpace: 'nowrap',
-          }}
+          className="shrink-0 rounded-xl bg-primary px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-[#35679e]"
         >
           Sign Up
         </a>
       )}
       {rsvpClosed && (
-        <span style={{
-          padding: '7px 16px', borderRadius: 8, flexShrink: 0,
-          background: '#ffffff08', color: '#444',
-          fontSize: 13, fontWeight: 500, whiteSpace: 'nowrap',
-          border: '1px solid #2a2f45',
-        }}>
+        <span className="shrink-0 rounded-xl border border-home-border bg-bg px-4 py-2 text-sm font-medium text-subtitle">
           RSVP Closed
         </span>
       )}
@@ -124,10 +88,8 @@ function EventCard({ event, attended }: { event: Event, attended: boolean }) {
 
 export default function MemberEventsClient({ events, attendedIds, semester }: Props) {
   const [showPast, setShowPast] = useState(false)
-  const now = new Date()
-
-  const upcoming = events.filter(e => new Date(e.event_date) >= now)
-  const past     = events.filter(e => new Date(e.event_date) < now)
+  const upcoming = events.filter(e => !isEventPast(e.starts_at))
+  const past     = events.filter(e => isEventPast(e.starts_at))
 
   const sections = [
     {
@@ -140,42 +102,42 @@ export default function MemberEventsClient({ events, attendedIds, semester }: Pr
     },
     {
       label: '🏅 JT Olympics',
-      events: upcoming.filter(e => e.scope === 'jt_shared' && e.category === 'JT_Olympics'),
+      events: upcoming.filter(e => e.scope === 'jt_shared' && isJiatingOlympicsCategory(e.category)),
     },
     {
-      label: '⚽ Intramural / Sports',
-      events: upcoming.filter(e => e.category === 'Sports' || e.category === 'Sports Spectator'),
+      label: '🤝 Mixers',
+      events: upcoming.filter(e => isMixerCategory(e.category)),
+    },
+    {
+      label: '⚽ Sports & Dance',
+      events: upcoming.filter(e => isSportsRelatedCategory(e.category)),
     },
   ].filter(s => s.events.length > 0)
 
   return (
-    <div style={{ padding: 28, maxWidth: 800, margin: '0 auto' }}>
+    <div className="mx-auto max-w-5xl px-6 py-8 lg:px-8">
 
       {/* Header */}
-      <div style={{ marginBottom: 28 }}>
-        <h1 style={{ fontSize: 22, fontWeight: 700, color: '#fff' }}>Events</h1>
-        <div style={{ fontSize: 13, color: '#555', marginTop: 2 }}>
+      <div className="mb-8">
+        <h1 className="text-3xl font-bold tracking-tight text-text">Events</h1>
+        <div className="mt-1 text-sm text-subtitle">
           {semester?.name ?? 'Current Semester'}
         </div>
       </div>
 
       {/* Upcoming sections */}
       {sections.length === 0 && (
-        <div style={{
-          padding: 40, textAlign: 'center', color: '#444',
-          background: '#161a27', borderRadius: 14, border: '1px solid #1e2337',
-        }}>
+        <div className="rounded-4xl border border-home-border bg-white px-10 py-12 text-center text-sm text-subtitle shadow-sm">
           No upcoming events this semester.
         </div>
       )}
 
       {sections.map(section => (
-        <div key={section.label} style={{ marginBottom: 28 }}>
-          <h2 style={{ fontSize: 14, fontWeight: 700, color: '#888', marginBottom: 10,
-            textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+        <div key={section.label} className="mb-8">
+          <h2 className="mb-3 text-xs font-bold uppercase tracking-[0.08em] text-subtitle">
             {section.label}
           </h2>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+          <div className="flex flex-col gap-3">
             {section.events.map(event => (
               <EventCard
                 key={event.id}
@@ -192,18 +154,13 @@ export default function MemberEventsClient({ events, attendedIds, semester }: Pr
         <div>
           <button
             onClick={() => setShowPast(p => !p)}
-            style={{
-              background: 'none', border: '1px solid #2a2f45',
-              color: '#555', cursor: 'pointer', fontFamily: 'inherit',
-              fontSize: 13, padding: '8px 16px', borderRadius: 8,
-              marginBottom: 16,
-            }}
+            className="mb-4 rounded-xl border border-home-border bg-white px-4 py-2 text-sm text-subtitle shadow-sm transition hover:border-primary/30 hover:text-primary"
           >
             {showPast ? '▲ Hide' : '▼ Show'} Past Events ({past.length})
           </button>
 
           {showPast && (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+            <div className="flex flex-col gap-3">
               {past.map(event => (
                 <EventCard
                   key={event.id}

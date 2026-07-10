@@ -1,7 +1,17 @@
 'use client'
-import { useState } from 'react'
-import { createBrowserClient } from '@supabase/ssr'
+
 import { useRouter } from 'next/navigation'
+import { useState } from 'react'
+import { createEvent } from '@/app/actions/events'
+import {
+  EVENT_CATEGORIES,
+  applyCategoryDefaults,
+  getCategoryCheckInLabel,
+  getCategoryConfig,
+  getCategoryScopeLabel,
+  type EventCategory,
+} from '@/utils/events'
+import { inputClassName, labelClassName } from '@/utils/constants'
 
 interface JTFamily {
   id: string
@@ -14,44 +24,16 @@ interface Props {
   jtFamilies: JTFamily[]
   officerJtFamilyId: string | null
   createdBy: string
-  isAdmin: boolean
 }
 
-const CATEGORIES = [
-  'GM',
-  'CSA',
-  'JT_Olympics',
-  'Mixer',
-  'Sports',
-  'Sports Spectator',
-  'Philanthropy',
-  'First Friday',
-  'Intern Event',
-  'Dance',
-  'Other',
-]
+const DEFAULT_CATEGORY: EventCategory = 'General Meeting'
 
-const inputStyle: React.CSSProperties = {
-  width: '100%',
-  padding: '10px 14px',
-  background: '#0f1117',
-  border: '1px solid #2a2f45',
-  borderRadius: 8,
-  color: '#ddd',
-  fontSize: 14,
-  fontFamily: 'inherit',
-  outline: 'none',
-}
-
-const labelStyle: React.CSSProperties = {
-  fontSize: 12,
-  fontWeight: 600,
-  color: '#888',
-  textTransform: 'uppercase' as const,
-  letterSpacing: '0.05em',
-  display: 'block',
-  marginBottom: 6,
-}
+const scopeBtn = (active: boolean) =>
+  `flex-1 rounded-xl border px-3 py-2.5 text-sm font-medium transition ${
+    active
+      ? 'border-primary bg-primary/10 text-primary'
+      : 'border-home-border bg-white text-subtitle hover:border-primary/30'
+  }`
 
 export default function NewEventClient({
   semesterId,
@@ -59,363 +41,233 @@ export default function NewEventClient({
   jtFamilies,
   officerJtFamilyId,
   createdBy,
-  isAdmin,
 }: Props) {
   const router = useRouter()
-  const supabase = createBrowserClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-  )
-
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
-
-  const [form, setForm] = useState({
-    name:           '',
-    category:       'GM',
-    point_value:    '1',
-    scope:          'org',
-    jt_family_id:   officerJtFamilyId ?? '',
-    check_in_type:  'officer',
-    event_date:     '',
-    location:       '',
-    description:    '',
-    rsvp_url:       '',
-    rsvp_deadline:  '',
-    // Sports dual check-in
-    has_spectators: false,
+  const [form, setForm] = useState(() => {
+    const defaults = applyCategoryDefaults(DEFAULT_CATEGORY, {
+      scope: 'org',
+      check_in_type: 'officer',
+      has_spectators: false,
+    })
+    return {
+      name: '',
+      category: DEFAULT_CATEGORY,
+      point_value: defaults.point_value,
+      scope: defaults.scope,
+      jt_family_id: officerJtFamilyId ?? '',
+      check_in_type: defaults.check_in_type,
+      event_date: '',
+      start_time: '',
+      end_time: '',
+      location: '',
+      description: '',
+      rsvp_url: '',
+      rsvp_deadline: '',
+      has_spectators: defaults.has_spectators,
+    }
   })
 
   const set = (key: string, value: string | boolean) =>
     setForm(f => ({ ...f, [key]: value }))
 
-  const isSports    = form.category === 'Sports'
+  const categoryConfig = getCategoryConfig(form.category)
+  const fixedCheckIn = categoryConfig?.checkInType
+  const effectiveCheckIn = fixedCheckIn ?? form.check_in_type
+  const isSports = categoryConfig?.allowSpectators === true
   const isJTSpecific = form.scope === 'jt_specific'
-  const isRSVP      = form.check_in_type === 'rsvp_required'
-  const isSelf      = form.check_in_type === 'self'
+  const isRSVP = effectiveCheckIn === 'rsvp_required'
+  const isSelf = effectiveCheckIn === 'self'
+
+  const handleCategoryChange = (category: string) => {
+    setForm(f => ({
+      ...f,
+      ...applyCategoryDefaults(category as EventCategory, {
+        scope: f.scope,
+        check_in_type: f.check_in_type,
+        has_spectators: f.has_spectators,
+      }),
+    }))
+  }
 
   const handleSubmit = async () => {
+    setSubmitting(true)
     setError(null)
 
-    // Validation
-    if (!form.name.trim())    return setError('Event name is required.')
-    if (!form.event_date)     return setError('Event date is required.')
-    if (isJTSpecific && !form.jt_family_id) return setError('JT family is required for JT-specific events.')
+    const result = await createEvent({
+      semesterId,
+      name: form.name,
+      category: form.category,
+      pointValue: parseInt(form.point_value),
+      scope: form.scope,
+      jtFamilyId: isJTSpecific ? form.jt_family_id : null,
+      checkInType: effectiveCheckIn,
+      eventDate: form.event_date,
+      startTime: form.start_time,
+      endTime: form.end_time.trim() || null,
+      location: form.location.trim() || null,
+      description: form.description.trim() || null,
+      rsvpUrl: isRSVP && form.rsvp_url ? form.rsvp_url.trim() : null,
+      rsvpDeadline: isRSVP && form.rsvp_deadline ? form.rsvp_deadline : null,
+      createdBy,
+      hasSpectators: isSports && form.has_spectators,
+    })
 
-    setSubmitting(true)
-
-    // Insert main event
-    const { data: event, error: eventError } = await supabase
-      .from('events')
-      .insert({
-        semester_id:   semesterId,
-        name:          form.name.trim(),
-        category:      form.category,
-        point_value:   parseInt(form.point_value),
-        scope:         form.scope,
-        jt_family_id:  isJTSpecific ? form.jt_family_id : null,
-        check_in_type: form.check_in_type,
-        event_date:    form.event_date,
-        location:      form.location.trim() || null,
-        description:   form.description.trim() || null,
-        rsvp_url:      isRSVP && form.rsvp_url ? form.rsvp_url.trim() : null,
-        rsvp_deadline: isRSVP && form.rsvp_deadline ? form.rsvp_deadline : null,
-        created_by:    createdBy,
-      })
-      .select()
-      .single()
-
-    if (eventError || !event) {
-      setError('Failed to create event. Please try again.')
-      setSubmitting(false)
+    setSubmitting(false)
+    if (!result.success) {
+      setError(result.error ?? 'Failed to create event.')
       return
     }
-
-    // If Sports with spectators, create the linked spectator event
-    if (isSports && form.has_spectators) {
-      await supabase.from('events').insert({
-        semester_id:     semesterId,
-        name:            `${form.name.trim()} — Spectator`,
-        category:        'Sports Spectator',
-        point_value:     1,
-        scope:           form.scope,
-        jt_family_id:    isJTSpecific ? form.jt_family_id : null,
-        check_in_type:   'self',
-        event_date:      form.event_date,
-        location:        form.location.trim() || null,
-        created_by:      createdBy,
-        parent_event_id: event.id,
-      })
-    }
-
     router.push('/officer/events')
   }
 
   return (
-    <div style={{ padding: 28, maxWidth: 640, margin: '0 auto' }}>
+    <div className="mx-auto max-w-2xl px-6 py-8 lg:px-8">
+      <button onClick={() => router.back()} className="mb-4 text-sm text-subtitle hover:text-primary">
+        ← Back
+      </button>
+      <h1 className="text-3xl font-bold text-text">New Event</h1>
+      <p className="mt-1 text-sm text-subtitle">{semesterName}</p>
 
-      {/* Header */}
-      <div style={{ marginBottom: 28 }}>
-        <button
-          onClick={() => router.back()}
-          style={{
-            background: 'none', border: 'none', color: '#555',
-            cursor: 'pointer', fontFamily: 'inherit', fontSize: 13,
-            padding: 0, marginBottom: 12,
-          }}
-        >
-          ← Back
-        </button>
-        <h1 style={{ fontSize: 22, fontWeight: 700, color: '#fff' }}>New Event</h1>
-        <div style={{ fontSize: 13, color: '#555', marginTop: 2 }}>{semesterName}</div>
-      </div>
-
-      <div style={{
-        background: '#161a27', borderRadius: 14,
-        border: '1px solid #1e2337', padding: 28,
-        display: 'flex', flexDirection: 'column', gap: 20,
-      }}>
-
-        {/* Name */}
+      <div className="mt-6 flex flex-col gap-5 rounded-4xl border border-home-border bg-white p-6 shadow-sm">
         <div>
-          <label style={labelStyle}>Event Name *</label>
-          <input
-            style={inputStyle}
-            placeholder="e.g. First Friday March"
-            value={form.name}
-            onChange={e => set('name', e.target.value)}
-          />
+          <label className={labelClassName}>Event Name *</label>
+          <input className={inputClassName} placeholder="e.g. First Friday March" value={form.name} onChange={e => set('name', e.target.value)} />
         </div>
 
-        {/* Category + Points row */}
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
-          <div>
-            <label style={labelStyle}>Category *</label>
-            <select
-              style={{ ...inputStyle, cursor: 'pointer' }}
-              value={form.category}
-              onChange={e => set('category', e.target.value)}
-            >
-              {CATEGORIES.map(c => (
-                <option key={c} value={c}>{c}</option>
-              ))}
-            </select>
-          </div>
-          <div>
-            <label style={labelStyle}>Point Value *</label>
-            <select
-              style={{ ...inputStyle, cursor: 'pointer' }}
-              value={form.point_value}
-              onChange={e => set('point_value', e.target.value)}
-            >
-              <option value="1">1 point</option>
-              <option value="2">2 points</option>
-              <option value="3">3 points</option>
-            </select>
-          </div>
-        </div>
-
-        {/* Date + Location row */}
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
-          <div>
-            <label style={labelStyle}>Date *</label>
-            <input
-              type="date"
-              style={inputStyle}
-              value={form.event_date}
-              onChange={e => set('event_date', e.target.value)}
-            />
-          </div>
-          <div>
-            <label style={labelStyle}>Location</label>
-            <input
-              style={inputStyle}
-              placeholder="e.g. MSC 2406"
-              value={form.location}
-              onChange={e => set('location', e.target.value)}
-            />
-          </div>
-        </div>
-
-        {/* Scope */}
         <div>
-          <label style={labelStyle}>Event Scope *</label>
-          <div style={{ display: 'flex', gap: 8 }}>
-            {[
-              { value: 'org',         label: '🏫 CSA-Wide' },
-              { value: 'jt_shared',   label: '🏅 JT Shared' },
-              { value: 'jt_specific', label: '🏠 JT Specific' },
-            ].map(opt => (
-              <button
-                key={opt.value}
-                onClick={() => set('scope', opt.value)}
-                style={{
-                  flex: 1, padding: '8px 12px',
-                  background: form.scope === opt.value ? '#4f6ef720' : '#0f1117',
-                  border: `1px solid ${form.scope === opt.value ? '#4f6ef7' : '#2a2f45'}`,
-                  color: form.scope === opt.value ? '#4f6ef7' : '#666',
-                  borderRadius: 8, fontSize: 13, fontWeight: 500,
-                  cursor: 'pointer', fontFamily: 'inherit',
-                }}
-              >
-                {opt.label}
-              </button>
-            ))}
-          </div>
-        </div>
-
-        {/* JT Family selector — only for jt_specific */}
-        {isJTSpecific && (
-          <div>
-            <label style={labelStyle}>JT Family *</label>
-            <select
-              style={{ ...inputStyle, cursor: 'pointer' }}
-              value={form.jt_family_id}
-              onChange={e => set('jt_family_id', e.target.value)}
-            >
-              <option value="">Select JT family…</option>
-              {jtFamilies.map(jt => (
-                <option key={jt.id} value={jt.id}>{jt.name}</option>
-              ))}
-            </select>
-          </div>
-        )}
-
-        {/* Check-in type */}
-        <div>
-          <label style={labelStyle}>Check-in Type *</label>
-          <div style={{ display: 'flex', gap: 8 }}>
-            {[
-              { value: 'officer',       label: '👤 Officer' },
-              { value: 'self',          label: '🔲 QR Code' },
-              { value: 'rsvp_required', label: '📋 RSVP' },
-            ].map(opt => (
-              <button
-                key={opt.value}
-                onClick={() => set('check_in_type', opt.value)}
-                style={{
-                  flex: 1, padding: '8px 12px',
-                  background: form.check_in_type === opt.value ? '#4f6ef720' : '#0f1117',
-                  border: `1px solid ${form.check_in_type === opt.value ? '#4f6ef7' : '#2a2f45'}`,
-                  color: form.check_in_type === opt.value ? '#4f6ef7' : '#666',
-                  borderRadius: 8, fontSize: 13, fontWeight: 500,
-                  cursor: 'pointer', fontFamily: 'inherit',
-                }}
-              >
-                {opt.label}
-              </button>
-            ))}
-          </div>
-          {isSelf && (
-            <div style={{ marginTop: 8, fontSize: 12, color: '#555' }}>
-              A QR code will be automatically generated after creating the event.
+          <label className={labelClassName}>Category *</label>
+          <select
+            className={`${inputClassName} cursor-pointer`}
+            value={form.category}
+            onChange={e => handleCategoryChange(e.target.value)}
+          >
+            {EVENT_CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
+          </select>
+          {categoryConfig && (
+            <div className="mt-2 flex flex-wrap gap-2 text-xs text-subtitle">
+              <span className="rounded-md bg-bg px-2 py-1">
+                {categoryConfig.pointValue} pt{categoryConfig.pointValue === 1 ? '' : 's'}
+              </span>
+              <span className="rounded-md bg-bg px-2 py-1">
+                {getCategoryScopeLabel(form.category)}
+              </span>
+              {fixedCheckIn && (
+                <span className="rounded-md bg-bg px-2 py-1">
+                  {getCategoryCheckInLabel(form.category, effectiveCheckIn as 'officer' | 'self' | 'rsvp_required')}
+                </span>
+              )}
             </div>
           )}
         </div>
 
-        {/* RSVP fields */}
-        {isRSVP && (
-          <div style={{
-            padding: 16, background: '#0f1117',
-            borderRadius: 10, border: '1px solid #2a2f45',
-            display: 'flex', flexDirection: 'column', gap: 14,
-          }}>
-            <div>
-              <label style={labelStyle}>RSVP Link</label>
-              <input
-                style={inputStyle}
-                placeholder="https://forms.gle/..."
-                value={form.rsvp_url}
-                onChange={e => set('rsvp_url', e.target.value)}
-              />
-            </div>
-            <div>
-              <label style={labelStyle}>RSVP Deadline</label>
-              <input
-                type="datetime-local"
-                style={inputStyle}
-                value={form.rsvp_deadline}
-                onChange={e => set('rsvp_deadline', e.target.value)}
-              />
-            </div>
+        <div className="grid gap-4 sm:grid-cols-2">
+          <div>
+            <label className={labelClassName}>Date *</label>
+            <input type="date" className={inputClassName} value={form.event_date} onChange={e => set('event_date', e.target.value)} />
           </div>
-        )}
-
-        {/* Sports spectator toggle */}
-        {isSports && (
-          <div style={{
-            padding: 16, background: '#0f1117',
-            borderRadius: 10, border: '1px solid #2a2f45',
-          }}>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-              <div>
-                <div style={{ fontSize: 13, fontWeight: 600, color: '#ccc' }}>
-                  Enable Spectator Check-in
-                </div>
-                <div style={{ fontSize: 12, color: '#555', marginTop: 2 }}>
-                  Creates a separate QR check-in for spectators worth 1 point (capped at 10/semester)
-                </div>
-              </div>
-              <button
-                onClick={() => set('has_spectators', !form.has_spectators)}
-                style={{
-                  width: 44, height: 24, borderRadius: 12,
-                  background: form.has_spectators ? '#4f6ef7' : '#2a2f45',
-                  border: 'none', cursor: 'pointer',
-                  position: 'relative', transition: 'background 0.2s',
-                  flexShrink: 0,
-                }}
-              >
-                <div style={{
-                  width: 18, height: 18, borderRadius: '50%',
-                  background: '#fff', position: 'absolute',
-                  top: 3, transition: 'left 0.2s',
-                  left: form.has_spectators ? 23 : 3,
-                }} />
-              </button>
-            </div>
+          <div>
+            <label className={labelClassName}>Start Time *</label>
+            <input type="time" className={inputClassName} value={form.start_time} onChange={e => set('start_time', e.target.value)} />
           </div>
-        )}
-
-        {/* Description */}
-        <div>
-          <label style={labelStyle}>Description <span style={{ color: '#444', fontWeight: 400 }}>(optional)</span></label>
-          <textarea
-            style={{ ...inputStyle, minHeight: 80, resize: 'vertical' }}
-            placeholder="Any additional details about this event…"
-            value={form.description}
-            onChange={e => set('description', e.target.value)}
-          />
         </div>
 
-        {/* Error */}
-        {error && (
-          <div style={{
-            padding: 12, background: '#e74c3c15',
-            borderRadius: 8, border: '1px solid #e74c3c30',
-          }}>
-            <p style={{ fontSize: 13, color: '#e74c3c' }}>{error}</p>
+        <div className="grid gap-4 sm:grid-cols-2">
+          <div>
+            <label className={labelClassName}>End Time <span className="font-normal normal-case text-subtitle">(optional)</span></label>
+            <input type="time" className={inputClassName} value={form.end_time} onChange={e => set('end_time', e.target.value)} />
+          </div>
+          <div>
+            <label className={labelClassName}>Location</label>
+            <input className={inputClassName} placeholder="e.g. MSC 2406" value={form.location} onChange={e => set('location', e.target.value)} />
+          </div>
+        </div>
+
+        {isJTSpecific && (
+          <div>
+            <label className={labelClassName}>JT Family *</label>
+            <select className={`${inputClassName} cursor-pointer`} value={form.jt_family_id} onChange={e => set('jt_family_id', e.target.value)}>
+              <option value="">Select JT family…</option>
+              {jtFamilies.map(jt => <option key={jt.id} value={jt.id}>{jt.name}</option>)}
+            </select>
           </div>
         )}
 
-        {/* Submit */}
+        {!fixedCheckIn && (
+          <div>
+            <label className={labelClassName}>Check-in Type *</label>
+            <div className="flex flex-wrap gap-2">
+              {[
+                { value: 'officer', label: '👤 Officer' },
+                { value: 'self', label: '🔲 QR Code' },
+                { value: 'rsvp_required', label: '📋 RSVP' },
+              ].map(opt => (
+                <button key={opt.value} type="button" onClick={() => set('check_in_type', opt.value)} className={scopeBtn(form.check_in_type === opt.value)}>
+                  {opt.label}
+                </button>
+              ))}
+            </div>
+            {isSelf && (
+              <p className="mt-2 text-xs text-subtitle">A QR code is generated automatically when the event is created.</p>
+            )}
+          </div>
+        )}
+
+        {fixedCheckIn === 'self' && (
+          <p className="text-xs text-subtitle">Members scan a QR code to check themselves in.</p>
+        )}
+
+        {isRSVP && (
+          <div className="space-y-4 rounded-2xl border border-home-border bg-bg p-4">
+            <p className="text-xs text-subtitle">
+              RSVP link and deadline are optional now — you can add them later from the event detail page once the form is ready.
+            </p>
+            <div>
+              <label className={labelClassName}>RSVP Link <span className="font-normal normal-case text-subtitle">(optional)</span></label>
+              <input className={inputClassName} placeholder="https://forms.gle/..." value={form.rsvp_url} onChange={e => set('rsvp_url', e.target.value)} />
+            </div>
+            <div>
+              <label className={labelClassName}>RSVP Deadline <span className="font-normal normal-case text-subtitle">(optional)</span></label>
+              <input type="datetime-local" className={inputClassName} value={form.rsvp_deadline} onChange={e => set('rsvp_deadline', e.target.value)} />
+            </div>
+          </div>
+        )}
+
+        {isSports && (
+          <div className="flex items-center justify-between rounded-2xl border border-home-border bg-bg p-4">
+            <div>
+              <div className="text-sm font-semibold text-text">Enable Spectator Check-in</div>
+              <div className="mt-1 text-xs text-subtitle">Separate QR event worth 1 pt (capped at 10/semester)</div>
+            </div>
+            <button
+              type="button"
+              onClick={() => set('has_spectators', !form.has_spectators)}
+              className={`relative h-6 w-11 rounded-full transition ${form.has_spectators ? 'bg-primary' : 'bg-home-border'}`}
+            >
+              <span className={`absolute top-0.5 h-5 w-5 rounded-full bg-white transition ${form.has_spectators ? 'left-[1.35rem]' : 'left-0.5'}`} />
+            </button>
+          </div>
+        )}
+
+        <div>
+          <label className={labelClassName}>Description <span className="font-normal normal-case text-subtitle">(optional)</span></label>
+          <textarea className={`${inputClassName} min-h-24 resize-y`} placeholder="Additional details…" value={form.description} onChange={e => set('description', e.target.value)} />
+        </div>
+
+        {error && (
+          <div className="rounded-2xl border border-[#f5b0b0] bg-[#fff4f4] p-3">
+            <p className="text-sm text-[#c94b4b]">{error}</p>
+          </div>
+        )}
+
         <button
           onClick={handleSubmit}
           disabled={submitting}
-          style={{
-            padding: '12px',
-            background: submitting ? '#2a2f45' : '#4f6ef7',
-            color: submitting ? '#555' : '#fff',
-            border: 'none', borderRadius: 10,
-            fontSize: 15, fontWeight: 600,
-            cursor: submitting ? 'not-allowed' : 'pointer',
-            fontFamily: 'inherit',
-            transition: 'all 0.15s',
-          }}
+          className="rounded-xl bg-primary px-4 py-3 text-[15px] font-semibold text-white disabled:bg-[#9cb8d8]"
         >
           {submitting ? 'Creating…' : 'Create Event'}
         </button>
-
       </div>
     </div>
   )
