@@ -1,10 +1,12 @@
 'use client'
 
-import { useRouter } from 'next/navigation'
 import AccountLinkBadge from '@/app/(dashboard)/(officer)/officer/members/components/AccountLinkBadge'
+import BackLink from '@/app/components/BackLink'
 import MemberAvatar from '@/app/components/MemberAvatar'
+import EmptyState from '@/app/components/EmptyState'
 import { CATEGORY_COLORS, CHECKIN_METHOD_LABELS, POINT_BUCKET_LABELS } from '@/utils/constants'
 import { formatEventSchedule } from '@/utils/datetime'
+import { Calendar } from 'lucide-react'
 
 interface Member {
   id: string
@@ -49,7 +51,6 @@ interface Props {
 }
 
 export default function MemberDetailClient({ member, attendance, history }: Props) {
-  const router = useRouter()
   const color = member.jt_color ?? '#4779B8'
   const displayName = member.full_name
 
@@ -62,7 +63,7 @@ export default function MemberDetailClient({ member, attendance, history }: Prop
 
   return (
     <div className="mx-auto max-w-3xl px-6 py-8 lg:px-8">
-      <button onClick={() => router.back()} className="mb-5 text-sm text-subtitle hover:text-primary">← Back</button>
+      <BackLink href="/officer/members" label="Back to Members" className="mb-5" />
 
       <div className="mb-6 flex flex-col gap-4 rounded-4xl border border-home-border bg-white p-6 shadow-sm sm:flex-row sm:items-center">
         <MemberAvatar
@@ -108,7 +109,12 @@ export default function MemberDetailClient({ member, attendance, history }: Prop
       <h2 className="mb-3 text-lg font-bold text-text">This Semester</h2>
       <div className="mb-6 overflow-hidden rounded-4xl border border-home-border bg-white shadow-sm">
         {attendance.length === 0 && (
-          <div className="px-8 py-10 text-center text-sm text-subtitle">No events attended yet.</div>
+          <EmptyState
+            icon={Calendar}
+            title="No events attended yet"
+            description="Attendance records will show up here after this member checks in."
+            compact
+          />
         )}
         {attendance.map(row => {
           const catColor = CATEGORY_COLORS[row.events?.category] ?? CATEGORY_COLORS.default

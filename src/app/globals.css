@@ -1,8 +1,8 @@
 @import "tailwindcss";
 
 @theme inline {
-  --font-primary: bayon;
-  --font-secondary: akshar;
+  --font-display: var(--font-bayon), ui-sans-serif, system-ui, sans-serif;
+  --font-sans: var(--font-akshar), ui-sans-serif, system-ui, sans-serif;
 }
 @theme {
   --color-primary: #4779B8;
@@ -16,6 +16,15 @@
   --animation-fade-in: fadeIn 0.5s ease-in-out;
   --animation-slide-up: slideUp 0.5s ease-in-out;
 }
+
+@layer base {
+  h1,
+  h2 {
+    font-family: var(--font-display);
+    letter-spacing: 0.01em;
+  }
+}
+
 html {
   height: 100%;
 }

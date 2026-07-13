@@ -3,6 +3,7 @@ export const EVENT_CATEGORIES = [
   'General Meeting',
   'CSA-Wide',
   'Jiating Olympics',
+  'Jiating Event',
   'Mixer',
   'Sports',
   'Philanthropy',
@@ -32,11 +33,35 @@ export const CATEGORY_CONFIG: Record<EventCategory, CategoryConfig> = {
   'General Meeting': { pointValue: 2, scope: 'org', checkInType: 'self' },
   'CSA-Wide': { pointValue: 3, scope: 'org' },
   'Jiating Olympics': { pointValue: 2, scope: 'jt_shared', checkInType: 'officer' },
+  'Jiating Event': { pointValue: 1, scope: 'jt_specific', checkInType: 'officer' },
   'Mixer': { pointValue: 2, scope: 'jt_shared', checkInType: 'officer' },
   'Sports': { pointValue: 1, scope: 'org', checkInType: 'officer', allowSpectators: true },
   'Philanthropy': { pointValue: 3, scope: 'org' },
   'Dance': { pointValue: 1, scope: 'org', checkInType: 'officer' },
   'Concessions': { pointValue: 3, scope: 'org', checkInType: 'officer' },
+}
+
+/**
+ * Soft guidance for who typically creates each category.
+ * Not enforced in RBAC — guidance only.
+ */
+export const CATEGORY_OWNER_HINTS: Record<EventCategory, string> = {
+  'General Meeting': 'Typically created by Executives, mainly the Secretary',
+  'CSA-Wide': 'Typically created by the Event Coordinator',
+  'Jiating Olympics': 'Typically created by the Sports chair',
+  'Jiating Event': 'Typically created by Jiating parents for their own family',
+  Mixer: 'Typically created by Jiating parents',
+  Sports: 'Typically created by the Sports chair',
+  Philanthropy: 'Typically created by the Philanthropy chair',
+  Dance: 'Typically created by the Dance chair',
+  Concessions: 'Typically created by the Fundraising chair',
+}
+
+export function getCategoryOwnerHint(category: string): string | null {
+  if ((EVENT_CATEGORIES as readonly string[]).includes(category)) {
+    return CATEGORY_OWNER_HINTS[category as EventCategory]
+  }
+  return null
 }
 
 /** Auto-created child event when Sports has spectator check-in enabled. */
@@ -49,9 +74,9 @@ const SCOPE_LABELS: Record<EventScope, string> = {
 }
 
 const CHECKIN_LABELS: Record<CheckInType, string> = {
-  officer: 'Officer check-in',
-  self: 'QR / self check-in',
-  rsvp_required: 'RSVP required',
+  officer: 'Officer Check-in',
+  self: 'Self Check-in',
+  rsvp_required: 'RSVP',
 }
 
 export function getCategoryConfig(category: string): CategoryConfig | null {
@@ -91,6 +116,88 @@ export function isMixerCategory(category: string) {
 export function isSportsRelatedCategory(category: string) {
   const value = category.trim()
   return value === 'Sports' || value === SPECTATOR_EVENT_CATEGORY || value === 'Dance'
+}
+
+/** Browse filters for officer + member event lists (not RBAC). */
+export const EVENT_FILTER_TABS = [
+  { id: 'all', label: 'All' },
+  { id: 'csa', label: 'CSA' },
+  { id: 'jiating', label: 'Jiating' },
+  { id: 'sports', label: 'Sports' },
+  { id: 'dance', label: 'Dance' },
+] as const
+
+export type EventFilterTabId = (typeof EVENT_FILTER_TABS)[number]['id']
+
+export function isDanceCategory(category: string) {
+  return category.trim() === 'Dance'
+}
+
+export function eventMatchesFilter(
+  event: { category: string; scope: string },
+  filter: EventFilterTabId,
+): boolean {
+  if (filter === 'all') return true
+
+  const category = event.category.trim()
+
+  if (filter === 'dance') {
+    return isDanceCategory(category)
+  }
+
+  if (filter === 'sports') {
+    return category === 'Sports' || category === SPECTATOR_EVENT_CATEGORY
+  }
+
+  if (filter === 'jiating') {
+    return (
+      event.scope === 'jt_specific' ||
+      isJiatingOlympicsCategory(category) ||
+      isMixerCategory(category)
+    )
+  }
+
+  // CSA: org-wide programming excluding sports/dance
+  return (
+    event.scope === 'org' &&
+    category !== 'Sports' &&
+    category !== SPECTATOR_EVENT_CATEGORY &&
+    !isDanceCategory(category)
+  )
+}
+
+/**
+ * Officer Jiating family filter: which family an event counts toward.
+ * - Olympics: every selected family
+ * - Mixer: only participating families (legacy mixers with no links → all)
+ * - JT-specific: that event's family only
+ * `familyId === null` means All families.
+ */
+export function eventMatchesJiatingFamily(
+  event: {
+    id: string
+    category: string
+    scope: string
+    jt_family_id: string | null
+  },
+  familyId: string | null,
+  mixerFamiliesByEventId: Record<string, string[]>,
+): boolean {
+  if (!familyId) return true
+
+  if (isJiatingOlympicsCategory(event.category)) return true
+
+  if (isMixerCategory(event.category)) {
+    const ids = mixerFamiliesByEventId[event.id]
+    if (!ids || ids.length === 0) return true
+    return ids.includes(familyId)
+  }
+
+  if (event.scope === 'jt_specific') {
+    return event.jt_family_id === familyId
+  }
+
+  return false
 }
 
 export function applyCategoryDefaults(

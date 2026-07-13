@@ -1,5 +1,6 @@
 'use client'
 import { useRef, useState } from 'react'
+import { FileText } from 'lucide-react'
 import { activateMember, importMembers, type ImportMode, type JtChange } from '@/app/actions/members'
 import MemberAvatar from '@/app/components/MemberAvatar'
 
@@ -187,7 +188,7 @@ export default function AdminMembersClient({ pending: initialPending, jtFamilies
       <div className="mb-6">
         <h1 className="text-3xl font-bold tracking-tight text-text">Member Admin</h1>
         <div className="mt-1 text-sm text-subtitle">
-          Admin only
+          {pending.length} pending JT assignment{pending.length === 1 ? '' : 's'} · CSV import
         </div>
       </div>
 
@@ -359,8 +360,8 @@ export default function AdminMembersClient({ pending: initialPending, jtFamilies
                   : 'border-home-border bg-bg hover:border-primary/40 hover:bg-white'
             }`}
           >
-            <div className="mb-3 flex h-12 w-12 items-center justify-center rounded-2xl bg-primary/10 text-xl">
-              📄
+            <div className="mb-3 flex h-12 w-12 items-center justify-center rounded-2xl bg-primary/10">
+              <FileText className="size-6 text-primary" aria-hidden />
             </div>
             {importing ? (
               <>

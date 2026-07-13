@@ -13,15 +13,15 @@ export const POINT_COLORS: Record<number, string> = {
 }
 
 export const SCOPE_LABELS: Record<string, string> = {
-  org: '🏫 CSA-Wide',
-  jt_shared: '🏅 JT Shared',
-  jt_specific: '🏠 JT Specific',
+  org: 'CSA-Wide',
+  jt_shared: 'JT Shared',
+  jt_specific: 'JT Specific',
 }
 
 export const CHECKIN_TYPE_LABELS: Record<string, string> = {
-  officer: '👤 Officer',
-  self: '🔲 QR Code',
-  rsvp_required: '📋 RSVP',
+  officer: 'Officer Check-in',
+  self: 'Self Check-in',
+  rsvp_required: 'RSVP',
 }
 
 export const CHECKIN_METHOD_LABELS: Record<string, string> = {
@@ -40,6 +40,7 @@ export const POINT_BUCKET_LABELS = {
 export const CATEGORY_COLORS: Record<string, string> = {
   'CSA-Wide': '#4779B8',
   'Jiating Olympics': '#f7934f',
+  'Jiating Event': '#6b7fd7',
   Sports: '#4fc787',
   'Sports Spectator': '#4fc787',
   'General Meeting': '#e8b84b',

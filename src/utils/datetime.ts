@@ -74,3 +74,31 @@ export function isEventPast(startsAt: string) {
   const start = parseInstant(startsAt)
   return start ? start < new Date() : false
 }
+
+function startsAtMs(iso: string) {
+  return parseInstant(iso)?.getTime() ?? 0
+}
+
+/** Sort by event start time. */
+export function sortEventsByStartsAt<T extends { starts_at: string }>(
+  events: T[],
+  direction: 'asc' | 'desc' = 'asc',
+): T[] {
+  return [...events].sort((a, b) => {
+    const diff = startsAtMs(a.starts_at) - startsAtMs(b.starts_at)
+    return direction === 'asc' ? diff : -diff
+  })
+}
+
+/** Upcoming soonest-first, then past most-recent-first. */
+export function sortEventsForDisplay<T extends { starts_at: string }>(events: T[]): T[] {
+  const upcoming = sortEventsByStartsAt(
+    events.filter(e => !isEventPast(e.starts_at)),
+    'asc',
+  )
+  const past = sortEventsByStartsAt(
+    events.filter(e => isEventPast(e.starts_at)),
+    'desc',
+  )
+  return [...upcoming, ...past]
+}

@@ -1,8 +1,12 @@
 'use client'
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
+import { GraduationCap, Home, User } from 'lucide-react'
 import { registerMember } from '@/app/actions/members'
+import AuthFeatureCard from '@/app/(auth)/components/AuthFeatureCard'
 import MemberAvatar from '@/app/components/MemberAvatar'
+import PageLoading from '@/app/components/PageLoading'
+import PublicPageShell from '@/app/(auth)/components/PublicPageShell'
 import { parseGoogleName, validateClassYear, validateRegistrationNames } from '@/utils/members'
 import { GoogleUser } from '@/utils/types'
 import { createBrowserSupabase } from '@/utils/supabase/client'
@@ -94,15 +98,17 @@ export default function RegisterPage() {
     user?.user_metadata.full_name ||
     ''
 
-  if (loading) return null
+  if (loading) {
+    return (
+      <PublicPageShell showFooter={false}>
+        <PageLoading label="Loading your account…" />
+      </PublicPageShell>
+    )
+  }
 
   return (
-    <div className="relative min-h-screen overflow-hidden bg-bg px-6 py-6 text-text lg:max-h-screen lg:min-h-0">
-      <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(71,121,184,0.16),transparent_34%),radial-gradient(circle_at_bottom_right,rgba(240,176,195,0.22),transparent_38%)]" />
-      <div className="absolute -left-24 top-16 h-44 w-44 rounded-full bg-primary/10 blur-3xl" />
-      <div className="absolute -right-20 bottom-10 h-56 w-56 rounded-full bg-accent/20 blur-3xl" />
-
-      <div className="relative mx-auto flex min-h-[calc(100vh-3rem)] w-full max-w-6xl items-center justify-center lg:max-h-[calc(100vh-3rem)] lg:min-h-0">
+    <PublicPageShell showFooter={false}>
+      <div className="flex min-h-[calc(100vh-5rem)] items-center justify-center lg:max-h-[calc(100vh-5rem)]">
         <div className="grid w-full max-w-5xl overflow-hidden rounded-4xl border border-home-border bg-white shadow-[0_24px_80px_rgba(15,23,42,0.08)] lg:grid-cols-[1.05fr_0.95fr]">
           <div className="relative overflow-hidden bg-[linear-gradient(135deg,rgba(71,121,184,0.08),rgba(255,255,255,0.9)_52%,rgba(240,176,195,0.16))] p-8 sm:p-10 lg:p-12">
             <div className="mb-8 inline-flex items-center gap-2 rounded-full border border-primary/15 bg-white/80 px-4 py-2 text-xs font-semibold uppercase tracking-[0.24em] text-primary backdrop-blur">
@@ -117,24 +123,22 @@ export default function RegisterPage() {
             </p>
 
             <div className="mt-10 hidden gap-4 sm:grid sm:grid-cols-3">
-              <div className="rounded-2xl border border-home-border bg-white/85 p-4 shadow-sm">
-                <div className="text-sm font-semibold text-primary">Profile</div>
-                <div className="mt-1 text-sm leading-6 text-subtitle">
-                  Confirm your name and contact info.
-                </div>
-              </div>
-              <div className="rounded-2xl border border-home-border bg-white/85 p-4 shadow-sm">
-                <div className="text-sm font-semibold text-primary">Class</div>
-                <div className="mt-1 text-sm leading-6 text-subtitle">
-                  Set your class so officers can organize members.
-                </div>
-              </div>
-              <div className="rounded-2xl border border-home-border bg-white/85 p-4 shadow-sm">
-                <div className="text-sm font-semibold text-accent">JT family</div>
-                <div className="mt-1 text-sm leading-6 text-subtitle">
-                  Your group is assigned after sorting is complete.
-                </div>
-              </div>
+              <AuthFeatureCard
+                icon={User}
+                title="Profile"
+                description="Confirm your name and contact info."
+              />
+              <AuthFeatureCard
+                icon={GraduationCap}
+                title="Class"
+                description="Set your class so officers can organize members."
+              />
+              <AuthFeatureCard
+                icon={Home}
+                title="JT family"
+                description="Your group is assigned after sorting is complete."
+                accent
+              />
             </div>
           </div>
 
@@ -235,7 +239,7 @@ export default function RegisterPage() {
           </div>
         </div>
       </div>
-    </div>
+    </PublicPageShell>
   )
 }
 
