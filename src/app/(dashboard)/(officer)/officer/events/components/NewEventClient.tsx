@@ -10,6 +10,7 @@ import {
   EVENT_CATEGORIES,
   applyCategoryDefaults,
   getCategoryConfig,
+  getCategoryOwnerHint,
   type EventCategory,
 } from '@/utils/events'
 import { CHECKIN_TYPE_LABELS, inputClassName, labelClassName } from '@/utils/constants'
@@ -75,6 +76,7 @@ export default function NewEventClient({
     setForm(f => ({ ...f, [key]: value }))
 
   const categoryConfig = getCategoryConfig(form.category)
+  const categoryOwnerHint = getCategoryOwnerHint(form.category)
   const fixedCheckIn = categoryConfig?.checkInType
   const effectiveCheckIn = fixedCheckIn ?? form.check_in_type
   const isSports = categoryConfig?.allowSpectators === true
@@ -121,12 +123,12 @@ export default function NewEventClient({
       setError(result.error ?? 'Failed to create event.')
       return
     }
-    router.push('/officer/events')
+    router.replace('/officer/events')
   }
 
   return (
     <div className="mx-auto max-w-2xl px-6 py-8 lg:px-8">
-      <BackLink onClick={() => router.back()} />
+      <BackLink href="/officer/events" label="Back to Events" replace />
       <PageHeader title="New Event" subtitle={semesterName} />
 
       <div className="mt-6 flex flex-col gap-5 rounded-4xl border border-home-border bg-white p-6 shadow-sm">
@@ -158,6 +160,11 @@ export default function NewEventClient({
                 </span>
               )}
             </div>
+          )}
+          {categoryOwnerHint && (
+            <p className="mt-2 text-xs leading-5 text-subtitle">
+              {categoryOwnerHint}.
+            </p>
           )}
         </div>
 

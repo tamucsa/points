@@ -1,8 +1,7 @@
 'use client'
 
-import { useRouter } from 'next/navigation'
-import BackLink from '@/app/components/BackLink'
 import AccountLinkBadge from '@/app/(dashboard)/(officer)/officer/members/components/AccountLinkBadge'
+import BackLink from '@/app/components/BackLink'
 import MemberAvatar from '@/app/components/MemberAvatar'
 import EmptyState from '@/app/components/EmptyState'
 import { CATEGORY_COLORS, CHECKIN_METHOD_LABELS, POINT_BUCKET_LABELS } from '@/utils/constants'
@@ -52,7 +51,6 @@ interface Props {
 }
 
 export default function MemberDetailClient({ member, attendance, history }: Props) {
-  const router = useRouter()
   const color = member.jt_color ?? '#4779B8'
   const displayName = member.full_name
 
@@ -65,7 +63,7 @@ export default function MemberDetailClient({ member, attendance, history }: Prop
 
   return (
     <div className="mx-auto max-w-3xl px-6 py-8 lg:px-8">
-      <BackLink onClick={() => router.back()} className="mb-5" />
+      <BackLink href="/officer/members" label="Back to Members" replace className="mb-5" />
 
       <div className="mb-6 flex flex-col gap-4 rounded-4xl border border-home-border bg-white p-6 shadow-sm sm:flex-row sm:items-center">
         <MemberAvatar

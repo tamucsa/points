@@ -121,7 +121,7 @@ export default function EventDetailClient({ event, attendance, publishedSnapshot
 
   return (
     <div className="mx-auto max-w-3xl px-6 py-8 lg:px-8">
-      <BackLink href="/officer/events" label="Back to Events" className="mb-5" />
+      <BackLink href="/officer/events" label="Back to Events" replace className="mb-5" />
 
       <div className="mb-6 rounded-4xl border border-home-border bg-white p-6 shadow-sm">
         <div className="flex gap-4">

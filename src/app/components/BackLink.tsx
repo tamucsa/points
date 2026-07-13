@@ -6,6 +6,8 @@ interface Props {
   onClick?: () => void
   label?: string
   className?: string
+  /** Prefer for “up” navigation so the child page is not left in history. */
+  replace?: boolean
 }
 
 const baseClassName =
@@ -16,6 +18,7 @@ export default function BackLink({
   onClick,
   label = 'Back',
   className = 'mb-4',
+  replace = false,
 }: Props) {
   const combinedClassName = `${baseClassName} ${className}`
   const content = (
@@ -27,7 +30,7 @@ export default function BackLink({
 
   if (href) {
     return (
-      <Link href={href} className={combinedClassName}>
+      <Link href={href} replace={replace} className={combinedClassName}>
         {content}
       </Link>
     )

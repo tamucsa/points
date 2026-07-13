@@ -41,6 +41,29 @@ export const CATEGORY_CONFIG: Record<EventCategory, CategoryConfig> = {
   'Concessions': { pointValue: 3, scope: 'org', checkInType: 'officer' },
 }
 
+/**
+ * Soft guidance for who typically creates each category.
+ * Not enforced in RBAC — guidance only.
+ */
+export const CATEGORY_OWNER_HINTS: Record<EventCategory, string> = {
+  'General Meeting': 'Typically created by Executives, mainly the Secretary',
+  'CSA-Wide': 'Typically created by the Event Coordinator',
+  'Jiating Olympics': 'Typically created by the Sports chair',
+  'Jiating Event': 'Typically created by Jiating parents for their own family',
+  Mixer: 'Typically created by Jiating parents',
+  Sports: 'Typically created by the Sports chair',
+  Philanthropy: 'Typically created by the Philanthropy chair',
+  Dance: 'Typically created by the Dance chair',
+  Concessions: 'Typically created by the Fundraising chair',
+}
+
+export function getCategoryOwnerHint(category: string): string | null {
+  if ((EVENT_CATEGORIES as readonly string[]).includes(category)) {
+    return CATEGORY_OWNER_HINTS[category as EventCategory]
+  }
+  return null
+}
+
 /** Auto-created child event when Sports has spectator check-in enabled. */
 export const SPECTATOR_EVENT_CATEGORY = 'Sports Spectator'
 

@@ -104,6 +104,7 @@ export default function OfficerCheckinClient({ event, members, checkedInIds }: P
       <BackLink
         href={`/officer/events/${event.id}`}
         label="Back to Event"
+        replace
         className="mb-5"
       />
 
