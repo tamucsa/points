@@ -8,6 +8,7 @@ import {
 import {
   SPECTATOR_EVENT_CATEGORY,
   getCategoryConfig,
+  isMixerCategory,
   isSportsCategory,
   type CheckInType,
 } from '@/utils/events'
@@ -19,6 +20,8 @@ export interface CreateEventInput {
   pointValue: number
   scope: string
   jtFamilyId: string | null
+  /** Participating families for Mixer (and optionally other JT-shared events). */
+  jtFamilyIds: string[]
   checkInType: string
   eventDate: string
   startTime: string
@@ -111,6 +114,11 @@ export async function createEvent(input: CreateEventInput) {
     return { success: false, error: 'JT family is required for JT-specific events.' }
   }
 
+  const mixerFamilyIds = [...new Set(input.jtFamilyIds.filter(Boolean))]
+  if (isMixerCategory(input.category) && mixerFamilyIds.length < 2) {
+    return { success: false, error: 'Select at least two Jiatings for a Mixer.' }
+  }
+
   const { supabase, error: authError } = await requireOfficer()
   if (authError) return { success: false, error: authError }
 
@@ -165,6 +173,20 @@ export async function createEvent(input: CreateEventInput) {
     return { success: false, error: 'Failed to create event. Please try again.' }
   }
 
+  if (isMixerCategory(input.category) && mixerFamilyIds.length > 0) {
+    const { error: familiesError } = await supabase.from('event_jt_families').insert(
+      mixerFamilyIds.map(jtFamilyId => ({
+        event_id: event.id,
+        jt_family_id: jtFamilyId,
+      })),
+    )
+
+    if (familiesError) {
+      await supabase.from('events').delete().eq('id', event.id)
+      return { success: false, error: 'Failed to save Mixer families. Please try again.' }
+    }
+  }
+
   if (isSportsCategory(input.category) && hasSpectators) {
     const { error: spectatorError } = await supabase.from('events').insert({
       semester_id: input.semesterId,
@@ -217,5 +239,87 @@ export async function updateEventRsvp(
     .eq('id', eventId)
 
   if (error) return { success: false, error: 'Failed to save RSVP details.' }
+  return { success: true, error: null }
+}
+
+export async function updateEventMixerFamilies(eventId: string, jtFamilyIds: string[]) {
+  if (!eventId) return { success: false, error: 'Event not found.' }
+
+  const familyIds = [...new Set(jtFamilyIds.filter(Boolean))]
+  if (familyIds.length < 2) {
+    return { success: false, error: 'Select at least two Jiatings for a Mixer.' }
+  }
+
+  const { supabase, error: authError } = await requireOfficer()
+  if (authError) return { success: false, error: authError }
+
+  const { data: event } = await supabase
+    .from('events')
+    .select('id, category')
+    .eq('id', eventId)
+    .maybeSingle()
+
+  if (!event) return { success: false, error: 'Event not found.' }
+  if (!isMixerCategory(event.category)) {
+    return { success: false, error: 'Only Mixer events have participating families.' }
+  }
+
+  const { data: currentLinks } = await supabase
+    .from('event_jt_families')
+    .select('jt_family_id')
+    .eq('event_id', eventId)
+
+  const currentIds = new Set((currentLinks ?? []).map(row => row.jt_family_id))
+  const nextIds = new Set(familyIds)
+  const removedIds = [...currentIds].filter(id => !nextIds.has(id))
+
+  if (removedIds.length > 0) {
+    const { data: membersInRemoved } = await supabase
+      .from('members')
+      .select('id')
+      .in('jt_family_id', removedIds)
+
+    const memberIds = (membersInRemoved ?? []).map(m => m.id)
+    if (memberIds.length > 0) {
+      const { count, error: attendanceError } = await supabase
+        .from('attendance')
+        .select('id', { count: 'exact', head: true })
+        .eq('event_id', eventId)
+        .in('member_id', memberIds)
+
+      if (attendanceError) {
+        return { success: false, error: 'Failed to verify existing check-ins.' }
+      }
+
+      if ((count ?? 0) > 0) {
+        return {
+          success: false,
+          error:
+            'Cannot remove a Jiating that already has check-ins. Remove those check-ins first, or keep the family selected.',
+        }
+      }
+    }
+  }
+
+  const { error: deleteError } = await supabase
+    .from('event_jt_families')
+    .delete()
+    .eq('event_id', eventId)
+
+  if (deleteError) {
+    return { success: false, error: 'Failed to update Mixer families.' }
+  }
+
+  const { error: insertError } = await supabase.from('event_jt_families').insert(
+    familyIds.map(jtFamilyId => ({
+      event_id: eventId,
+      jt_family_id: jtFamilyId,
+    })),
+  )
+
+  if (insertError) {
+    return { success: false, error: 'Failed to save Mixer families.' }
+  }
+
   return { success: true, error: null }
 }

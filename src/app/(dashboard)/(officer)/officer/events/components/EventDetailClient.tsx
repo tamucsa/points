@@ -4,11 +4,11 @@ import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import BackLink from '@/app/components/BackLink'
 import { publishJiatingStandings } from '@/app/actions/jt-standings'
-import { updateEventRsvp } from '@/app/actions/events'
+import { updateEventMixerFamilies, updateEventRsvp } from '@/app/actions/events'
 import MemberAvatar from '@/app/components/MemberAvatar'
 import IconLabel, { CheckInMethodBadge } from '@/app/components/IconLabel'
 import EmptyState from '@/app/components/EmptyState'
-import { isGeneralMeetingCategory } from '@/utils/events'
+import { isGeneralMeetingCategory, isMixerCategory } from '@/utils/events'
 import { formatEventSchedule } from '@/utils/datetime'
 import { ClipboardList, Clock, MapPin } from 'lucide-react'
 import { inputClassName, labelClassName } from '@/utils/constants'
@@ -46,10 +46,23 @@ interface PublishedSnapshot {
   label: string | null
 }
 
+interface JTFamily {
+  id: string
+  name: string
+}
+
 interface Props {
   event: Event
   attendance: AttendanceRow[]
   publishedSnapshot: PublishedSnapshot | null
+  jtFamilies: JTFamily[]
+  mixerFamilyIds: string[]
+  spectatorEvent: {
+    id: string
+    name: string
+    check_in_code: string | null
+    point_value: number
+  } | null
 }
 
 const btnPrimaryClassName =
@@ -61,7 +74,14 @@ const btnPrimaryOutlineClassName =
 const btnSecondaryClassName =
   'rounded-xl border border-home-border bg-white px-4 py-2.5 text-sm font-semibold text-subtitle transition hover:border-primary/30 hover:bg-bg hover:text-text sm:py-2'
 
-export default function EventDetailClient({ event, attendance, publishedSnapshot }: Props) {
+export default function EventDetailClient({
+  event,
+  attendance,
+  publishedSnapshot,
+  jtFamilies,
+  mixerFamilyIds,
+  spectatorEvent,
+}: Props) {
   const router = useRouter()
   const [publishing, setPublishing] = useState(false)
   const [publishError, setPublishError] = useState<string | null>(null)
@@ -73,8 +93,21 @@ export default function EventDetailClient({ event, attendance, publishedSnapshot
   const [rsvpSaving, setRsvpSaving] = useState(false)
   const [rsvpError, setRsvpError] = useState<string | null>(null)
   const [rsvpSaved, setRsvpSaved] = useState(false)
+  const [selectedMixerFamilies, setSelectedMixerFamilies] = useState(mixerFamilyIds)
+  const [mixerSaving, setMixerSaving] = useState(false)
+  const [mixerError, setMixerError] = useState<string | null>(null)
+  const [mixerSaved, setMixerSaved] = useState(false)
   const isGm = isGeneralMeetingCategory(event.category)
+  const isMixer = isMixerCategory(event.category)
   const isRsvpEvent = event.check_in_type === 'rsvp_required'
+
+  const toggleMixerFamily = (id: string) => {
+    setSelectedMixerFamilies(prev =>
+      prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id],
+    )
+    setMixerSaved(false)
+    setMixerError(null)
+  }
 
   const handleSaveRsvp = async () => {
     setRsvpSaving(true)
@@ -93,6 +126,22 @@ export default function EventDetailClient({ event, attendance, publishedSnapshot
       return
     }
     setRsvpSaved(true)
+    router.refresh()
+  }
+
+  const handleSaveMixerFamilies = async () => {
+    setMixerSaving(true)
+    setMixerError(null)
+    setMixerSaved(false)
+
+    const result = await updateEventMixerFamilies(event.id, selectedMixerFamilies)
+
+    setMixerSaving(false)
+    if (!result.success) {
+      setMixerError(result.error ?? 'Failed to save Mixer families.')
+      return
+    }
+    setMixerSaved(true)
     router.refresh()
   }
 
@@ -121,7 +170,7 @@ export default function EventDetailClient({ event, attendance, publishedSnapshot
 
   return (
     <div className="mx-auto max-w-3xl px-6 py-8 lg:px-8">
-      <BackLink href="/officer/events" label="Back to Events" replace className="mb-5" />
+      <BackLink href="/officer/events" label="Back to Events" className="mb-5" />
 
       <div className="mb-6 rounded-4xl border border-home-border bg-white p-6 shadow-sm">
         <div className="flex gap-4">
@@ -160,6 +209,15 @@ export default function EventDetailClient({ event, attendance, publishedSnapshot
               Open QR Full Screen
             </button>
           )}
+          {spectatorEvent?.check_in_code && (
+            <button
+              type="button"
+              onClick={() => window.open(`/officer/events/${spectatorEvent.id}/qr`, '_blank')}
+              className={btnPrimaryOutlineClassName}
+            >
+              Spectator QR Full Screen
+            </button>
+          )}
           {event.rsvp_url && (
             <a
               href={event.rsvp_url}
@@ -188,6 +246,59 @@ export default function EventDetailClient({ event, attendance, publishedSnapshot
         </div>
         {publishError && (
           <p className="mt-3 text-sm text-red-600">{publishError}</p>
+        )}
+        {spectatorEvent && (
+          <div className="mt-5 rounded-2xl border border-home-border bg-bg p-4">
+            <div className="text-sm font-semibold text-text">Spectator check-in</div>
+            <p className="mt-1 text-xs leading-5 text-subtitle">
+              Linked QR event worth {spectatorEvent.point_value} pt
+              {spectatorEvent.point_value === 1 ? '' : 's'} (capped at 10/semester).
+              Use the Spectator QR buttons above at the event.
+            </p>
+          </div>
+        )}
+        {isMixer && (
+          <div className="mt-5 space-y-3 rounded-2xl border border-home-border bg-bg p-4">
+            <div>
+              <div className="text-sm font-semibold text-text">Participating Jiatings</div>
+              <p className="mt-1 text-xs leading-5 text-subtitle">
+                Add families anytime. Removing a family that already has check-ins is blocked until those check-ins are cleared.
+              </p>
+            </div>
+            <div className="grid gap-2 sm:grid-cols-2">
+              {jtFamilies.map(jt => {
+                const checked = selectedMixerFamilies.includes(jt.id)
+                return (
+                  <label
+                    key={jt.id}
+                    className={`flex cursor-pointer items-center gap-3 rounded-xl border px-3 py-2.5 text-sm transition ${
+                      checked
+                        ? 'border-primary/40 bg-primary/10 text-primary'
+                        : 'border-home-border bg-white text-text hover:border-primary/30'
+                    }`}
+                  >
+                    <input
+                      type="checkbox"
+                      checked={checked}
+                      onChange={() => toggleMixerFamily(jt.id)}
+                      className="size-4 rounded border-home-border text-primary focus:ring-primary/30"
+                    />
+                    <span className="font-medium">{jt.name}</span>
+                  </label>
+                )
+              })}
+            </div>
+            {mixerError && <p className="text-sm text-red-600">{mixerError}</p>}
+            {mixerSaved && <p className="text-sm text-green-700">Participating families saved.</p>}
+            <button
+              type="button"
+              onClick={() => void handleSaveMixerFamilies()}
+              disabled={mixerSaving}
+              className={btnPrimaryClassName}
+            >
+              {mixerSaving ? 'Saving…' : 'Save participating families'}
+            </button>
+          </div>
         )}
         {isRsvpEvent && (
           <div className="mt-5 space-y-3 rounded-2xl border border-home-border bg-bg p-4">

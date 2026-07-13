@@ -118,6 +118,88 @@ export function isSportsRelatedCategory(category: string) {
   return value === 'Sports' || value === SPECTATOR_EVENT_CATEGORY || value === 'Dance'
 }
 
+/** Browse filters for officer + member event lists (not RBAC). */
+export const EVENT_FILTER_TABS = [
+  { id: 'all', label: 'All' },
+  { id: 'csa', label: 'CSA' },
+  { id: 'jiating', label: 'Jiating' },
+  { id: 'sports', label: 'Sports' },
+  { id: 'dance', label: 'Dance' },
+] as const
+
+export type EventFilterTabId = (typeof EVENT_FILTER_TABS)[number]['id']
+
+export function isDanceCategory(category: string) {
+  return category.trim() === 'Dance'
+}
+
+export function eventMatchesFilter(
+  event: { category: string; scope: string },
+  filter: EventFilterTabId,
+): boolean {
+  if (filter === 'all') return true
+
+  const category = event.category.trim()
+
+  if (filter === 'dance') {
+    return isDanceCategory(category)
+  }
+
+  if (filter === 'sports') {
+    return category === 'Sports' || category === SPECTATOR_EVENT_CATEGORY
+  }
+
+  if (filter === 'jiating') {
+    return (
+      event.scope === 'jt_specific' ||
+      isJiatingOlympicsCategory(category) ||
+      isMixerCategory(category)
+    )
+  }
+
+  // CSA: org-wide programming excluding sports/dance
+  return (
+    event.scope === 'org' &&
+    category !== 'Sports' &&
+    category !== SPECTATOR_EVENT_CATEGORY &&
+    !isDanceCategory(category)
+  )
+}
+
+/**
+ * Officer Jiating family filter: which family an event counts toward.
+ * - Olympics: every selected family
+ * - Mixer: only participating families (legacy mixers with no links → all)
+ * - JT-specific: that event's family only
+ * `familyId === null` means All families.
+ */
+export function eventMatchesJiatingFamily(
+  event: {
+    id: string
+    category: string
+    scope: string
+    jt_family_id: string | null
+  },
+  familyId: string | null,
+  mixerFamiliesByEventId: Record<string, string[]>,
+): boolean {
+  if (!familyId) return true
+
+  if (isJiatingOlympicsCategory(event.category)) return true
+
+  if (isMixerCategory(event.category)) {
+    const ids = mixerFamiliesByEventId[event.id]
+    if (!ids || ids.length === 0) return true
+    return ids.includes(familyId)
+  }
+
+  if (event.scope === 'jt_specific') {
+    return event.jt_family_id === familyId
+  }
+
+  return false
+}
+
 export function applyCategoryDefaults(
   category: EventCategory,
   current: {

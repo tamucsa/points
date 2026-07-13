@@ -29,7 +29,11 @@ export async function middleware(request: NextRequest) {
 
   const isPublicRoute =
     pathname === '/' ||
-    publicRoutes.some(r => pathname.startsWith(r))
+    publicRoutes.some(r =>
+      r === '/checkin'
+        ? pathname === '/checkin' || pathname.startsWith('/checkin/')
+        : pathname === r || pathname.startsWith(`${r}/`),
+    )
 
   if (!user && !isPublicRoute) {
     return NextResponse.redirect(new URL('/', request.url))

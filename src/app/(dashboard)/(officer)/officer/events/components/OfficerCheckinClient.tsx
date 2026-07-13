@@ -19,6 +19,7 @@ interface Event {
   check_in_type: string
   scope: string
   jt_family_name: string | null
+  is_mixer: boolean
 }
 
 interface Member {
@@ -26,32 +27,58 @@ interface Member {
   full_name: string
   email: string
   profile_image_url: string | null
+  jt_family_id: string | null
+  jt_family_name: string | null
   jt_color: string | null
   role_label: 'Member' | 'Officer'
+}
+
+interface TabFamily {
+  id: string
+  name: string
+  color: string | null
 }
 
 interface Props {
   event: Event
   members: Member[]
-  checkedInIds: Set<string>
+  checkedInIds: string[]
+  tabFamilies: TabFamily[]
+  defaultTabId: string | null
 }
 
-export default function OfficerCheckinClient({ event, members, checkedInIds }: Props) {
+export default function OfficerCheckinClient({
+  event,
+  members,
+  checkedInIds,
+  tabFamilies,
+  defaultTabId,
+}: Props) {
   const [search, setSearch] = useState('')
-  const [checkedIn, setCheckedIn] = useState(checkedInIds)
+  const [checkedIn, setCheckedIn] = useState(() => new Set(checkedInIds))
   const [saving, setSaving] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [uncheckTarget, setUncheckTarget] = useState<Member | null>(null)
   const [uncheckError, setUncheckError] = useState<string | null>(null)
+  const [activeTabId, setActiveTabId] = useState<string | null>(defaultTabId)
   const isJtSpecific = event.scope === 'jt_specific'
+  const showTabs = event.scope === 'jt_shared' && tabFamilies.length > 0
 
   const filtered = useMemo(() => {
     const q = search.toLowerCase()
-    return members.filter(m =>
-      m.full_name.toLowerCase().includes(q) ||
-      m.email.toLowerCase().includes(q)
-    )
-  }, [members, search])
+    return members.filter(m => {
+      if (showTabs && activeTabId && m.jt_family_id !== activeTabId) return false
+      return (
+        m.full_name.toLowerCase().includes(q) ||
+        m.email.toLowerCase().includes(q)
+      )
+    })
+  }, [members, search, showTabs, activeTabId])
+
+  const tabCheckedInCount = useMemo(() => {
+    if (!showTabs || !activeTabId) return null
+    return members.filter(m => m.jt_family_id === activeTabId && checkedIn.has(m.id)).length
+  }, [showTabs, activeTabId, members, checkedIn])
 
   const closeUncheckModal = () => {
     if (saving) return
@@ -99,23 +126,69 @@ export default function OfficerCheckinClient({ event, members, checkedInIds }: P
     setUncheckError(null)
   }
 
+  const subtitle = (() => {
+    if (isJtSpecific && event.jt_family_name) {
+      return `${event.name} · ${event.jt_family_name} only · ${checkedIn.size} checked in`
+    }
+    if (showTabs && event.is_mixer) {
+      return `${event.name} · ${tabFamilies.length} families · ${checkedIn.size} checked in`
+    }
+    if (showTabs) {
+      return `${event.name} · all Jiatings · ${checkedIn.size} checked in`
+    }
+    return `${event.name} · ${checkedIn.size} checked in`
+  })()
+
   return (
     <div className="mx-auto max-w-3xl px-6 py-8 lg:px-8">
       <BackLink
         href={`/officer/events/${event.id}`}
         label="Back to Event"
-        replace
         className="mb-5"
       />
 
-      <PageHeader
-        title="Check In Members"
-        subtitle={
-          isJtSpecific && event.jt_family_name
-            ? `${event.name} · ${event.jt_family_name} only · ${checkedIn.size} checked in`
-            : `${event.name} · ${checkedIn.size} checked in`
-        }
-      />
+      <PageHeader title="Check In Members" subtitle={subtitle} />
+
+      {showTabs && (
+        <div
+          className="mb-4 flex gap-2 overflow-x-auto pb-1"
+          role="tablist"
+          aria-label="Jiating families"
+        >
+          {tabFamilies.map(family => {
+            const active = family.id === activeTabId
+            const count = members.filter(
+              m => m.jt_family_id === family.id && checkedIn.has(m.id),
+            ).length
+            return (
+              <button
+                key={family.id}
+                type="button"
+                role="tab"
+                aria-selected={active}
+                onClick={() => setActiveTabId(family.id)}
+                className={`shrink-0 rounded-xl border px-3 py-2 text-sm font-semibold transition ${
+                  active
+                    ? 'border-primary bg-primary/10 text-primary'
+                    : 'border-home-border bg-white text-subtitle hover:border-primary/30 hover:text-text'
+                }`}
+              >
+                <span className="inline-flex items-center gap-2">
+                  <span
+                    className="size-2.5 rounded-full"
+                    style={{ backgroundColor: family.color ?? '#4779B8' }}
+                    aria-hidden
+                  />
+                  {family.name}
+                  <span className={active ? 'text-primary/70' : 'text-subtitle/80'}>
+                    {count}
+                  </span>
+                </span>
+              </button>
+            )
+          })}
+        </div>
+      )}
 
       <input
         placeholder="Search by name or email…"
@@ -123,6 +196,13 @@ export default function OfficerCheckinClient({ event, members, checkedInIds }: P
         onChange={e => setSearch(e.target.value)}
         className="mb-4 w-full rounded-xl border border-home-border bg-white px-4 py-3 text-sm text-text outline-none focus:border-primary focus:ring-2 focus:ring-primary/15"
       />
+
+      {showTabs && activeTabId && tabCheckedInCount != null && (
+        <p className="mb-3 text-xs text-subtitle">
+          {tabFamilies.find(f => f.id === activeTabId)?.name}: {tabCheckedInCount} checked in
+          {search ? ' (search filters this tab)' : ''}
+        </p>
+      )}
 
       {error && (
         <div className="mb-4 rounded-2xl border border-[#f5b0b0] bg-[#fff4f4] p-3">
@@ -140,7 +220,9 @@ export default function OfficerCheckinClient({ event, members, checkedInIds }: P
                 ? 'Try a different name or email.'
                 : isJtSpecific && event.jt_family_name
                   ? `No active members in ${event.jt_family_name}.`
-                  : 'No active members to check in.'
+                  : showTabs
+                    ? 'No active members in this Jiating.'
+                    : 'No active members to check in.'
             }
             compact
           />

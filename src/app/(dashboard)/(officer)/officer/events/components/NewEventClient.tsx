@@ -11,6 +11,7 @@ import {
   applyCategoryDefaults,
   getCategoryConfig,
   getCategoryOwnerHint,
+  isMixerCategory,
   type EventCategory,
 } from '@/utils/events'
 import { CHECKIN_TYPE_LABELS, inputClassName, labelClassName } from '@/utils/constants'
@@ -48,6 +49,9 @@ export default function NewEventClient({
   const router = useRouter()
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [mixerFamilyIds, setMixerFamilyIds] = useState<string[]>(
+    officerJtFamilyId ? [officerJtFamilyId] : [],
+  )
   const [form, setForm] = useState(() => {
     const defaults = applyCategoryDefaults(DEFAULT_CATEGORY, {
       scope: 'org',
@@ -81,8 +85,15 @@ export default function NewEventClient({
   const effectiveCheckIn = fixedCheckIn ?? form.check_in_type
   const isSports = categoryConfig?.allowSpectators === true
   const isJTSpecific = form.scope === 'jt_specific'
+  const isMixer = isMixerCategory(form.category)
   const isRSVP = effectiveCheckIn === 'rsvp_required'
   const isSelf = effectiveCheckIn === 'self'
+
+  const toggleMixerFamily = (id: string) => {
+    setMixerFamilyIds(prev =>
+      prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id],
+    )
+  }
 
   const handleCategoryChange = (category: string) => {
     setForm(f => ({
@@ -99,6 +110,12 @@ export default function NewEventClient({
     setSubmitting(true)
     setError(null)
 
+    if (isMixer && mixerFamilyIds.length < 2) {
+      setError('Select at least two Jiatings for a Mixer.')
+      setSubmitting(false)
+      return
+    }
+
     const result = await createEvent({
       semesterId,
       name: form.name,
@@ -106,6 +123,7 @@ export default function NewEventClient({
       pointValue: parseInt(form.point_value),
       scope: form.scope,
       jtFamilyId: isJTSpecific ? form.jt_family_id : null,
+      jtFamilyIds: isMixer ? mixerFamilyIds : [],
       checkInType: effectiveCheckIn,
       eventDate: form.event_date,
       startTime: form.start_time,
@@ -128,7 +146,7 @@ export default function NewEventClient({
 
   return (
     <div className="mx-auto max-w-2xl px-6 py-8 lg:px-8">
-      <BackLink href="/officer/events" label="Back to Events" replace />
+      <BackLink href="/officer/events" label="Back to Events" />
       <PageHeader title="New Event" subtitle={semesterName} />
 
       <div className="mt-6 flex flex-col gap-5 rounded-4xl border border-home-border bg-white p-6 shadow-sm">
@@ -197,6 +215,38 @@ export default function NewEventClient({
               <option value="">Select JT family…</option>
               {jtFamilies.map(jt => <option key={jt.id} value={jt.id}>{jt.name}</option>)}
             </select>
+          </div>
+        )}
+
+        {isMixer && (
+          <div>
+            <label className={labelClassName}>Participating Jiatings *</label>
+            <p className="mb-3 text-xs leading-5 text-subtitle">
+              Select the families in this Mixer. Check-in will only show tabs for these families.
+            </p>
+            <div className="grid gap-2 sm:grid-cols-2">
+              {jtFamilies.map(jt => {
+                const checked = mixerFamilyIds.includes(jt.id)
+                return (
+                  <label
+                    key={jt.id}
+                    className={`flex cursor-pointer items-center gap-3 rounded-xl border px-3 py-2.5 text-sm transition ${
+                      checked
+                        ? 'border-primary/40 bg-primary/10 text-primary'
+                        : 'border-home-border bg-white text-text hover:border-primary/30'
+                    }`}
+                  >
+                    <input
+                      type="checkbox"
+                      checked={checked}
+                      onChange={() => toggleMixerFamily(jt.id)}
+                      className="size-4 rounded border-home-border text-primary focus:ring-primary/30"
+                    />
+                    <span className="font-medium">{jt.name}</span>
+                  </label>
+                )
+              })}
+            </div>
           </div>
         )}
 

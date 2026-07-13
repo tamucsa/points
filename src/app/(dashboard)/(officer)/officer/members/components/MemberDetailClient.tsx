@@ -63,7 +63,7 @@ export default function MemberDetailClient({ member, attendance, history }: Prop
 
   return (
     <div className="mx-auto max-w-3xl px-6 py-8 lg:px-8">
-      <BackLink href="/officer/members" label="Back to Members" replace className="mb-5" />
+      <BackLink href="/officer/members" label="Back to Members" className="mb-5" />
 
       <div className="mb-6 flex flex-col gap-4 rounded-4xl border border-home-border bg-white p-6 shadow-sm sm:flex-row sm:items-center">
         <MemberAvatar

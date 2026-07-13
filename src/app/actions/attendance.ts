@@ -64,17 +64,43 @@ export async function officerCheckIn(eventId: string, semesterId: string, member
     return { success: false, error: 'Event not found.' }
   }
 
-  if (event.scope === 'jt_specific' && event.jt_family_id) {
-    const { data: member } = await supabase
-      .from('members')
-      .select('jt_family_id')
-      .eq('id', memberId)
-      .maybeSingle()
+  const { data: member } = await supabase
+    .from('members')
+    .select('jt_family_id')
+    .eq('id', memberId)
+    .maybeSingle()
 
-    if (!member || member.jt_family_id !== event.jt_family_id) {
+  if (!member) {
+    return { success: false, error: 'Member not found.' }
+  }
+
+  if (event.scope === 'jt_specific' && event.jt_family_id) {
+    if (member.jt_family_id !== event.jt_family_id) {
       return {
         success: false,
         error: 'Only members in this Jiating can be checked in to this event.',
+      }
+    }
+  }
+
+  if (event.scope === 'jt_shared') {
+    const { data: linkedFamilies } = await supabase
+      .from('event_jt_families')
+      .select('jt_family_id')
+      .eq('event_id', eventId)
+
+    if (linkedFamilies && linkedFamilies.length > 0) {
+      const allowed = new Set(linkedFamilies.map(row => row.jt_family_id))
+      if (!member.jt_family_id || !allowed.has(member.jt_family_id)) {
+        return {
+          success: false,
+          error: 'Only members in the participating Jiatings can be checked in to this event.',
+        }
+      }
+    } else if (!member.jt_family_id) {
+      return {
+        success: false,
+        error: 'Only members assigned to a Jiating can be checked in to this event.',
       }
     }
   }

@@ -1,6 +1,7 @@
 import { notFound, redirect } from 'next/navigation'
 import EventDetailClient from '@/app/(dashboard)/(officer)/officer/events/components/EventDetailClient'
 import { getSnapshotForEvent } from '@/app/actions/jt-standings'
+import { isMixerCategory } from '@/utils/events'
 import { createServerSupabase } from '@/utils/supabase/server'
 
 export default async function EventDetailPage({ params }: { params: Promise<{ id: string }> }) {
@@ -18,7 +19,6 @@ export default async function EventDetailPage({ params }: { params: Promise<{ id
 
   if (!event) notFound()
 
-  // Get attendance list for this event
   const { data: attendance, error: attendanceError } = await supabase
     .from('attendance')
     .select(`
@@ -47,11 +47,50 @@ export default async function EventDetailPage({ params }: { params: Promise<{ id
 
   const publishedSnapshot = await getSnapshotForEvent(id)
 
+  let jtFamilies: { id: string; name: string }[] = []
+  let mixerFamilyIds: string[] = []
+  let spectatorEvent: {
+    id: string
+    name: string
+    check_in_code: string | null
+    point_value: number
+  } | null = null
+
+  if (isMixerCategory(event.category)) {
+    const [{ data: families }, { data: links }] = await Promise.all([
+      supabase
+        .from('jt_families')
+        .select('id, name')
+        .eq('is_active', true)
+        .order('name'),
+      supabase
+        .from('event_jt_families')
+        .select('jt_family_id')
+        .eq('event_id', id),
+    ])
+
+    jtFamilies = families ?? []
+    mixerFamilyIds = (links ?? []).map(row => row.jt_family_id)
+  }
+
+  const { data: spectator } = await supabase
+    .from('events')
+    .select('id, name, check_in_code, point_value')
+    .eq('parent_event_id', id)
+    .maybeSingle()
+
+  if (spectator) {
+    spectatorEvent = spectator
+  }
+
   return (
     <EventDetailClient
       event={event}
       attendance={normalizedAttendance}
       publishedSnapshot={publishedSnapshot}
+      jtFamilies={jtFamilies}
+      mixerFamilyIds={mixerFamilyIds}
+      spectatorEvent={spectatorEvent}
     />
   )
 }

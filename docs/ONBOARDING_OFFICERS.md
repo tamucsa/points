@@ -35,7 +35,7 @@ The app currently allows any officer to create any category. Prefer following th
 | **CSA-Wide** | Event Coordinator | |
 | **Jiating Olympics** | Sports chair | Created by Sports chair but edited by jiating parents |
 | **Jiating Event** | Jiating parents | JT-specific — create only for **your** Jiating |
-| **Mixer** | Jiating parents | Shared among the families involved in the mixer |
+| **Mixer** | Jiating parents | Select participating families at create time (editable later on event detail); check-in tabs only for those families |
 | **Sports** | Sports chair | Optional spectator check-in child event |
 | **Philanthropy** | Philanthropy chair | |
 | **Dance** | Dance chair | |
@@ -54,6 +54,7 @@ If you need an event outside your usual categories, create it only when the resp
 - Open the event check-in page
 - Search/filter members
 - Check them in as they arrive
+- For **Jiating Olympics**, use the Jiating tabs (all families). For **Mixers**, tabs only include the families selected when the event was created.
 
 ### 3) Verify attendance
 - Confirm attendance count on the event detail page.

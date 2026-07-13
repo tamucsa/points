@@ -26,6 +26,7 @@ export default async function NewEventPage() {
     .from('jt_families')
     .select('id, name')
     .eq('is_active', true)
+    .order('name')
 
   return (
     <NewEventClient
