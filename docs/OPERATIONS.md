@@ -17,6 +17,7 @@ Runbook for day-to-day CSA Points operations. Each section includes an **overvie
 | View leaderboard | Member | `/leaderboard`, `/leaderboard/jiatings`, `/leaderboard/standings` |
 | View own points | Member | `/profile` |
 | Browse events | Member | `/events` |
+| Browse / filter events | Officer/Admin | `/officer/events` |
 | Look up member points / sign-in status | Officer/Admin | `/officer/members` |
 
 Related docs:
@@ -154,6 +155,19 @@ Officers and admins create events tied to the active semester. Each event has:
 
 Sports events can optionally create a linked **Spectator** child event (1 point, self check-in, capped at 10 points/semester per member via `attendance.counted`).
 
+### Step-by-step: Browse Officer Events
+
+1. Officer/admin goes to **Officer Events** → `/officer/events`.
+2. Optionally search by event name.
+3. Use category tabs (**All** / **CSA** / **Jiating** / **Sports** / **Dance**) to filter.
+4. On the **Jiating** tab, use **Counts toward** to pick a family (defaults to the officer’s Jiating when assigned):
+   - Olympics count toward every family → always shown for a selected family
+   - Mixers count only toward participating families (`event_jt_families`)
+   - JT-specific events count only toward their `jt_family_id`
+5. Expand **Past Events** when checking in after the start time or verifying older attendance.
+
+Member **Events** (`/events`) is narrower: only the member’s JT-specific events plus shared/org events (and Mixers their Jiating participates in). Same category tabs and past-events collapse; no family dropdown.
+
 ### Step-by-step: Create an event
 
 1. Officer/admin signs in and goes to **Officer Events** → `/officer/events`.
@@ -171,8 +185,9 @@ Sports events can optionally create a linked **Spectator** child event (1 point,
      - *RSVP Required* — provide RSVP URL and deadline
    - **Date**, **location**, **description** (as needed)
 4. For **Sports** events, optionally enable **Spectator check-in** (creates a child spectator event).
-5. Submit the form.
-6. Confirm the event appears on `/officer/events`.
+5. For **Mixers**, select at least two participating Jiatings (editable later on the event detail page).
+6. Submit the form.
+7. Confirm the event appears on `/officer/events`.
 
 ### Step-by-step: Run officer check-in at an event
 

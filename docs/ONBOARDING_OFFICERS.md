@@ -15,6 +15,15 @@ Officers must have `members.role` set to `officer`. If you can't see officer pag
 
 ## Running an event (end-to-end)
 
+### Browse Officer Events
+- Go to **Officer Events** → search by name if needed
+- Use the **category tabs** (All / CSA / Jiating / Sports / Dance) to narrow the list
+- On the **Jiating** tab, use **Counts toward** to filter by family (defaults to your Jiating when assigned):
+  - **Olympics** appear for every selected family
+  - **Mixers** appear only for families participating in that Mixer
+  - **Jiating Events** appear only for that event’s family
+- Upcoming events show in the main list; expand **Past Events** when you need late check-in or verification
+
 ### 1) Create the event
 - Go to **Officer Events**
 - Click **New Event**

@@ -32,6 +32,13 @@ There are two common flows:
 ### Officer check-in
 - An officer may check you in from the officer tool.
 
+## Browsing Events
+
+On **Events** (`/events`):
+- You only see **your Jiating’s events**, plus shared events (CSA-wide, Olympics, and Mixers your Jiating is in).
+- Use the **category tabs** (All / CSA / Jiating / Sports / Dance) and search by name to find events.
+- Upcoming events show first; expand **Past Events** if you need history.
+
 ## Understanding points
 
 - Points are earned by attending events.

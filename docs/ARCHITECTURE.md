@@ -32,6 +32,7 @@ This document explains how the system is structured, how requests flow through t
 Core tables (names reflect actual schema):
 - `members`: one row per person (email, role, status, jt family, auth uid)
 - `events`: point-earning opportunities; has scope (CSA-wide / JT shared / JT specific)
+- `event_jt_families`: which Jiatings participate in a Mixer (and similar multi-family events)
 - `attendance`: joins members to events; source of points
 - `semesters`: identifies the active semester
 - `jt_families`: Jiating / family grouping
