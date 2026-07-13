@@ -18,13 +18,14 @@ Runbook for day-to-day CSA Points operations. Each section includes an **overvie
 | View own points | Member | `/profile` |
 | Browse events | Member | `/events` |
 | Browse / filter events | Officer/Admin | `/officer/events` |
+| Edit event date / time / location | Officer/Admin | `/officer/events/[id]` → When and Where |
 | Manage member roles | Admin | `/admin/members?tab=roles` |
 | Look up member points / sign-in status | Officer/Admin | `/officer/members` |
 
 Related docs:
 - User guides: `docs/ONBOARDING_MEMBERS.md`, `docs/ONBOARDING_OFFICERS.md`, `docs/ONBOARDING_ADMINS.md`
 - Deployment: `docs/DEPLOYMENT.md`
-- Known issues: `docs/KNOWN_ISSUES.md`
+- Known issues & planned features: [GitHub Issues](https://github.com/tamucsa/points/issues) (`known-issue`, `planned-feature` labels)
 
 ---
 
@@ -166,9 +167,9 @@ Sports events can optionally create a linked **Spectator** child event (1 point,
    - Mixers count only toward participating families (`event_jt_families`)
    - JT-specific events count only toward their `jt_family_id`
 5. Expand **Past Events** when checking in after the start time or verifying older attendance.
-6. Long lists paginate at **10 events per page** (upcoming and past separately). Prev/Next appears when a list exceeds that.
+6. Long lists paginate at **10 events per page** (upcoming and past separately). Prev/Next and the range label appear **above and below** the list when there is more than one page.
 
-Member **Events** (`/events`) is narrower: only the member’s JT-specific events plus shared/org events (and Mixers their Jiating participates in). Same category tabs, past-events collapse, and 10-per-page pagination; no family dropdown.
+Member **Events** (`/events`) is narrower: only the member’s JT-specific events plus shared/org events (and Mixers their Jiating participates in). Same category tabs, past-events collapse, and 10-per-page pagination (controls above and below); no family dropdown.
 
 ### Step-by-step: Create an event
 
@@ -190,6 +191,13 @@ Member **Events** (`/events`) is narrower: only the member’s JT-specific event
 5. For **Mixers**, select at least two participating Jiatings (editable later on the event detail page).
 6. Submit the form.
 7. Confirm the event appears on `/officer/events`.
+
+### Step-by-step: Edit event date, time, or location
+
+1. Officer opens the event from `/officer/events` → event detail `/officer/events/[id]`.
+2. Under **When and Where**, update **Date**, **Location**, **Start time**, and optional **End time**.
+3. Click **Save Date and Location**.
+4. Linked **Spectator** child events (if any) get the same schedule and location automatically.
 
 ### Step-by-step: Run officer check-in at an event
 
@@ -280,7 +288,7 @@ There is no dedicated “undo check-in” UI yet. Corrections are handled at the
 3. A developer or Supabase admin makes the change.
 4. Verify the member’s points updated on `/profile` and leaderboard.
 
-> **Planned:** Admin UI for attendance corrections.
+> **Planned:** Broader admin/event-detail correction UI — [#10](https://github.com/tamucsa/points/issues/10) (PF-001). Officers can already remove mistaken check-ins from the check-in page.
 
 ---
 
@@ -341,10 +349,8 @@ See `docs/DEPLOYMENT.md` for full deployment steps.
 
 ## Planned features (not yet in app)
 
-| Feature | Status |
-|---------|--------|
-| Role management admin UI | Shipped (`/admin/members?tab=roles`) |
-| Attendance correction UI | Planned |
-| Materialized leaderboard (performance at 300+ members) | Under consideration |
+Track the roadmap in [GitHub Issues](https://github.com/tamucsa/points/issues?q=is%3Aissue+is%3Aopen+label%3Aplanned-feature) (`planned-feature` label).
 
-Track implementation progress and open bugs in `docs/KNOWN_ISSUES.md`.
+Bugs and debt on existing behavior: [known-issue issues](https://github.com/tamucsa/points/issues?q=is%3Aissue+is%3Aopen+label%3Aknown-issue).
+
+> **Attendance corrections:** Officers can already uncheck from the check-in page. Broader UI (event detail / `counted`) is [#10](https://github.com/tamucsa/points/issues/10).

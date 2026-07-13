@@ -37,7 +37,7 @@ There are two common flows:
 On **Events** (`/events`):
 - You only see **your Jiating’s events**, plus shared events (CSA-wide, Olympics, and Mixers your Jiating is in).
 - Use the **category tabs** (All / CSA / Jiating / Sports / Dance) and search by name to find events.
-- Upcoming events show first (10 per page); expand **Past Events** if you need history (also paginated).
+- Upcoming events show first (10 per page; Prev/Next above and below); expand **Past Events** if you need history (also paginated).
 
 ## Understanding points
 

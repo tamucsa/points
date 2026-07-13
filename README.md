@@ -31,7 +31,7 @@ Open `http://localhost:3000`.
 - **Environment variables**: `docs/ENVIRONMENT.md`
 - **Architecture (developer onboarding / transfer)**: `docs/ARCHITECTURE.md`
 - **Operations (all workflows)**: `docs/OPERATIONS.md`
-- **Known issues**: `docs/KNOWN_ISSUES.md`
+- **Known issues / planned features**: [GitHub Issues](https://github.com/tamucsa/points/issues) (labels `known-issue`, `planned-feature`)
 - **Deployment**: `docs/DEPLOYMENT.md`
 - **User onboarding**:
   - Members: `docs/ONBOARDING_MEMBERS.md`

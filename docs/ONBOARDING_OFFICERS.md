@@ -22,7 +22,7 @@ Officers must have `members.role` set to `officer`. If you can't see officer pag
   - **Olympics** appear for every selected family
   - **Mixers** appear only for families participating in that Mixer
   - **Jiating Events** appear only for that event’s family
-- Upcoming events show in the main list (10 per page); expand **Past Events** when you need late check-in or verification (also paginated)
+- Upcoming events show in the main list (10 per page; Prev/Next above and below); expand **Past Events** when you need late check-in or verification (also paginated)
 
 ### 1) Create the event
 - Go to **Officer Events**
@@ -51,6 +51,11 @@ The app currently allows any officer to create any category. Prefer following th
 | **Concessions** | Fundraising chair | |
 
 If you need an event outside your usual categories, create it only when the responsible chair/parents have asked you to.
+
+### 1b) Edit date, time, or location
+- Open the event detail page
+- Under **When and Where**, change date, location, start time, and optional end time
+- Click **Save Date and Location** (spectator child events update too)
 
 ### 2) Check-in members
 
