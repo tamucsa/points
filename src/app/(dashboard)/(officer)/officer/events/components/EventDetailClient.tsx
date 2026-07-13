@@ -1,15 +1,23 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import BackLink from '@/app/components/BackLink'
 import { publishJiatingStandings } from '@/app/actions/jt-standings'
-import { updateEventMixerFamilies, updateEventRsvp } from '@/app/actions/events'
+import {
+  updateEventMixerFamilies,
+  updateEventRsvp,
+  updateEventSchedule,
+} from '@/app/actions/events'
 import MemberAvatar from '@/app/components/MemberAvatar'
 import IconLabel, { CheckInMethodBadge } from '@/app/components/IconLabel'
 import EmptyState from '@/app/components/EmptyState'
 import { isGeneralMeetingCategory, isMixerCategory } from '@/utils/events'
 import { formatEventSchedule } from '@/utils/datetime'
+import {
+  eventTimestampToFormDate,
+  eventTimestampToFormTime,
+} from '@/utils/event-times'
 import { ClipboardList, Clock, MapPin } from 'lucide-react'
 import { inputClassName, labelClassName } from '@/utils/constants'
 
@@ -97,9 +105,25 @@ export default function EventDetailClient({
   const [mixerSaving, setMixerSaving] = useState(false)
   const [mixerError, setMixerError] = useState<string | null>(null)
   const [mixerSaved, setMixerSaved] = useState(false)
+  const [eventDate, setEventDate] = useState(() => eventTimestampToFormDate(event.starts_at))
+  const [startTime, setStartTime] = useState(() => eventTimestampToFormTime(event.starts_at))
+  const [endTime, setEndTime] = useState(() =>
+    event.ends_at ? eventTimestampToFormTime(event.ends_at) : '',
+  )
+  const [location, setLocation] = useState(event.location ?? '')
+  const [scheduleSaving, setScheduleSaving] = useState(false)
+  const [scheduleError, setScheduleError] = useState<string | null>(null)
+  const [scheduleSaved, setScheduleSaved] = useState(false)
   const isGm = isGeneralMeetingCategory(event.category)
   const isMixer = isMixerCategory(event.category)
   const isRsvpEvent = event.check_in_type === 'rsvp_required'
+
+  useEffect(() => {
+    setEventDate(eventTimestampToFormDate(event.starts_at))
+    setStartTime(eventTimestampToFormTime(event.starts_at))
+    setEndTime(event.ends_at ? eventTimestampToFormTime(event.ends_at) : '')
+    setLocation(event.location ?? '')
+  }, [event.starts_at, event.ends_at, event.location])
 
   const toggleMixerFamily = (id: string) => {
     setSelectedMixerFamilies(prev =>
@@ -142,6 +166,27 @@ export default function EventDetailClient({
       return
     }
     setMixerSaved(true)
+    router.refresh()
+  }
+
+  const handleSaveSchedule = async () => {
+    setScheduleSaving(true)
+    setScheduleError(null)
+    setScheduleSaved(false)
+
+    const result = await updateEventSchedule(event.id, {
+      eventDate,
+      startTime,
+      endTime: endTime.trim() || null,
+      location,
+    })
+
+    setScheduleSaving(false)
+    if (!result.success) {
+      setScheduleError(result.error ?? 'Failed to save event details.')
+      return
+    }
+    setScheduleSaved(true)
     router.refresh()
   }
 
@@ -247,6 +292,81 @@ export default function EventDetailClient({
         {publishError && (
           <p className="mt-3 text-sm text-red-600">{publishError}</p>
         )}
+        <div className="mt-5 space-y-3 rounded-2xl border border-home-border bg-bg p-4">
+          <div className="text-sm font-semibold text-text">When and Where</div>
+          <div className="grid gap-3 sm:grid-cols-2">
+            <div>
+              <label className={labelClassName} htmlFor="event-edit-date">
+                Date
+              </label>
+              <input
+                id="event-edit-date"
+                type="date"
+                className={inputClassName}
+                value={eventDate}
+                onChange={e => {
+                  setEventDate(e.target.value)
+                  setScheduleSaved(false)
+                }}
+              />
+            </div>
+            <div>
+              <label className={labelClassName} htmlFor="event-edit-location">
+                Location
+              </label>
+              <input
+                id="event-edit-location"
+                className={inputClassName}
+                placeholder="e.g. MSC 2406"
+                value={location}
+                onChange={e => {
+                  setLocation(e.target.value)
+                  setScheduleSaved(false)
+                }}
+              />
+            </div>
+            <div>
+              <label className={labelClassName} htmlFor="event-edit-start">
+                Start time
+              </label>
+              <input
+                id="event-edit-start"
+                type="time"
+                className={inputClassName}
+                value={startTime}
+                onChange={e => {
+                  setStartTime(e.target.value)
+                  setScheduleSaved(false)
+                }}
+              />
+            </div>
+            <div>
+              <label className={labelClassName} htmlFor="event-edit-end">
+                End time <span className="font-normal normal-case text-subtitle">(optional)</span>
+              </label>
+              <input
+                id="event-edit-end"
+                type="time"
+                className={inputClassName}
+                value={endTime}
+                onChange={e => {
+                  setEndTime(e.target.value)
+                  setScheduleSaved(false)
+                }}
+              />
+            </div>
+          </div>
+          {scheduleError && <p className="text-sm text-red-600">{scheduleError}</p>}
+          {scheduleSaved && <p className="text-sm text-green-700">Event details saved.</p>}
+          <button
+            type="button"
+            onClick={() => void handleSaveSchedule()}
+            disabled={scheduleSaving}
+            className={btnPrimaryClassName}
+          >
+            {scheduleSaving ? 'Saving…' : 'Save Date and Location'}
+          </button>
+        </div>
         {spectatorEvent && (
           <div className="mt-5 rounded-2xl border border-home-border bg-bg p-4">
             <div className="text-sm font-semibold text-text">Spectator check-in</div>
@@ -302,7 +422,7 @@ export default function EventDetailClient({
         )}
         {isRsvpEvent && (
           <div className="mt-5 space-y-3 rounded-2xl border border-home-border bg-bg p-4">
-            <div className="text-sm font-semibold text-text">RSVP details</div>
+            <div className="text-sm font-semibold text-text">RSVP Details</div>
             <div>
               <label className={labelClassName}>RSVP Link</label>
               <input
@@ -335,7 +455,7 @@ export default function EventDetailClient({
               disabled={rsvpSaving}
               className={btnPrimaryClassName}
             >
-              {rsvpSaving ? 'Saving…' : 'Save RSVP details'}
+              {rsvpSaving ? 'Saving…' : 'Save RSVP Details'}
             </button>
           </div>
         )}

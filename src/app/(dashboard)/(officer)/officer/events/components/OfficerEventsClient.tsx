@@ -2,11 +2,12 @@
 
 import { QRCodeSVG } from 'qrcode.react'
 import { useRouter } from 'next/navigation'
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { deleteEvent } from '@/app/actions/events'
 import IconLabel, { CheckInTypeBadge, ScopeBadge } from '@/app/components/IconLabel'
 import EmptyState from '@/app/components/EmptyState'
 import EventFilterTabs from '@/app/components/EventFilterTabs'
+import EventListPager, { paginateItems } from '@/app/components/EventListPager'
 import JiatingFamilyFilter from '@/app/components/JiatingFamilyFilter'
 import { EventMetaChip, EventMetaItem, EventMetaRow } from '@/app/components/EventMeta'
 import PageHeader from '@/app/components/PageHeader'
@@ -85,6 +86,8 @@ export default function OfficerEventsClient({
   const [filter, setFilter] = useState<EventFilterTabId>('all')
   const [search, setSearch] = useState('')
   const [showPast, setShowPast] = useState(false)
+  const [upcomingPage, setUpcomingPage] = useState(1)
+  const [pastPage, setPastPage] = useState(1)
   const [jiatingFamilyId, setJiatingFamilyId] = useState<string | null>(() => {
     if (
       officerJtFamilyId &&
@@ -154,6 +157,14 @@ export default function OfficerEventsClient({
     ),
     [filteredByTabAndSearch],
   )
+
+  useEffect(() => {
+    setUpcomingPage(1)
+    setPastPage(1)
+  }, [filter, search, jiatingFamilyId])
+
+  const upcomingPageData = paginateItems(upcomingEvents, upcomingPage)
+  const pastPageData = paginateItems(pastEvents, pastPage)
 
   const closeDeleteModal = () => {
     if (deleting) return
@@ -387,8 +398,21 @@ export default function OfficerEventsClient({
       )}
 
       {upcomingEvents.length > 0 && (
-        <div className="mb-8 flex flex-col gap-3">
-          {upcomingEvents.map(event => renderEventCard(event, false))}
+        <div className="mb-8">
+          <EventListPager
+            page={upcomingPageData.page}
+            totalCount={upcomingPageData.totalCount}
+            onPageChange={setUpcomingPage}
+            className="mb-4"
+          />
+          <div className="flex flex-col gap-3">
+            {upcomingPageData.items.map(event => renderEventCard(event, false))}
+          </div>
+          <EventListPager
+            page={upcomingPageData.page}
+            totalCount={upcomingPageData.totalCount}
+            onPageChange={setUpcomingPage}
+          />
         </div>
       )}
 
@@ -396,15 +420,33 @@ export default function OfficerEventsClient({
         <div>
           <button
             type="button"
-            onClick={() => setShowPast(p => !p)}
+            onClick={() => {
+              setShowPast(p => {
+                if (!p) setPastPage(1)
+                return !p
+              })
+            }}
             className="mb-4 rounded-xl border border-home-border bg-white px-4 py-2 text-sm text-subtitle shadow-sm transition hover:border-primary/30 hover:text-primary"
           >
             {showPast ? '▲ Hide' : '▼ Show'} Past Events ({pastEvents.length})
           </button>
 
           {showPast && (
-            <div className="flex flex-col gap-3">
-              {pastEvents.map(event => renderEventCard(event, true))}
+            <div>
+              <EventListPager
+                page={pastPageData.page}
+                totalCount={pastPageData.totalCount}
+                onPageChange={setPastPage}
+                className="mb-4"
+              />
+              <div className="flex flex-col gap-3">
+                {pastPageData.items.map(event => renderEventCard(event, true))}
+              </div>
+              <EventListPager
+                page={pastPageData.page}
+                totalCount={pastPageData.totalCount}
+                onPageChange={setPastPage}
+              />
             </div>
           )}
         </div>

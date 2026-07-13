@@ -22,7 +22,7 @@ Officers must have `members.role` set to `officer`. If you can't see officer pag
   - **Olympics** appear for every selected family
   - **Mixers** appear only for families participating in that Mixer
   - **Jiating Events** appear only for that event’s family
-- Upcoming events show in the main list; expand **Past Events** when you need late check-in or verification
+- Upcoming events show in the main list (10 per page); expand **Past Events** when you need late check-in or verification (also paginated)
 
 ### 1) Create the event
 - Go to **Officer Events**

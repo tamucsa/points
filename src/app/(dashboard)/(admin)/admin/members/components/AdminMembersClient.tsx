@@ -1,8 +1,13 @@
 'use client'
 import { useRef, useState } from 'react'
-import { FileText } from 'lucide-react'
+import { useRouter } from 'next/navigation'
+import { FileText, ChevronDown } from 'lucide-react'
 import { activateMember, importMembers, type ImportMode, type JtChange } from '@/app/actions/members'
+import AdminRolesPanel, {
+  type RoleMember,
+} from '@/app/(dashboard)/(admin)/admin/members/components/AdminRolesPanel'
 import MemberAvatar from '@/app/components/MemberAvatar'
+import type { MemberRole } from '@/utils/members'
 
 interface PendingMember {
   id: string
@@ -17,9 +22,19 @@ interface JTFamily {
   name: string
 }
 
+type AdminTab = 'pending' | 'import' | 'roles'
+
 interface Props {
   pending: PendingMember[]
   jtFamilies: JTFamily[]
+  initialTab: AdminTab
+  currentAdminId: string
+  roleMembers: RoleMember[]
+  rolePage: number
+  roleTotalPages: number
+  roleTotalCount: number
+  roleQuery: string
+  roleFilter: 'all' | MemberRole
 }
 
 interface CSVRow {
@@ -80,7 +95,24 @@ function parseCSV(text: string): CSVRow[] {
   })
 }
 
-export default function AdminMembersClient({ pending: initialPending, jtFamilies }: Props) {
+function tabHref(tab: AdminTab) {
+  if (tab === 'pending') return '/admin/members'
+  return `/admin/members?tab=${tab}`
+}
+
+export default function AdminMembersClient({
+  pending: initialPending,
+  jtFamilies,
+  initialTab,
+  currentAdminId,
+  roleMembers,
+  rolePage,
+  roleTotalPages,
+  roleTotalCount,
+  roleQuery,
+  roleFilter,
+}: Props) {
+  const router = useRouter()
   const [pending, setPending] = useState(initialPending)
   const [assignments, setAssignments] = useState<Record<string, string>>({})
   const [saving, setSaving] = useState<string | null>(null)
@@ -88,9 +120,10 @@ export default function AdminMembersClient({ pending: initialPending, jtFamilies
   const [importing, setImporting] = useState(false)
   const [dragActive, setDragActive] = useState(false)
   const [selectedFile, setSelectedFile] = useState<File | null>(null)
-  const [tab, setTab] = useState<'pending' | 'import'>('pending')
   const [importMode, setImportMode] = useState<ImportMode>('full')
   const fileInputRef = useRef<HTMLInputElement>(null)
+
+  const tab = initialTab
 
   const assignJT = async (memberId: string) => {
     const jtFamilyId = assignments[memberId]
@@ -188,19 +221,24 @@ export default function AdminMembersClient({ pending: initialPending, jtFamilies
       <div className="mb-6">
         <h1 className="text-3xl font-bold tracking-tight text-text">Member Admin</h1>
         <div className="mt-1 text-sm text-subtitle">
-          {pending.length} pending JT assignment{pending.length === 1 ? '' : 's'} · CSV import
+          {pending.length} pending JT assignment{pending.length === 1 ? '' : 's'} · Roles · CSV import
         </div>
       </div>
 
       {/* Tabs */}
       <div className="mb-6 inline-flex rounded-2xl border border-home-border bg-white p-1 shadow-sm">
-        {(['pending', 'import'] as const).map(t => (
+        {([
+          { id: 'pending' as const, label: `Pending JT (${pending.length})` },
+          { id: 'roles' as const, label: 'Roles' },
+          { id: 'import' as const, label: 'CSV Import' },
+        ]).map(t => (
           <button
-            key={t}
-            onClick={() => setTab(t)}
-            className={`rounded-xl px-4 py-2 text-sm font-medium transition ${tab === t ? 'bg-primary text-white shadow-sm' : 'text-subtitle hover:bg-bg hover:text-text'}`}
+            key={t.id}
+            type="button"
+            onClick={() => router.push(tabHref(t.id))}
+            className={`rounded-xl px-4 py-2 text-sm font-medium transition ${tab === t.id ? 'bg-primary text-white shadow-sm' : 'text-subtitle hover:bg-bg hover:text-text'}`}
           >
-            {t === 'pending' ? `Pending JT (${pending.length})` : 'CSV Import'}
+            {t.label}
           </button>
         ))}
       </div>
@@ -225,16 +263,22 @@ export default function AdminMembersClient({ pending: initialPending, jtFamilies
                   <div className="text-xs text-subtitle/80">Class of {m.graduation_year}</div>
                 )}
               </div>
-              <select
-                value={assignments[m.id] ?? ''}
-                onChange={e => setAssignments(a => ({ ...a, [m.id]: e.target.value }))}
-                className="rounded-xl border border-home-border bg-white px-3 py-2 text-sm text-text shadow-sm"
-              >
-                <option value="">Assign JT…</option>
-                {jtFamilies.map(jt => (
-                  <option key={jt.id} value={jt.id}>{jt.name}</option>
-                ))}
-              </select>
+              <div className="relative">
+                <select
+                  value={assignments[m.id] ?? ''}
+                  onChange={e => setAssignments(a => ({ ...a, [m.id]: e.target.value }))}
+                  className="cursor-pointer appearance-none rounded-xl border border-home-border bg-white py-2 pl-3 pr-10 text-sm text-text shadow-sm"
+                >
+                  <option value="">Assign JT…</option>
+                  {jtFamilies.map(jt => (
+                    <option key={jt.id} value={jt.id}>{jt.name}</option>
+                  ))}
+                </select>
+                <ChevronDown
+                  className="pointer-events-none absolute right-3 top-1/2 size-4 -translate-y-1/2 text-subtitle"
+                  aria-hidden
+                />
+              </div>
               <button
                 onClick={() => assignJT(m.id)}
                 disabled={!assignments[m.id] || saving === m.id}
@@ -245,6 +289,18 @@ export default function AdminMembersClient({ pending: initialPending, jtFamilies
             </div>
           ))}
         </div>
+      )}
+
+      {tab === 'roles' && (
+        <AdminRolesPanel
+          members={roleMembers}
+          currentAdminId={currentAdminId}
+          page={rolePage}
+          totalPages={roleTotalPages}
+          totalCount={roleTotalCount}
+          query={roleQuery}
+          roleFilter={roleFilter}
+        />
       )}
 
       {/* Import tab */}

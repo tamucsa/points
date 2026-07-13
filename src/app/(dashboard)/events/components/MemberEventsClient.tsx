@@ -1,9 +1,10 @@
 'use client'
 
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import IconLabel, { CheckInTypeBadge } from '@/app/components/IconLabel'
 import EmptyState from '@/app/components/EmptyState'
 import EventFilterTabs from '@/app/components/EventFilterTabs'
+import EventListPager, { paginateItems } from '@/app/components/EventListPager'
 import { EventMetaChip, EventMetaItem, EventMetaRow } from '@/app/components/EventMeta'
 import PageHeader from '@/app/components/PageHeader'
 import { formatEventSchedule, isEventPast, sortEventsByStartsAt } from '@/utils/datetime'
@@ -95,6 +96,8 @@ export default function MemberEventsClient({ events, attendedIds, semester }: Pr
   const [showPast, setShowPast] = useState(false)
   const [filter, setFilter] = useState<EventFilterTabId>('all')
   const [search, setSearch] = useState('')
+  const [upcomingPage, setUpcomingPage] = useState(1)
+  const [pastPage, setPastPage] = useState(1)
 
   const filteredEvents = useMemo(() => {
     const q = search.trim().toLowerCase()
@@ -119,11 +122,25 @@ export default function MemberEventsClient({ events, attendedIds, semester }: Pr
     return counts
   }, [events, search])
 
-  const upcoming = sortEventsByStartsAt(filteredEvents.filter(e => !isEventPast(e.starts_at)))
-  const past = sortEventsByStartsAt(
-    filteredEvents.filter(e => isEventPast(e.starts_at)),
-    'desc',
+  const upcoming = useMemo(
+    () => sortEventsByStartsAt(filteredEvents.filter(e => !isEventPast(e.starts_at))),
+    [filteredEvents],
   )
+  const past = useMemo(
+    () => sortEventsByStartsAt(
+      filteredEvents.filter(e => isEventPast(e.starts_at)),
+      'desc',
+    ),
+    [filteredEvents],
+  )
+
+  useEffect(() => {
+    setUpcomingPage(1)
+    setPastPage(1)
+  }, [filter, search])
+
+  const upcomingPageData = paginateItems(upcoming, upcomingPage)
+  const pastPageData = paginateItems(past, pastPage)
 
   return (
     <div className="mx-auto max-w-5xl px-6 py-8 lg:px-8">
@@ -167,14 +184,27 @@ export default function MemberEventsClient({ events, attendedIds, semester }: Pr
       )}
 
       {upcoming.length > 0 && (
-        <div className="mb-8 flex flex-col gap-3">
-          {upcoming.map(event => (
-            <EventCard
-              key={event.id}
-              event={event}
-              attended={attendedIds.has(event.id)}
-            />
-          ))}
+        <div className="mb-8">
+          <EventListPager
+            page={upcomingPageData.page}
+            totalCount={upcomingPageData.totalCount}
+            onPageChange={setUpcomingPage}
+            className="mb-4"
+          />
+          <div className="flex flex-col gap-3">
+            {upcomingPageData.items.map(event => (
+              <EventCard
+                key={event.id}
+                event={event}
+                attended={attendedIds.has(event.id)}
+              />
+            ))}
+          </div>
+          <EventListPager
+            page={upcomingPageData.page}
+            totalCount={upcomingPageData.totalCount}
+            onPageChange={setUpcomingPage}
+          />
         </div>
       )}
 
@@ -182,21 +212,39 @@ export default function MemberEventsClient({ events, attendedIds, semester }: Pr
         <div>
           <button
             type="button"
-            onClick={() => setShowPast(p => !p)}
+            onClick={() => {
+              setShowPast(p => {
+                if (!p) setPastPage(1)
+                return !p
+              })
+            }}
             className="mb-4 rounded-xl border border-home-border bg-white px-4 py-2 text-sm text-subtitle shadow-sm transition hover:border-primary/30 hover:text-primary"
           >
             {showPast ? '▲ Hide' : '▼ Show'} Past Events ({past.length})
           </button>
 
           {showPast && (
-            <div className="flex flex-col gap-3">
-              {past.map(event => (
-                <EventCard
-                  key={event.id}
-                  event={event}
-                  attended={attendedIds.has(event.id)}
-                />
-              ))}
+            <div>
+              <EventListPager
+                page={pastPageData.page}
+                totalCount={pastPageData.totalCount}
+                onPageChange={setPastPage}
+                className="mb-4"
+              />
+              <div className="flex flex-col gap-3">
+                {pastPageData.items.map(event => (
+                  <EventCard
+                    key={event.id}
+                    event={event}
+                    attended={attendedIds.has(event.id)}
+                  />
+                ))}
+              </div>
+              <EventListPager
+                page={pastPageData.page}
+                totalCount={pastPageData.totalCount}
+                onPageChange={setPastPage}
+              />
             </div>
           )}
         </div>

@@ -63,14 +63,15 @@ Typical flow: close fall → spring partial CSV import → start spring semester
 
 ## Role management
 
-### Promote to officer
-- Update `members.role` to `officer`.
+Go to **Admin** → **Members** → **Roles** (`/admin/members?tab=roles`).
 
-### Promote to admin
-- Update `members.role` to `admin`.
+- Search active members and filter by current role.
+- Set role to **Member**, **Officer**, or **Admin**, then **Save**.
+- Promoting to admin and demoting yourself require confirmation.
+- The last remaining admin cannot be demoted.
 
 Security note:
-- Only admins should be able to change `role` or critical fields (enforced by RLS + server-side guards).
+- Only admins can change `role` (enforced by RLS + `updateMemberRole` server action). Officers cannot elevate themselves.
 
 ## Data integrity / corrections
 

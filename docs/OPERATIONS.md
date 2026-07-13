@@ -18,6 +18,7 @@ Runbook for day-to-day CSA Points operations. Each section includes an **overvie
 | View own points | Member | `/profile` |
 | Browse events | Member | `/events` |
 | Browse / filter events | Officer/Admin | `/officer/events` |
+| Manage member roles | Admin | `/admin/members?tab=roles` |
 | Look up member points / sign-in status | Officer/Admin | `/officer/members` |
 
 Related docs:
@@ -165,8 +166,9 @@ Sports events can optionally create a linked **Spectator** child event (1 point,
    - Mixers count only toward participating families (`event_jt_families`)
    - JT-specific events count only toward their `jt_family_id`
 5. Expand **Past Events** when checking in after the start time or verifying older attendance.
+6. Long lists paginate at **10 events per page** (upcoming and past separately). Prev/Next appears when a list exceeds that.
 
-Member **Events** (`/events`) is narrower: only the member’s JT-specific events plus shared/org events (and Mixers their Jiating participates in). Same category tabs and past-events collapse; no family dropdown.
+Member **Events** (`/events`) is narrower: only the member’s JT-specific events plus shared/org events (and Mixers their Jiating participates in). Same category tabs, past-events collapse, and 10-per-page pagination; no family dropdown.
 
 ### Step-by-step: Create an event
 
@@ -286,19 +288,19 @@ There is no dedicated “undo check-in” UI yet. Corrections are handled at the
 
 ### Overview
 
-Roles (`member`, `officer`, `admin`) control access to officer and admin pages. RLS policies prevent officers from elevating roles.
+Roles (`member`, `officer`, `admin`) control access to officer and admin pages. RLS policies prevent officers from elevating roles. Admins manage roles in the app.
 
-### Step-by-step: Promote a member to officer or admin (interim)
+### Step-by-step: Promote or demote a member
 
-> **Status:** No in-app role management UI yet.
+1. Sign in as an admin and go to **Admin** → **Members** → **Roles** (`/admin/members?tab=roles`).
+2. Search by name/email and optionally filter by current role.
+3. Choose the new role (`Member`, `Officer`, or `Admin`) and click **Save**.
+   - Promoting to **Admin** asks for confirmation (full access including roles and semesters).
+   - Demoting yourself away from admin asks for confirmation.
+   - You cannot demote the **last remaining admin**.
+4. The member should refresh (or sign out/in) so nav picks up officer/admin access.
 
-1. A developer or Supabase admin updates `members.role` for the target member:
-   - `officer` — access to `/officer/*`
-   - `admin` — access to `/officer/*` and `/admin/*`
-2. Member signs out and back in (or refreshes) to pick up the new role.
-3. Verify they can access the appropriate pages.
-
-> **Planned:** Admin UI for role management.
+Only **active** members appear on the Roles tab. Pending JT members must be activated first.
 
 ---
 
@@ -341,7 +343,7 @@ See `docs/DEPLOYMENT.md` for full deployment steps.
 
 | Feature | Status |
 |---------|--------|
-| Role management admin UI | Planned |
+| Role management admin UI | Shipped (`/admin/members?tab=roles`) |
 | Attendance correction UI | Planned |
 | Materialized leaderboard (performance at 300+ members) | Under consideration |
 
