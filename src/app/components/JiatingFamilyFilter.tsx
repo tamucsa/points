@@ -1,5 +1,7 @@
 'use client'
 
+import { ChevronDown } from 'lucide-react'
+
 export interface JiatingFamilyOption {
   id: string
   name: string
@@ -26,61 +28,39 @@ export default function JiatingFamilyFilter({
   if (families.length === 0) return null
 
   return (
-    <div
-      className={`flex gap-2 overflow-x-auto pb-1 ${className}`}
-      role="tablist"
-      aria-label="Filter by Jiating"
-    >
-      <button
-        type="button"
-        role="tab"
-        aria-selected={value === null}
-        onClick={() => onChange(null)}
-        className={`shrink-0 rounded-xl border px-3.5 py-2 text-sm font-semibold transition ${
-          value === null
-            ? 'border-primary bg-primary/10 text-primary'
-            : 'border-home-border bg-white text-subtitle hover:border-primary/30 hover:text-text'
-        }`}
+    <div className={`flex flex-col gap-1.5 sm:flex-row sm:items-center sm:gap-3 ${className}`}>
+      <label
+        htmlFor="jiating-family-filter"
+        className="shrink-0 text-sm font-semibold text-subtitle"
       >
-        All
-        {typeof allCount === 'number' && (
-          <span className={`ml-1.5 ${value === null ? 'text-primary/70' : 'text-subtitle/80'}`}>
-            {allCount}
-          </span>
-        )}
-      </button>
-      {families.map(family => {
-        const active = value === family.id
-        const count = counts?.[family.id]
-        return (
-          <button
-            key={family.id}
-            type="button"
-            role="tab"
-            aria-selected={active}
-            onClick={() => onChange(family.id)}
-            className={`shrink-0 rounded-xl border px-3.5 py-2 text-sm font-semibold transition ${
-              active
-                ? 'border-primary bg-primary/10 text-primary'
-                : 'border-home-border bg-white text-subtitle hover:border-primary/30 hover:text-text'
-            }`}
-          >
-            {family.color && (
-              <span
-                className="mr-1.5 inline-block size-2 rounded-full align-middle"
-                style={{ backgroundColor: family.color }}
-                aria-hidden
-              />
-            )}
-            {family.name}
-            {typeof count === 'number' && (
-              <span className={`ml-1.5 ${active ? 'text-primary/70' : 'text-subtitle/80'}`}>
-                {count}
-              </span>
-            )}
-          </button>
-        )
-      })}
+        Counts toward
+      </label>
+      <div className="relative min-w-0 flex-1 sm:max-w-xs">
+        <select
+          id="jiating-family-filter"
+          value={value ?? ''}
+          onChange={e => onChange(e.target.value || null)}
+          className="w-full cursor-pointer appearance-none rounded-xl border border-home-border bg-white py-2.5 pl-4 pr-10 text-sm font-semibold text-text outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/15"
+          aria-label="Filter by which Jiating events count toward"
+        >
+          <option value="">
+            All families{typeof allCount === 'number' ? ` (${allCount})` : ''}
+          </option>
+          {families.map(family => {
+            const count = counts?.[family.id]
+            return (
+              <option key={family.id} value={family.id}>
+                {family.name}
+                {typeof count === 'number' ? ` (${count})` : ''}
+              </option>
+            )
+          })}
+        </select>
+        <ChevronDown
+          className="pointer-events-none absolute right-3 top-1/2 size-4 -translate-y-1/2 text-subtitle"
+          aria-hidden
+        />
+      </div>
     </div>
   )
 }

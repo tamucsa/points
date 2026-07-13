@@ -20,35 +20,37 @@ export default function EventFilterTabs({
 }: Props) {
   return (
     <div
-      className={`flex gap-2 overflow-x-auto pb-1 ${className}`}
+      className={`border-b border-home-border ${className}`}
       role="tablist"
-      aria-label="Filter events"
+      aria-label="Filter events by category"
     >
-      {EVENT_FILTER_TABS.map(tab => {
-        const active = tab.id === value
-        const count = counts?.[tab.id]
-        return (
-          <button
-            key={tab.id}
-            type="button"
-            role="tab"
-            aria-selected={active}
-            onClick={() => onChange(tab.id)}
-            className={`shrink-0 rounded-xl border px-3.5 py-2 text-sm font-semibold transition ${
-              active
-                ? 'border-primary bg-primary/10 text-primary'
-                : 'border-home-border bg-white text-subtitle hover:border-primary/30 hover:text-text'
-            }`}
-          >
-            {tab.label}
-            {typeof count === 'number' && (
-              <span className={`ml-1.5 ${active ? 'text-primary/70' : 'text-subtitle/80'}`}>
-                {count}
-              </span>
-            )}
-          </button>
-        )
-      })}
+      <div className="-mb-px flex gap-1 overflow-x-auto">
+        {EVENT_FILTER_TABS.map(tab => {
+          const active = tab.id === value
+          const count = counts?.[tab.id]
+          return (
+            <button
+              key={tab.id}
+              type="button"
+              role="tab"
+              aria-selected={active}
+              onClick={() => onChange(tab.id)}
+              className={`relative shrink-0 border-b-2 px-3.5 py-2.5 text-sm font-semibold transition ${
+                active
+                  ? 'border-primary text-primary'
+                  : 'border-transparent text-subtitle hover:text-text'
+              }`}
+            >
+              {tab.label}
+              {typeof count === 'number' && (
+                <span className={`ml-1.5 tabular-nums ${active ? 'text-primary/70' : 'text-subtitle/70'}`}>
+                  {count}
+                </span>
+              )}
+            </button>
+          )
+        })}
+      </div>
     </div>
   )
 }
