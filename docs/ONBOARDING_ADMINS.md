@@ -54,7 +54,7 @@ Go to **Admin** → **Semesters** (`/admin/semesters`).
 
 - **Current** — active semester; edit name/dates; manage Jiatings; close action
 - **Past semesters** — collapsible history of closed terms with archived member counts
-- **Close semester** — archives points into `semester_summaries` via `close_semester` (requires `SUPABASE_SERVICE_ROLE_KEY` on the server)
+- **Close semester** — archives points into `semester_summaries` via `close_semester` (requires `SUPABASE_SERVICE_ROLE_KEY` on the server). **Spring close** also clears active members’ `jt_family_id` (status stays `active`). Fall close keeps Jiatings for Spring.
 - **Start semester** — only when no semester is active; enter name and dates. **School year is derived from the start date** (Aug–Dec → `YYYY-(YYYY+1)`, Jan–Jul → `(YYYY-1)-YYYY`) and created automatically if missing
 
 ### Jiatings (per school year)
@@ -68,7 +68,7 @@ Jiatings (`jt_families`) belong to a **school year**, not a single semester. Fal
 
 Do **not** pre-create inactive semester rows for a future term (e.g. Spring 2027 while Fall 2026 is still active). Create each semester when it starts via **Start semester**.
 
-Typical flow: start fall (placeholders) → rename JTs when themes land → fall roster CSV → close fall → spring partial CSV → start spring (same JTs).
+Typical flow: start fall (placeholders) → rename JTs when themes land → fall roster CSV → close fall (JTs kept) → spring partial CSV → start spring → close spring (**clears JTs**) → next fall.
 
 ## Role management
 

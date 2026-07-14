@@ -57,7 +57,7 @@ Derived views / RPCs (used by UI):
 - `v_jt_leaderboard`: per-jiating aggregation for the active semester (source for GM snapshot publish)
 - `attendance_counts_for_semester(semester_id)`: per-event attendance counts for Officer Events (SQL `GROUP BY`, not a full attendance row fetch)
 - `top_leaderboard_members_per_jt(limit)`: top N members per Jiating for `/leaderboard/jiatings` without loading the full leaderboard
-- `close_semester(semester_id)`: archives `member_semester_points` into `semester_summaries` and deactivates the semester (service role)
+- `close_semester(semester_id)`: archives `member_semester_points` into `semester_summaries` and deactivates the semester; for Spring (start month before August) also clears `members.jt_family_id` while leaving `status = active` (service role)
 
 ## Request flow
 

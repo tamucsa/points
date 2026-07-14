@@ -573,7 +573,12 @@ export default function SemesterAdminClient({
 
   const handleClose = async () => {
     if (!activeSemester) return
-    if (!window.confirm(`Close "${activeSemester.name}"? This archives semester totals and cannot be undone from the UI.`)) {
+    const startMonth = Number(activeSemester.start_date.slice(5, 7))
+    const isSpringClose = startMonth >= 1 && startMonth < 8
+    const confirmMsg = isSpringClose
+      ? `Close "${activeSemester.name}"? This archives semester totals and clears every active member’s Jiating (status stays active). This cannot be undone from the UI.`
+      : `Close "${activeSemester.name}"? This archives semester totals and cannot be undone from the UI. Jiating assignments are kept for Spring.`
+    if (!window.confirm(confirmMsg)) {
       return
     }
 
@@ -594,7 +599,9 @@ export default function SemesterAdminClient({
     setPastOpen(true)
     setMessage({
       type: 'success',
-      text: `Closed "${result.closedSemester}". Start the next semester when ready.`,
+      text: result.clearedJiatings
+        ? `Closed "${result.closedSemester}" and cleared Jiating assignments. Start the next semester when ready.`
+        : `Closed "${result.closedSemester}". Start the next semester when ready.`,
     })
   }
 

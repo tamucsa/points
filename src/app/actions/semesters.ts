@@ -113,6 +113,16 @@ async function deactivateActiveJtFamilies(admin: ReturnType<typeof createAdminSu
   return error
 }
 
+/** Clear live JT links when replacing the year's Jiating set (members stay active). */
+async function clearActiveMemberJtAssignments(admin: ReturnType<typeof createAdminSupabase>) {
+  const { error } = await admin
+    .from('members')
+    .update({ jt_family_id: null })
+    .eq('status', 'active')
+    .not('jt_family_id', 'is', null)
+  return error
+}
+
 async function insertJtFamiliesForYear(
   admin: ReturnType<typeof createAdminSupabase>,
   yearId: string,
@@ -137,7 +147,7 @@ export async function closeActiveSemester() {
 
   const { data: active } = await admin
     .from('semesters')
-    .select('id, name')
+    .select('id, name, start_date')
     .eq('is_active', true)
     .maybeSingle()
 
@@ -149,7 +159,15 @@ export async function closeActiveSemester() {
 
   if (error) return { success: false, error: 'Failed to close semester.' }
 
-  return { success: true, error: null, closedSemester: active.name }
+  const startMonth = Number(active.start_date?.slice(5, 7) ?? 0)
+  const clearedJiatings = startMonth > 0 && startMonth < 8
+
+  return {
+    success: true,
+    error: null,
+    closedSemester: active.name,
+    clearedJiatings,
+  }
 }
 
 export async function startSemester(input: {
@@ -222,6 +240,11 @@ export async function startSemester(input: {
     const deactivateError = await deactivateActiveJtFamilies(admin)
     if (deactivateError) {
       return { success: false, error: 'Semester created but failed to deactivate prior Jiatings.' }
+    }
+
+    const clearError = await clearActiveMemberJtAssignments(admin)
+    if (clearError) {
+      return { success: false, error: 'Semester created but failed to clear prior Jiating assignments.' }
     }
 
     const { error: jtError } = await insertJtFamiliesForYear(
@@ -466,6 +489,11 @@ export async function bootstrapYearPlaceholders() {
   const deactivateError = await deactivateActiveJtFamilies(admin)
   if (deactivateError) {
     return { success: false, error: 'Failed to deactivate prior Jiatings.' }
+  }
+
+  const clearError = await clearActiveMemberJtAssignments(admin)
+  if (clearError) {
+    return { success: false, error: 'Failed to clear prior Jiating assignments.' }
   }
 
   const placeholders = defaultPlaceholders()

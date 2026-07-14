@@ -123,12 +123,14 @@ Points and leaderboards are scoped to the **active semester** (`semesters.is_act
 
 Closing a semester archives totals (via `close_semester` in the database, which copies `member_semester_points` into `semester_summaries`) and deactivates the semester. The RPC is service-role only; the admin UI calls it through `createAdminSupabase` after an admin auth check.
 
+**Spring close** (semester `start_date` month January–July): after archiving, clears `members.jt_family_id` for all **active** members. Status stays `active` (they are not moved to `pending_jt`). Fall close leaves Jiating assignments in place for the shared school year.
+
 ### Step-by-step: Close the active semester
 
 1. Confirm all events for the semester are complete and attendance is finalized.
 2. Admin goes to **Admin** → **Semesters** (`/admin/semesters`).
-3. Click **Close semester** on the active term and confirm.
-4. Verify the semester appears as **Closed** in history.
+3. Click **Close semester** on the active term and confirm (Spring close also confirms JT clearing).
+4. Verify the semester appears as **Closed** in history. After Spring close, members should have no Jiating until the next fall roster.
 
 ### Step-by-step: Start a new semester
 
@@ -152,8 +154,9 @@ Closing a semester archives totals (via `close_semester` in the database, which 
 ### Typical annual flow
 
 1. **Late summer:** Start fall semester (placeholder Jiatings OK). Rename/recolor Jiatings when themes are decided. Full roster CSV after sorting → members sign in with Google.
-2. **End of fall:** Close fall semester on `/admin/semesters`.
+2. **End of fall:** Close fall semester on `/admin/semesters` (Jiating assignments kept).
 3. **Spring:** Spring partial CSV (JT transfers + new members) → start spring semester (same school-year Jiatings).
+4. **End of spring:** Close spring semester — archives totals and **clears** every active member’s Jiating (status stays active). New fall creates new-year Jiatings; fall roster reassigns members.
 
 > **Note:** Do not pre-create inactive semester rows for a future term. Use **Start semester** on `/admin/semesters` when the term actually begins; pre-created rows can duplicate when you start the term from the UI.
 
