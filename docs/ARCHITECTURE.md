@@ -36,11 +36,12 @@ Core tables (names reflect actual schema):
 - `attendance`: joins members to events; source of points
 - `member_semester_points`: cached counted point totals per member per semester; maintained by triggers on attendance / event category·point changes; backing store for `v_current_leaderboard`
 - `semesters`: identifies the active semester
-- `jt_families`: Jiating / family grouping
+- `jt_families`: Jiating / family grouping; scoped to a school year via `year_id` (Fall and Spring share the same rows); `is_active` marks the current year’s set
 - `semester_summaries`: optional historical rollups per member per semester
 - `jt_transfer_log`: audit log of Jiating changes from spring CSV imports
 - `jt_leaderboard_snapshots` / `jt_leaderboard_snapshot_rows`: frozen Jiating standings published after GM
-- `years`, `semester_families`: configuration/support tables
+- `years`: school year labels (e.g. `2026-2027`); auto-created when starting a semester
+- `semester_families`: legacy junction (unused by app; prefer `jt_families.year_id`)
 
 ### Member name field
 

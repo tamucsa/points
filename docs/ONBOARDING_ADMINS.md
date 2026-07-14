@@ -10,7 +10,7 @@ Admins must have `members.role = 'admin'`. Admin pages are under `/admin/*`.
 
 - Verify you can access the admin dashboard (e.g., pending members list).
 - Confirm the active semester is correct.
-- Confirm the Jiating list (`jt_families`) is accurate and active.
+- Confirm the Jiating list for the active school year is accurate (`/admin/semesters` — edit names/colors as needed).
 
 ## Member onboarding workflow (pending → active)
 
@@ -52,14 +52,23 @@ Members still sign in with Google once to link `auth_uid`. They skip the self-re
 
 Go to **Admin** → **Semesters** (`/admin/semesters`).
 
-- **Current** — active semester with close action, school year, dates, Jiatings, and event count
+- **Current** — active semester; edit name/dates; manage Jiatings; close action
 - **Past semesters** — collapsible history of closed terms with archived member counts
 - **Close semester** — archives points into `semester_summaries` via `close_semester` (requires `SUPABASE_SERVICE_ROLE_KEY` on the server)
-- **Start semester** — only available when no semester is active; pick name, dates, and school year (`years.name`, e.g. `2026-2027`)
+- **Start semester** — only when no semester is active; enter name and dates. **School year is derived from the start date** (Aug–Dec → `YYYY-(YYYY+1)`, Jan–Jul → `(YYYY-1)-YYYY`) and created automatically if missing
+
+### Jiatings (per school year)
+
+Jiatings (`jt_families`) belong to a **school year**, not a single semester. Fall and Spring of the same year share the same families.
+
+- **New school year (typically Fall):** if the year has no Jiatings yet, starting the semester creates **JT 1–JT 6** placeholders with random colors (or customize names/colors in the optional section). Prior years’ active Jiatings are deactivated.
+- **Same school year (typically Spring):** existing Jiatings carry over; no new placeholders.
+- **After start:** on the active semester card, edit names/colors, add Jiatings, or deactivate. Rename placeholders once themes are decided (e.g. August).
+- **Mislinked placeholders:** if active Jiatings belong to a different year than the active semester, use **Replace with JT 1–6 placeholders** on the semester card.
 
 Do **not** pre-create inactive semester rows for a future term (e.g. Spring 2027 while Fall 2026 is still active). Create each semester when it starts via **Start semester**.
 
-Typical flow: close fall → spring partial CSV import → start spring semester.
+Typical flow: start fall (placeholders) → rename JTs when themes land → fall roster CSV → close fall → spring partial CSV → start spring (same JTs).
 
 ## Role management
 

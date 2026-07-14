@@ -134,22 +134,30 @@ Closing a semester archives totals (via `close_semester` in the database, which 
 
 1. Confirm no semester is currently active (close the previous one first).
 2. Admin goes to `/admin/semesters`.
-3. Fill in semester name, start/end dates, and school year.
-4. Click **Start semester**.
-5. Verify in the app:
+3. Fill in semester name and start/end dates. School year is inferred from the start date and created if needed.
+4. If this is a **new school year**, leave Jiating setup default (**JT 1–JT 6** placeholders) or open **Customize Jiatings**. If the year already has Jiatings (e.g. starting Spring after Fall), they carry over.
+5. Click **Start semester**.
+6. Verify in the app:
   - Leaderboard shows data for the new semester (may be empty initially).
   - Officer event creation uses the new semester.
-6. Communicate the semester change to officers.
+7. Communicate the semester change to officers.
+
+### Edit semester or Jiatings
+
+1. On `/admin/semesters`, open the **active** term.
+2. **Edit semester** — change name or dates (dates that would switch school years while Jiatings remain on the old year are blocked).
+3. **Jiatings** — edit name/color, add a family, or deactivate. Soft-deactivate only; the UI does not hard-delete rows.
+4. If the UI warns that active Jiatings are not linked to this school year, use **Replace with JT 1–6 placeholders**, then rename when themes are ready.
 
 ### Typical annual flow
 
-1. **Fall:** Full roster CSV import → members sign in with Google.
+1. **Late summer:** Start fall semester (placeholder Jiatings OK). Rename/recolor Jiatings when themes are decided. Full roster CSV after sorting → members sign in with Google.
 2. **End of fall:** Close fall semester on `/admin/semesters`.
-3. **Spring:** Spring partial CSV (JT transfers + new members) → start spring semester.
+3. **Spring:** Spring partial CSV (JT transfers + new members) → start spring semester (same school-year Jiatings).
 
 > **Note:** Do not pre-create inactive semester rows for a future term. Use **Start semester** on `/admin/semesters` when the term actually begins; pre-created rows can duplicate when you start the term from the UI.
 
-The semester admin page shows the active term, a collapsible **Past semesters** list, and per-semester details (school year, dates, Jiatings, event count, archived member count for closed terms).
+The semester admin page shows the active term (editable), a collapsible **Past semesters** list (read-only), and per-semester details (school year, dates, Jiatings, event count, archived member count for closed terms). Jiatings are scoped to `jt_families.year_id` and shared by Fall and Spring of that year.
 
 ---
 
