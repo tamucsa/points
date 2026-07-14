@@ -8,7 +8,7 @@ This document explains how the system is structured, how requests flow through t
 - **Backend**: Supabase (Postgres + Auth + RLS).
 - **Auth**: Supabase OAuth → `/api/auth/callback` exchanges code for session, enforces TAMU domain, and links auth users to `members`.
 - **Authorization**: RLS policies in Supabase + server-side guards in layouts/routes.
-- **Points**: Aggregated from `attendance` and `events` for the active semester (see leaderboard views).
+- **Points**: Counted attendance points are rolled into `member_semester_points` on check-in / uncheck / related event updates. `v_current_leaderboard` reads those cached totals for the active semester.
 
 ## Repository layout
 
@@ -34,6 +34,7 @@ Core tables (names reflect actual schema):
 - `events`: point-earning opportunities; has scope (CSA-wide / JT shared / JT specific)
 - `event_jt_families`: which Jiatings participate in a Mixer (and similar multi-family events)
 - `attendance`: joins members to events; source of points
+- `member_semester_points`: cached counted point totals per member per semester; maintained by triggers on attendance / event category·point changes; backing store for `v_current_leaderboard`
 - `semesters`: identifies the active semester
 - `jt_families`: Jiating / family grouping
 - `semester_summaries`: optional historical rollups per member per semester
@@ -51,7 +52,7 @@ Core tables (names reflect actual schema):
 Registration helpers live in `src/utils/members.ts`.
 
 Derived views (used by UI):
-- `v_current_leaderboard`: active members + points breakdown for the active semester; includes `account_linked` (`auth_uid IS NOT NULL`) for officer sign-in status (not shown on public leaderboard UI)
+- `v_current_leaderboard`: active members + points breakdown for the active semester from `member_semester_points` (not a live re-sum of all attendance); includes `account_linked` (`auth_uid IS NOT NULL`) for officer sign-in status (not shown on public leaderboard UI)
 - `v_jt_leaderboard`: per-jiating aggregation for the active semester (source for GM snapshot publish)
 
 ## Request flow

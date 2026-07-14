@@ -119,7 +119,7 @@ After fall semester close and Jiating re-sorting, upload only rows that changed.
 
 ### Overview
 
-Points and leaderboards are scoped to the **active semester** (`semesters.is_active = true`). Leaderboard views (`v_current_leaderboard`, `v_jt_leaderboard`) join against the active semester automatically.
+Points and leaderboards are scoped to the **active semester** (`semesters.is_active = true`). `v_current_leaderboard` reads cached totals from `member_semester_points` (refreshed when attendance is inserted/deleted/`counted` changes, or when an event’s `point_value` / `category` changes). `v_jt_leaderboard` still aggregates live for GM publish snapshots.
 
 Closing a semester archives totals (via `close_semester` in the database) and rolls up data into `semester_summaries`.
 
