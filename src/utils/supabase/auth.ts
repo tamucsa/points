@@ -16,7 +16,7 @@ export const getCurrentMember = cache(async () => {
 
   const { data: member } = await supabase
     .from('members')
-    .select('id, full_name, role, status, profile_image_url')
+    .select('id, full_name, role, status, profile_image_url, graduation_year')
     .eq('auth_uid', user.id)
     .maybeSingle()
 

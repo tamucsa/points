@@ -73,6 +73,7 @@ Most routes fetch data via Supabase server client.
 
 Performance note:
 - Use cached helpers in `src/utils/supabase/auth.ts` to avoid repeated `getUser()`/member queries.
+- `/profile` reuses those helpers and loads points, attendance, and history with `Promise.all` after member + semester are known.
 
 ## Auth & onboarding
 
