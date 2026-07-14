@@ -15,6 +15,15 @@ Officers must have `members.role` set to `officer`. If you can't see officer pag
 
 ## Running an event (end-to-end)
 
+### Browse Officer Events
+- Go to **Officer Events** → search by name if needed
+- Use the **category tabs** (All / CSA / Jiating / Sports / Dance) to narrow the list
+- On the **Jiating** tab, use **Counts toward** to filter by family (defaults to your Jiating when assigned):
+  - **Olympics** appear for every selected family
+  - **Mixers** appear only for families participating in that Mixer
+  - **Jiating Events** appear only for that event’s family
+- Upcoming events show in the main list (10 per page; Prev/Next above and below); expand **Past Events** when you need late check-in or verification (also paginated)
+
 ### 1) Create the event
 - Go to **Officer Events**
 - Click **New Event**
@@ -43,6 +52,11 @@ The app currently allows any officer to create any category. Prefer following th
 
 If you need an event outside your usual categories, create it only when the responsible chair/parents have asked you to.
 
+### 1b) Edit date, time, or location
+- Open the event detail page
+- Under **When and Where**, change date, location, start time, and optional end time
+- Click **Save Date and Location** (spectator child events update too)
+
 ### 2) Check-in members
 
 #### Option A: Self check-in (QR)
@@ -57,8 +71,9 @@ If you need an event outside your usual categories, create it only when the resp
 - For **Jiating Olympics**, use the Jiating tabs (all families). For **Mixers**, tabs only include the families selected when the event was created.
 
 ### 3) Verify attendance
-- Confirm attendance count on the event detail page.
-- If there are duplicates or errors, coordinate with the Secretary for correction policies.
+- Confirm attendance on the event detail page.
+- If someone was checked in by mistake, **Remove** them from event detail (or uncheck on the check-in page). That means they were not at the event.
+- “Cap reached” means they attended but points did not apply under a system cap — leave them on the list. Cap details: `docs/OPERATIONS.md` → **Points rules**.
 
 ### 4) Publish Jiating standings (General Meeting only)
 - On a **General Meeting** event detail page, click **Publish Jiating standings** after check-in wraps up.

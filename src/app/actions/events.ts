@@ -242,6 +242,73 @@ export async function updateEventRsvp(
   return { success: true, error: null }
 }
 
+export async function updateEventSchedule(
+  eventId: string,
+  input: {
+    eventDate: string
+    startTime: string
+    endTime: string | null
+    location: string
+  },
+) {
+  if (!eventId) return { success: false, error: 'Event not found.' }
+  if (!input.eventDate) return { success: false, error: 'Event date is required.' }
+  if (!input.startTime) return { success: false, error: 'Start time is required.' }
+  if (!input.location.trim()) return { success: false, error: 'Location is required.' }
+
+  const { supabase, error: authError } = await requireOfficer()
+  if (authError) return { success: false, error: authError }
+
+  const { data: event } = await supabase
+    .from('events')
+    .select('id')
+    .eq('id', eventId)
+    .maybeSingle()
+
+  if (!event) return { success: false, error: 'Event not found.' }
+
+  const { value: startsAt, error: startError } = await resolveCentralEventTimestamp(
+    supabase,
+    input.eventDate,
+    input.startTime,
+  )
+  if (!startsAt) return { success: false, error: startError ?? 'Invalid start time.' }
+
+  let endsAt: string | null = null
+  if (input.endTime) {
+    const { value, error: endError } = await resolveCentralEventTimestamp(
+      supabase,
+      input.eventDate,
+      input.endTime,
+    )
+    if (!value) return { success: false, error: endError ?? 'Invalid end time.' }
+    if (!validateEventEndAfterStart(startsAt, value)) {
+      return { success: false, error: 'End time must be after start time.' }
+    }
+    endsAt = value
+  }
+
+  const location = input.location.trim()
+  const patch = { starts_at: startsAt, ends_at: endsAt, location }
+
+  const { error } = await supabase.from('events').update(patch).eq('id', eventId)
+  if (error) return { success: false, error: 'Failed to save event details.' }
+
+  const { error: spectatorError } = await supabase
+    .from('events')
+    .update(patch)
+    .eq('parent_event_id', eventId)
+
+  if (spectatorError) {
+    return {
+      success: false,
+      error: 'Event updated, but linked spectator event failed to update.',
+    }
+  }
+
+  return { success: true, error: null }
+}
+
 export async function updateEventMixerFamilies(eventId: string, jtFamilyIds: string[]) {
   if (!eventId) return { success: false, error: 'Event not found.' }
 

@@ -1,12 +1,10 @@
 import { notFound, redirect } from 'next/navigation'
 import MemberDetailClient from '@/app/(dashboard)/(officer)/officer/members/components/MemberDetailClient'
-import { createServerSupabase } from '@/utils/supabase/server'
+import { getActiveSemester, getAuthUser } from '@/utils/supabase/auth'
 
 export default async function MemberDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
-  const supabase = await createServerSupabase()
-
-  const { data: { user } } = await supabase.auth.getUser()
+  const { supabase, user } = await getAuthUser()
   if (!user) redirect('/')
 
   const { data: member } = await supabase
@@ -16,6 +14,8 @@ export default async function MemberDetailPage({ params }: { params: Promise<{ i
     .single()
 
   if (!member) notFound()
+
+  const semester = await getActiveSemester()
 
   const { data: attendance } = await supabase
     .from('attendance')
@@ -34,6 +34,7 @@ export default async function MemberDetailPage({ params }: { params: Promise<{ i
       )
     `)
     .eq('member_id', id)
+    .eq('semester_id', semester?.id ?? '00000000-0000-0000-0000-000000000000')
     .order('recorded_at', { ascending: false })
 
   const { data: history } = await supabase

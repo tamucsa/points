@@ -1,27 +1,16 @@
 import { redirect } from 'next/navigation'
 import MemberEventsClient from '@/app/(dashboard)/events/components/MemberEventsClient'
 import { isMixerCategory } from '@/utils/events'
-import { createServerSupabase } from '@/utils/supabase/server'
+import { getActiveSemester, getCurrentMember } from '@/utils/supabase/auth'
 
 export default async function MemberEventsPage() {
-  const supabase = await createServerSupabase()
+  const [{ supabase, user, member }, semester] = await Promise.all([
+    getCurrentMember(),
+    getActiveSemester(),
+  ])
 
-  const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect('/')
-
-  const { data: member } = await supabase
-    .from('members')
-    .select('id, jt_family_id')
-    .eq('auth_uid', user.id)
-    .single()
-
   if (!member) redirect('/')
-
-  const { data: semester } = await supabase
-    .from('semesters')
-    .select('id, name')
-    .eq('is_active', true)
-    .single()
 
   const { data: events } = await supabase
     .from('events')

@@ -1,16 +1,25 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import BackLink from '@/app/components/BackLink'
 import { publishJiatingStandings } from '@/app/actions/jt-standings'
-import { updateEventMixerFamilies, updateEventRsvp } from '@/app/actions/events'
+import {
+  updateEventMixerFamilies,
+  updateEventRsvp,
+  updateEventSchedule,
+} from '@/app/actions/events'
 import MemberAvatar from '@/app/components/MemberAvatar'
 import IconLabel, { CheckInMethodBadge } from '@/app/components/IconLabel'
 import EmptyState from '@/app/components/EmptyState'
 import { isGeneralMeetingCategory, isMixerCategory } from '@/utils/events'
 import { formatEventSchedule } from '@/utils/datetime'
-import { ClipboardList, Clock, MapPin } from 'lucide-react'
+import {
+  eventTimestampToFormDate,
+  eventTimestampToFormTime,
+} from '@/utils/event-times'
+import { officerRemoveCheckIn } from '@/app/actions/attendance'
+import { ClipboardList, Clock, MapPin, UserX } from 'lucide-react'
 import { inputClassName, labelClassName } from '@/utils/constants'
 
 interface Event {
@@ -30,11 +39,13 @@ interface Event {
 
 interface AttendanceRow {
   id: string
+  member_id: string
   check_in_method: string
   verified: boolean
   counted: boolean
   recorded_at: string
   members: {
+    id: string
     full_name: string
     profile_image_url: string | null
   } | null
@@ -54,6 +65,7 @@ interface JTFamily {
 interface Props {
   event: Event
   attendance: AttendanceRow[]
+  attendanceLoadError?: string | null
   publishedSnapshot: PublishedSnapshot | null
   jtFamilies: JTFamily[]
   mixerFamilyIds: string[]
@@ -77,6 +89,7 @@ const btnSecondaryClassName =
 export default function EventDetailClient({
   event,
   attendance,
+  attendanceLoadError = null,
   publishedSnapshot,
   jtFamilies,
   mixerFamilyIds,
@@ -97,9 +110,53 @@ export default function EventDetailClient({
   const [mixerSaving, setMixerSaving] = useState(false)
   const [mixerError, setMixerError] = useState<string | null>(null)
   const [mixerSaved, setMixerSaved] = useState(false)
+  const [eventDate, setEventDate] = useState(() => eventTimestampToFormDate(event.starts_at))
+  const [startTime, setStartTime] = useState(() => eventTimestampToFormTime(event.starts_at))
+  const [endTime, setEndTime] = useState(() =>
+    event.ends_at ? eventTimestampToFormTime(event.ends_at) : '',
+  )
+  const [location, setLocation] = useState(event.location ?? '')
+  const [scheduleSaving, setScheduleSaving] = useState(false)
+  const [scheduleError, setScheduleError] = useState<string | null>(null)
+  const [scheduleSaved, setScheduleSaved] = useState(false)
+  const [uncheckTarget, setUncheckTarget] = useState<AttendanceRow | null>(null)
+  const [uncheckError, setUncheckError] = useState<string | null>(null)
+  const [uncheckSaving, setUncheckSaving] = useState(false)
   const isGm = isGeneralMeetingCategory(event.category)
   const isMixer = isMixerCategory(event.category)
   const isRsvpEvent = event.check_in_type === 'rsvp_required'
+
+  const closeUncheckModal = () => {
+    if (uncheckSaving) return
+    setUncheckTarget(null)
+    setUncheckError(null)
+  }
+
+  const confirmRemoveCheckIn = async () => {
+    if (!uncheckTarget) return
+
+    setUncheckError(null)
+    setUncheckSaving(true)
+
+    const result = await officerRemoveCheckIn(event.id, uncheckTarget.member_id)
+
+    setUncheckSaving(false)
+    if (!result.success) {
+      setUncheckError(result.error ?? 'Failed to remove check-in.')
+      return
+    }
+
+    setUncheckTarget(null)
+    setUncheckError(null)
+    router.refresh()
+  }
+
+  useEffect(() => {
+    setEventDate(eventTimestampToFormDate(event.starts_at))
+    setStartTime(eventTimestampToFormTime(event.starts_at))
+    setEndTime(event.ends_at ? eventTimestampToFormTime(event.ends_at) : '')
+    setLocation(event.location ?? '')
+  }, [event.starts_at, event.ends_at, event.location])
 
   const toggleMixerFamily = (id: string) => {
     setSelectedMixerFamilies(prev =>
@@ -142,6 +199,27 @@ export default function EventDetailClient({
       return
     }
     setMixerSaved(true)
+    router.refresh()
+  }
+
+  const handleSaveSchedule = async () => {
+    setScheduleSaving(true)
+    setScheduleError(null)
+    setScheduleSaved(false)
+
+    const result = await updateEventSchedule(event.id, {
+      eventDate,
+      startTime,
+      endTime: endTime.trim() || null,
+      location,
+    })
+
+    setScheduleSaving(false)
+    if (!result.success) {
+      setScheduleError(result.error ?? 'Failed to save event details.')
+      return
+    }
+    setScheduleSaved(true)
     router.refresh()
   }
 
@@ -247,6 +325,81 @@ export default function EventDetailClient({
         {publishError && (
           <p className="mt-3 text-sm text-red-600">{publishError}</p>
         )}
+        <div className="mt-5 space-y-3 rounded-2xl border border-home-border bg-bg p-4">
+          <div className="text-sm font-semibold text-text">When and Where</div>
+          <div className="grid gap-3 sm:grid-cols-2">
+            <div>
+              <label className={labelClassName} htmlFor="event-edit-date">
+                Date
+              </label>
+              <input
+                id="event-edit-date"
+                type="date"
+                className={inputClassName}
+                value={eventDate}
+                onChange={e => {
+                  setEventDate(e.target.value)
+                  setScheduleSaved(false)
+                }}
+              />
+            </div>
+            <div>
+              <label className={labelClassName} htmlFor="event-edit-location">
+                Location
+              </label>
+              <input
+                id="event-edit-location"
+                className={inputClassName}
+                placeholder="e.g. MSC 2406"
+                value={location}
+                onChange={e => {
+                  setLocation(e.target.value)
+                  setScheduleSaved(false)
+                }}
+              />
+            </div>
+            <div>
+              <label className={labelClassName} htmlFor="event-edit-start">
+                Start time
+              </label>
+              <input
+                id="event-edit-start"
+                type="time"
+                className={inputClassName}
+                value={startTime}
+                onChange={e => {
+                  setStartTime(e.target.value)
+                  setScheduleSaved(false)
+                }}
+              />
+            </div>
+            <div>
+              <label className={labelClassName} htmlFor="event-edit-end">
+                End time <span className="font-normal normal-case text-subtitle">(optional)</span>
+              </label>
+              <input
+                id="event-edit-end"
+                type="time"
+                className={inputClassName}
+                value={endTime}
+                onChange={e => {
+                  setEndTime(e.target.value)
+                  setScheduleSaved(false)
+                }}
+              />
+            </div>
+          </div>
+          {scheduleError && <p className="text-sm text-red-600">{scheduleError}</p>}
+          {scheduleSaved && <p className="text-sm text-green-700">Event details saved.</p>}
+          <button
+            type="button"
+            onClick={() => void handleSaveSchedule()}
+            disabled={scheduleSaving}
+            className={btnPrimaryClassName}
+          >
+            {scheduleSaving ? 'Saving…' : 'Save Date and Location'}
+          </button>
+        </div>
         {spectatorEvent && (
           <div className="mt-5 rounded-2xl border border-home-border bg-bg p-4">
             <div className="text-sm font-semibold text-text">Spectator check-in</div>
@@ -302,7 +455,7 @@ export default function EventDetailClient({
         )}
         {isRsvpEvent && (
           <div className="mt-5 space-y-3 rounded-2xl border border-home-border bg-bg p-4">
-            <div className="text-sm font-semibold text-text">RSVP details</div>
+            <div className="text-sm font-semibold text-text">RSVP Details</div>
             <div>
               <label className={labelClassName}>RSVP Link</label>
               <input
@@ -335,7 +488,7 @@ export default function EventDetailClient({
               disabled={rsvpSaving}
               className={btnPrimaryClassName}
             >
-              {rsvpSaving ? 'Saving…' : 'Save RSVP details'}
+              {rsvpSaving ? 'Saving…' : 'Save RSVP Details'}
             </button>
           </div>
         )}
@@ -362,11 +515,18 @@ export default function EventDetailClient({
 
       <div className="mb-3 flex items-center justify-between">
         <h2 className="text-lg font-bold text-text">Attendance</h2>
-        <span className="text-sm text-subtitle">{attendance.length} checked in</span>
+        <span className="text-sm text-subtitle">
+          {attendanceLoadError ? '—' : `${attendance.length} checked in`}
+        </span>
       </div>
 
       <div className="overflow-hidden rounded-4xl border border-home-border bg-white shadow-sm">
-        {attendance.length === 0 && (
+        {attendanceLoadError && (
+          <div className="px-5 py-6 text-sm text-red-600">
+            Could not load attendance. Refresh the page to try again.
+          </div>
+        )}
+        {!attendanceLoadError && attendance.length === 0 && (
           <EmptyState
             icon={ClipboardList}
             title="No check-ins yet"
@@ -374,10 +534,10 @@ export default function EventDetailClient({
             compact
           />
         )}
-        {attendance.map(row => {
+        {!attendanceLoadError && attendance.map(row => {
           const displayName = row.members?.full_name ?? 'Unknown member'
           return (
-          <div key={row.id} className="flex items-center gap-4 border-b border-home-border px-5 py-3 last:border-b-0">
+          <div key={row.id} className="flex items-center gap-3 border-b border-home-border px-5 py-3 last:border-b-0 sm:gap-4">
             <MemberAvatar
               name={displayName}
               profileImageUrl={row.members?.profile_image_url ?? null}
@@ -392,7 +552,7 @@ export default function EventDetailClient({
                 })}
               </div>
             </div>
-            <div className="flex shrink-0 flex-wrap gap-1">
+            <div className="flex shrink-0 flex-wrap items-center justify-end gap-1">
               <span className="rounded-md bg-bg px-2 py-0.5 text-[11px] text-subtitle">
                 <CheckInMethodBadge checkInMethod={row.check_in_method} />
               </span>
@@ -402,11 +562,76 @@ export default function EventDetailClient({
               {!row.counted && (
                 <span className="rounded-md bg-red-50 px-2 py-0.5 text-[11px] text-red-500">Cap reached</span>
               )}
+              <button
+                type="button"
+                onClick={() => {
+                  setUncheckError(null)
+                  setUncheckTarget(row)
+                }}
+                disabled={uncheckSaving}
+                className="rounded-xl border border-[#f5b0b0] bg-[#fff4f4] px-3 py-1.5 text-xs font-semibold text-[#c94b4b] transition hover:border-[#e88a8a] hover:bg-[#ffe8e8] disabled:opacity-60"
+              >
+                Remove
+              </button>
             </div>
           </div>
           )
         })}
       </div>
+
+      {uncheckTarget && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4"
+          onClick={closeUncheckModal}
+        >
+          <div
+            className="w-full max-w-md rounded-4xl border border-home-border bg-white p-6 shadow-xl sm:p-8"
+            onClick={e => e.stopPropagation()}
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="remove-checkin-title"
+          >
+            <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-2xl bg-[#fff4f4]">
+              <UserX className="size-5 text-[#c94b4b]" aria-hidden />
+            </div>
+            <h2 id="remove-checkin-title" className="text-center text-lg font-bold text-text">
+              Remove check-in?
+            </h2>
+            <p className="mt-2 text-center text-sm font-semibold text-text">
+              {uncheckTarget.members?.full_name ?? 'Unknown member'}
+            </p>
+            <p className="mt-3 text-center text-sm leading-6 text-subtitle">
+              This removes their attendance for {event.name}
+              {uncheckTarget.counted
+                ? ` and deducts ${event.point_value} point${event.point_value === 1 ? '' : 's'} from their total.`
+                : '. This check-in was not counting toward points (cap), so totals stay the same.'}
+            </p>
+            {uncheckError && (
+              <p className="mt-4 rounded-2xl border border-[#f5b0b0] bg-[#fff4f4] px-4 py-3 text-center text-sm text-[#c94b4b]">
+                {uncheckError}
+              </p>
+            )}
+            <div className="mt-6 flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
+              <button
+                type="button"
+                disabled={uncheckSaving}
+                onClick={closeUncheckModal}
+                className="rounded-xl border border-home-border bg-white px-4 py-2.5 text-sm font-semibold text-subtitle transition hover:border-primary/30 hover:bg-bg hover:text-text disabled:opacity-60"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                disabled={uncheckSaving}
+                onClick={() => void confirmRemoveCheckIn()}
+                className="rounded-xl border border-[#f5b0b0] bg-[#fff4f4] px-4 py-2.5 text-sm font-semibold text-[#c94b4b] transition hover:border-[#e88a8a] hover:bg-[#ffe8e8] disabled:opacity-60"
+              >
+                {uncheckSaving ? 'Removing…' : 'Remove Check-In'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

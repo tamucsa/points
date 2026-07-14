@@ -32,11 +32,19 @@ There are two common flows:
 ### Officer check-in
 - An officer may check you in from the officer tool.
 
+## Browsing Events
+
+On **Events** (`/events`):
+- You only see **your Jiating’s events**, plus shared events (CSA-wide, Olympics, and Mixers your Jiating is in).
+- Use the **category tabs** (All / CSA / Jiating / Sports / Dance) and search by name to find events.
+- Upcoming events show first (10 per page; Prev/Next above and below); expand **Past Events** if you need history (also paginated).
+
 ## Understanding points
 
 - Points are earned by attending events.
 - Your totals are computed for the **active semester**.
-- Some attendance may be marked “not counted” if caps/rules apply (e.g., specific spectator caps).
+- On **My Points**, the **Sports & Dance** bucket includes Sports, Sports Spectator, and Dance events (same as the leaderboard sports column).
+- Some attendance may be marked “not counted” if caps apply (Sports Spectator semester limit; Jiating Event / Mixer weekly limit of 4 counting events Mon–Sun). Officers/admins: full policy in `docs/OPERATIONS.md` → **Points rules**.
 
 ## Troubleshooting
 

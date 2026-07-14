@@ -1,7 +1,8 @@
 import { notFound, redirect } from 'next/navigation'
 import OfficerCheckinClient from '@/app/(dashboard)/(officer)/officer/events/components/OfficerCheckinClient'
 import { isMixerCategory } from '@/utils/events'
-import { createServerSupabase } from '@/utils/supabase/server'
+import { fetchAllPages } from '@/utils/supabase/fetchAll'
+import { getCurrentMember } from '@/utils/supabase/auth'
 
 function memberRoleLabel(role: string): 'Member' | 'Officer' {
   return role === 'officer' || role === 'admin' ? 'Officer' : 'Member'
@@ -9,16 +10,8 @@ function memberRoleLabel(role: string): 'Member' | 'Officer' {
 
 export default async function OfficerCheckinPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
-  const supabase = await createServerSupabase()
-
-  const { data: { user } } = await supabase.auth.getUser()
+  const { supabase, user, member: officer } = await getCurrentMember()
   if (!user) redirect('/')
-
-  const { data: officer } = await supabase
-    .from('members')
-    .select('role, jt_family_id')
-    .eq('auth_uid', user.id)
-    .maybeSingle()
 
   if (!officer || !['officer', 'admin'].includes(officer.role)) {
     redirect('/leaderboard')
@@ -98,34 +91,56 @@ export default async function OfficerCheckinPage({ params }: { params: Promise<{
     }
   }
 
-  let membersQuery = supabase
-    .from('members')
-    .select('id, full_name, email, profile_image_url, role, jt_family_id, jt_families(name, color)')
-    .eq('status', 'active')
-    .order('full_name')
-
-  if (isJtSpecific) {
-    membersQuery = membersQuery.eq('jt_family_id', event.jt_family_id!)
-  } else if (isJtShared && tabFamilies.length > 0) {
-    membersQuery = membersQuery.in('jt_family_id', tabFamilies.map(f => f.id))
-  } else if (isJtShared) {
-    membersQuery = membersQuery.not('jt_family_id', 'is', null)
+  type MemberRosterRow = {
+    id: string
+    full_name: string
+    email: string
+    profile_image_url: string | null
+    role: string
+    jt_family_id: string | null
+    jt_families: { name: string; color: string } | { name: string; color: string }[] | null
   }
 
-  const { data: members, error: membersError } = await membersQuery
+  const { data: members, error: membersError } = await fetchAllPages<MemberRosterRow>((from, to) => {
+    let membersQuery = supabase
+      .from('members')
+      .select('id, full_name, email, profile_image_url, role, jt_family_id, jt_families(name, color)')
+      .eq('status', 'active')
+      .order('full_name')
+
+    if (isJtSpecific) {
+      membersQuery = membersQuery.eq('jt_family_id', event.jt_family_id!)
+    } else if (isJtShared && tabFamilies.length > 0) {
+      membersQuery = membersQuery.in('jt_family_id', tabFamilies.map(f => f.id))
+    } else if (isJtShared) {
+      membersQuery = membersQuery.not('jt_family_id', 'is', null)
+    }
+
+    return membersQuery.range(from, to)
+  })
+
   if (membersError) {
     console.error('Officer check-in failed to load members:', membersError.message, { id })
     throw new Error(`Failed to load members: ${membersError.message}`)
   }
 
-  const { data: attendance } = await supabase
-    .from('attendance')
-    .select('member_id')
-    .eq('event_id', id)
+  const { data: attendance, error: attendanceError } = await fetchAllPages<{ member_id: string }>(
+    (from, to) =>
+      supabase
+        .from('attendance')
+        .select('member_id')
+        .eq('event_id', id)
+        .range(from, to),
+  )
 
-  const checkedInIds = attendance?.map(a => a.member_id) ?? []
+  if (attendanceError) {
+    console.error('Officer check-in failed to load attendance:', attendanceError.message, { id })
+    throw new Error(`Failed to load attendance: ${attendanceError.message}`)
+  }
 
-  const normalizedMembers = (members ?? []).map(m => {
+  const checkedInIds = attendance.map(a => a.member_id)
+
+  const normalizedMembers = members.map(m => {
     const jtFamily = Array.isArray(m.jt_families)
       ? m.jt_families[0] ?? null
       : (m.jt_families as { name: string; color: string } | null)

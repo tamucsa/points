@@ -168,7 +168,8 @@ export default function CheckinClient({ event, code, userEmail, member, alreadyC
                     </p>
                   ) : (
                     <p className="mt-1 text-sm text-subtitle">
-                      Attendance recorded, but you&apos;ve reached the point cap for this category.
+                      Attendance recorded, but this check-in doesn&apos;t add points under current
+                      caps.
                     </p>
                   )}
                   <button

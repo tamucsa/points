@@ -1,6 +1,11 @@
 'use server'
 
-import { validateClassYear, validateRegistrationNames } from '@/utils/members'
+import {
+  isMemberRole,
+  validateClassYear,
+  validateRegistrationNames,
+  type MemberRole,
+} from '@/utils/members'
 import { createActionSupabase } from '@/utils/supabase/action'
 import { createAdminSupabase } from '@/utils/supabase/admin'
 
@@ -47,6 +52,64 @@ export async function activateMember(memberId: string, jtFamilyId: string) {
     .eq('id', memberId)
 
   if (error) return { success: false, error: 'Failed to activate member.' }
+  return { success: true, error: null }
+}
+
+export async function updateMemberRole(memberId: string, role: MemberRole) {
+  if (!memberId) {
+    return { success: false, error: 'Member is required.' }
+  }
+
+  if (!isMemberRole(role)) {
+    return { success: false, error: 'Invalid role.' }
+  }
+
+  const { supabase, error: authError } = await requireAdmin()
+  if (authError) return { success: false, error: authError }
+
+  const { data: target, error: loadError } = await supabase
+    .from('members')
+    .select('id, role, status')
+    .eq('id', memberId)
+    .maybeSingle()
+
+  if (loadError || !target) {
+    return { success: false, error: 'Member not found.' }
+  }
+
+  if (target.status !== 'active') {
+    return { success: false, error: 'Only active members can have their role changed.' }
+  }
+
+  if (target.role === role) {
+    return { success: true, error: null }
+  }
+
+  if (target.role === 'admin' && role !== 'admin') {
+    const { count, error: countError } = await supabase
+      .from('members')
+      .select('id', { count: 'exact', head: true })
+      .eq('role', 'admin')
+      .neq('id', memberId)
+
+    if (countError) {
+      return { success: false, error: 'Failed to verify admin count.' }
+    }
+
+    if ((count ?? 0) === 0) {
+      return {
+        success: false,
+        error: 'Cannot demote the last admin. Promote another admin first.',
+      }
+    }
+  }
+
+  const { error } = await supabase
+    .from('members')
+    .update({ role })
+    .eq('id', memberId)
+
+  if (error) return { success: false, error: 'Failed to update role.' }
   return { success: true, error: null }
 }
 

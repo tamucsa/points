@@ -2,13 +2,25 @@ import { notFound, redirect } from 'next/navigation'
 import EventDetailClient from '@/app/(dashboard)/(officer)/officer/events/components/EventDetailClient'
 import { getSnapshotForEvent } from '@/app/actions/jt-standings'
 import { isMixerCategory } from '@/utils/events'
-import { createServerSupabase } from '@/utils/supabase/server'
+import { fetchAllPages } from '@/utils/supabase/fetchAll'
+import { getAuthUser } from '@/utils/supabase/auth'
+
+type AttendanceQueryRow = {
+  id: string
+  member_id: string
+  check_in_method: string
+  verified: boolean
+  counted: boolean
+  recorded_at: string
+  members:
+    | { id: string; full_name: string; profile_image_url: string | null }
+    | { id: string; full_name: string; profile_image_url: string | null }[]
+    | null
+}
 
 export default async function EventDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
-  const supabase = await createServerSupabase()
-
-  const { data: { user } } = await supabase.auth.getUser()
+  const { supabase, user } = await getAuthUser()
   if (!user) redirect('/')
 
   const { data: event } = await supabase
@@ -19,31 +31,38 @@ export default async function EventDetailPage({ params }: { params: Promise<{ id
 
   if (!event) notFound()
 
-  const { data: attendance, error: attendanceError } = await supabase
-    .from('attendance')
-    .select(`
-      id,
-      check_in_method,
-      verified,
-      counted,
-      recorded_at,
-      members!attendance_member_id_fkey (
-        id,
-        full_name,
-        profile_image_url
-      )
-    `)
-    .eq('event_id', id)
-    .order('recorded_at', { ascending: false })
+  const { data: attendance, error: attendanceError } = await fetchAllPages<AttendanceQueryRow>(
+    (from, to) =>
+      supabase
+        .from('attendance')
+        .select(`
+          id,
+          member_id,
+          check_in_method,
+          verified,
+          counted,
+          recorded_at,
+          members!attendance_member_id_fkey (
+            id,
+            full_name,
+            profile_image_url
+          )
+        `)
+        .eq('event_id', id)
+        .order('recorded_at', { ascending: false })
+        .range(from, to),
+  )
 
   if (attendanceError) {
     console.error('Failed to load event attendance:', attendanceError.message)
   }
 
-  const normalizedAttendance = (attendance ?? []).map((row) => ({
-    ...row,
-    members: Array.isArray(row.members) ? row.members[0] : row.members,
-  }))
+  const normalizedAttendance = attendanceError
+    ? []
+    : attendance.map((row) => ({
+        ...row,
+        members: Array.isArray(row.members) ? row.members[0] : row.members,
+      }))
 
   const publishedSnapshot = await getSnapshotForEvent(id)
 
@@ -87,6 +106,7 @@ export default async function EventDetailPage({ params }: { params: Promise<{ id
     <EventDetailClient
       event={event}
       attendance={normalizedAttendance}
+      attendanceLoadError={attendanceError?.message ?? null}
       publishedSnapshot={publishedSnapshot}
       jtFamilies={jtFamilies}
       mixerFamilyIds={mixerFamilyIds}

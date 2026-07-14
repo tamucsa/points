@@ -8,7 +8,7 @@ This document explains how the system is structured, how requests flow through t
 - **Backend**: Supabase (Postgres + Auth + RLS).
 - **Auth**: Supabase OAuth → `/api/auth/callback` exchanges code for session, enforces TAMU domain, and links auth users to `members`.
 - **Authorization**: RLS policies in Supabase + server-side guards in layouts/routes.
-- **Points**: Aggregated from `attendance` and `events` for the active semester (see leaderboard views).
+- **Points**: Counted attendance points are rolled into `member_semester_points` on check-in / uncheck / related event updates. `v_current_leaderboard` reads those cached totals for the active semester.
 
 ## Repository layout
 
@@ -24,7 +24,7 @@ This document explains how the system is structured, how requests flow through t
   - `action.ts`: Server Actions (writable cookies)
   - `admin.ts`: Service-role client for admin-only operations (semester close, roster import inserts, JT transfer logging)
   - `client.ts`: Browser client
-  - `auth.ts`: cached helpers to deduplicate auth/member lookups in a single request
+  - `auth.ts`: cached helpers (`getAuthUser`, `getCurrentMember`, `getActiveSemester`) to deduplicate auth/member lookups in a single request; prefer these in dashboard RSC pages over raw `createServerSupabase()` + `getUser()`
 - `supabase/migrations/`: SQL migrations for schema/views/security/indexes.
 
 ## Data model (high-level)
@@ -32,7 +32,9 @@ This document explains how the system is structured, how requests flow through t
 Core tables (names reflect actual schema):
 - `members`: one row per person (email, role, status, jt family, auth uid)
 - `events`: point-earning opportunities; has scope (CSA-wide / JT shared / JT specific)
+- `event_jt_families`: which Jiatings participate in a Mixer (and similar multi-family events)
 - `attendance`: joins members to events; source of points
+- `member_semester_points`: cached counted point totals per member per semester; maintained by triggers on attendance / event category·point changes; backing store for `v_current_leaderboard`
 - `semesters`: identifies the active semester
 - `jt_families`: Jiating / family grouping
 - `semester_summaries`: optional historical rollups per member per semester
@@ -49,27 +51,44 @@ Core tables (names reflect actual schema):
 
 Registration helpers live in `src/utils/members.ts`.
 
-Derived views (used by UI):
-- `v_current_leaderboard`: active members + points breakdown for the active semester; includes `account_linked` (`auth_uid IS NOT NULL`) for officer sign-in status (not shown on public leaderboard UI)
+Derived views / RPCs (used by UI):
+- `v_current_leaderboard`: active members + points breakdown for the active semester from `member_semester_points` (not a live re-sum of all attendance); includes `account_linked` (`auth_uid IS NOT NULL`) for officer sign-in status (not shown on public leaderboard UI)
 - `v_jt_leaderboard`: per-jiating aggregation for the active semester (source for GM snapshot publish)
+- `attendance_counts_for_semester(semester_id)`: per-event attendance counts for Officer Events (SQL `GROUP BY`, not a full attendance row fetch)
+- `top_leaderboard_members_per_jt(limit)`: top N members per Jiating for `/leaderboard/jiatings` without loading the full leaderboard
+- `close_semester(semester_id)`: archives `member_semester_points` into `semester_summaries` and deactivates the semester (service role)
 
 ## Request flow
 
 ### 1) Middleware gating
 `middleware.ts` enforces:
+- Session cookie refresh via `getUser()` (no `members` DB lookup).
 - Unauthenticated users are redirected to `/` (except public routes).
-- `pending_jt` users are restricted to onboarding routes.
+- Signed-in users hitting `/` or `/login` go to `/leaderboard`.
 
-Public routes (no sign-in required): `/`, `/login` (redirects to `/`), `/register`, `/pending`, `/privacy`, `/terms`, `/checkin/*`, `/api/auth/*`.
+Public routes (no sign-in required): `/`, `/login` (redirects to `/` when logged out; signed-in users go to `/leaderboard`), `/register`, `/pending`, `/privacy`, `/terms`, `/checkin/*`, `/api/auth/*`.
 
 ### 2) Layout gating
-`src/app/(dashboard)/layout.tsx` loads the current member and renders the app shell (`Sidebar` + page content). Officer/admin sections have their own layouts that enforce role membership.
+`src/app/(dashboard)/layout.tsx` loads the current member (`getCurrentMember`) and:
+- redirects missing members to `/register`
+- redirects `pending_jt` to `/pending`
+- renders the app shell (`Sidebar` + page content)
+
+`pending` page redirects active members to `/leaderboard`. Officer/admin sections have their own layouts that enforce role membership.
 
 ### 3) Data fetching
 Most routes fetch data via Supabase server client.
 
 Performance note:
 - Use cached helpers in `src/utils/supabase/auth.ts` to avoid repeated `getUser()`/member queries.
+- `/profile` reuses those helpers and loads points, attendance, and history with `Promise.all` after member + semester are known.
+- Unbounded selects can silently truncate near PostgREST `max-rows` (~1000). Prefer `fetchAllPages` (`src/utils/supabase/fetchAll.ts`), SQL aggregation RPCs (e.g. `attendance_counts_for_semester`, `top_leaderboard_members_per_jt`), or `count`/`head` queries.
+
+## Schema / migrations ownership
+
+- New DB changes belong in `supabase/migrations/*.sql` and must be applied to production before code that depends on them.
+- Migrations are **not** a complete bootstrap of production. See `docs/LOCAL_SETUP.md` → **Baseline schema gap**.
+- Semester close archives cached totals via `close_semester(p_semester_id)` (service role only).
 
 ## Auth & onboarding
 

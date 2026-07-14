@@ -1,6 +1,5 @@
 import StandingsLeaderboardClient from '@/app/(dashboard)/leaderboard/standings/components/StandingsLeaderboardClient'
-import { getActiveSemester } from '@/utils/supabase/auth'
-import { createServerSupabase } from '@/utils/supabase/server'
+import { getActiveSemester, getAuthUser } from '@/utils/supabase/auth'
 
 interface SearchParams {
   snapshot?: string
@@ -12,7 +11,7 @@ export default async function StandingsLeaderboardPage({
   searchParams: Promise<SearchParams>
 }) {
   const { snapshot: snapshotParam } = await searchParams
-  const supabase = await createServerSupabase()
+  const { supabase } = await getAuthUser()
   const semester = await getActiveSemester()
 
   let snapshotsQuery = supabase
@@ -24,27 +23,38 @@ export default async function StandingsLeaderboardPage({
     snapshotsQuery = snapshotsQuery.eq('semester_id', semester.id)
   }
 
-  const { data: snapshots } = await snapshotsQuery
+  const { data: snapshots, error: snapshotsError } = await snapshotsQuery
+
+  if (snapshotsError) {
+    console.error('Failed to load standings snapshots:', snapshotsError.message)
+  }
 
   const selectedId = snapshotParam ?? snapshots?.[0]?.id ?? null
 
-  const { data: rows } = selectedId
+  const { data: rows, error: rowsError } = selectedId && !snapshotsError
     ? await supabase
         .from('jt_leaderboard_snapshot_rows')
         .select('jt_family_name, jt_color, total_points, rank')
         .eq('snapshot_id', selectedId)
         .order('rank', { ascending: true })
-    : { data: [] }
+    : { data: [] as never[], error: null }
 
-  const selectedSnapshot = snapshots?.find(s => s.id === selectedId) ?? null
+  if (rowsError) {
+    console.error('Failed to load standings rows:', rowsError.message)
+  }
+
+  const loadError = snapshotsError?.message ?? rowsError?.message ?? null
+  const selectedSnapshot =
+    !loadError ? (snapshots?.find(s => s.id === selectedId) ?? null) : null
 
   return (
     <StandingsLeaderboardClient
       semester={semester ? { name: semester.name } : null}
-      snapshots={snapshots ?? []}
-      selectedSnapshotId={selectedId}
+      snapshots={loadError ? [] : (snapshots ?? [])}
+      selectedSnapshotId={loadError ? null : selectedId}
       selectedSnapshot={selectedSnapshot}
-      rows={rows ?? []}
+      rows={loadError ? [] : (rows ?? [])}
+      loadError={loadError}
     />
   )
 }

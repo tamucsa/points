@@ -1,7 +1,6 @@
 import MembersClient from '@/app/(dashboard)/(officer)/officer/members/components/MembersClient'
 import { OFFICER_MEMBERS_PAGE_SIZE } from '@/utils/constants'
-import { getActiveSemester } from '@/utils/supabase/auth'
-import { createServerSupabase } from '@/utils/supabase/server'
+import { getActiveSemester, getAuthUser } from '@/utils/supabase/auth'
 
 const MEMBER_COLUMNS =
   'id, full_name, email, profile_image_url, account_linked, jt_family, jt_color, total_points, csa_points, jt_points, sports_points, gm_points'
@@ -25,7 +24,7 @@ export default async function MembersPage({
   const from = (page - 1) * OFFICER_MEMBERS_PAGE_SIZE
   const to = from + OFFICER_MEMBERS_PAGE_SIZE - 1
 
-  const supabase = await createServerSupabase()
+  const { supabase } = await getAuthUser()
 
   let membersQuery = supabase
     .from('v_current_leaderboard')

@@ -105,8 +105,10 @@ export async function publishJiatingStandings(eventId: string) {
 }
 
 export async function getSnapshotForEvent(eventId: string) {
-  const admin = createAdminSupabase()
-  const { data } = await admin
+  const { supabase, error } = await requireOfficer()
+  if (error) return null
+
+  const { data } = await supabase
     .from('jt_leaderboard_snapshots')
     .select('id, snapshot_at, label')
     .eq('source_event_id', eventId)

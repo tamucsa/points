@@ -1,26 +1,14 @@
 import { redirect } from 'next/navigation'
 import NewEventClient from '@/app/(dashboard)/(officer)/officer/events/components/NewEventClient'
-import { createServerSupabase } from '@/utils/supabase/server'
+import { getActiveSemester, getCurrentMember } from '@/utils/supabase/auth'
 
 export default async function NewEventPage() {
-  const supabase = await createServerSupabase()
-
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) redirect('/')
-
-  const { data: member } = await supabase
-    .from('members')
-    .select('id, jt_family_id')
-    .eq('auth_uid', user.id)
-    .maybeSingle()
+  const [{ supabase, member }, semester] = await Promise.all([
+    getCurrentMember(),
+    getActiveSemester(),
+  ])
 
   if (!member) redirect('/')
-
-  const { data: semester } = await supabase
-    .from('semesters')
-    .select('id, name')
-    .eq('is_active', true)
-    .maybeSingle()
 
   const { data: jtFamilies } = await supabase
     .from('jt_families')

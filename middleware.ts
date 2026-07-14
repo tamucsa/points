@@ -4,8 +4,6 @@ import type { NextRequest } from 'next/server'
 
 const publicRoutes = ['/register', '/pending', '/api/auth', '/checkin', '/privacy', '/terms', '/login']
 
-const pendingAllowedRoutes = ['/pending', '/register', '/api/auth', '/checkin']
-
 export async function middleware(request: NextRequest) {
   let supabaseResponse = NextResponse.next({ request })
   const pathname = request.nextUrl.pathname
@@ -25,6 +23,7 @@ export async function middleware(request: NextRequest) {
     }
   )
 
+  // Required for @supabase/ssr cookie refresh; do not query members here (layouts load status).
   const { data: { user } } = await supabase.auth.getUser()
 
   const isPublicRoute =
@@ -39,32 +38,8 @@ export async function middleware(request: NextRequest) {
     return NextResponse.redirect(new URL('/', request.url))
   }
 
-  let member: { status: string } | null = null
-
-  if (user) {
-    const { data } = await supabase
-      .from('members')
-      .select('status')
-      .eq('auth_uid', user.id)
-      .maybeSingle()
-
-    member = data
-  }
-
-  if (user && member?.status === 'pending_jt') {
-    const isPendingAllowed = pendingAllowedRoutes.some(r => pathname.startsWith(r))
-    if (!isPendingAllowed) {
-      return NextResponse.redirect(new URL('/pending', request.url))
-    }
-  }
-
-  if (user && pathname.startsWith('/pending') && member?.status === 'active') {
-    return NextResponse.redirect(new URL('/leaderboard', request.url))
-  }
-
   if (user && (pathname === '/' || pathname.startsWith('/login'))) {
-    const dest = member?.status === 'pending_jt' ? '/pending' : '/leaderboard'
-    return NextResponse.redirect(new URL(dest, request.url))
+    return NextResponse.redirect(new URL('/leaderboard', request.url))
   }
 
   return supabaseResponse

@@ -1,13 +1,11 @@
 import { headers } from 'next/headers'
 import { notFound, redirect } from 'next/navigation'
 import QRFullScreen from '@/app/(dashboard)/(officer)/officer/events/components/QRFullScreen'
-import { createServerSupabase } from '@/utils/supabase/server'
+import { getAuthUser } from '@/utils/supabase/auth'
 
 export default async function QRPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
-  const supabase = await createServerSupabase()
-
-  const { data: { user } } = await supabase.auth.getUser()
+  const { supabase, user } = await getAuthUser()
   if (!user) redirect('/')
 
   const { data: event } = await supabase

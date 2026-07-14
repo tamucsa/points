@@ -2,6 +2,7 @@
 
 import { createActionSupabase } from '@/utils/supabase/action'
 import { createAdminSupabase } from '@/utils/supabase/admin'
+import { fetchAllPages } from '@/utils/supabase/fetchAll'
 
 async function requireAdmin() {
   const supabase = await createActionSupabase()
@@ -119,9 +120,20 @@ export async function listSemesters() {
       .select('id, name, start_date, end_date, is_active, year_id, years(name)')
       .order('start_date', { ascending: false }),
     supabase.from('years').select('id, name').order('name', { ascending: false }),
-    supabase.from('jt_families').select('name, color, semester, is_active').order('name'),
-    supabase.from('events').select('semester_id'),
-    supabase.from('semester_summaries').select('semester_id, jt_family_name'),
+    fetchAllPages<{ name: string; color: string | null; semester: string | null; is_active: boolean }>(
+      (from, to) =>
+        supabase
+          .from('jt_families')
+          .select('name, color, semester, is_active')
+          .order('name')
+          .range(from, to),
+    ),
+    fetchAllPages<{ semester_id: string }>((from, to) =>
+      supabase.from('events').select('semester_id').range(from, to),
+    ),
+    fetchAllPages<{ semester_id: string; jt_family_name: string | null }>((from, to) =>
+      supabase.from('semester_summaries').select('semester_id, jt_family_name').range(from, to),
+    ),
   ])
 
   if (semestersError || yearsError || jtError || eventsError || summariesError) {
@@ -129,13 +141,13 @@ export async function listSemesters() {
   }
 
   const eventCounts = new Map<string, number>()
-  for (const event of events ?? []) {
+  for (const event of events) {
     eventCounts.set(event.semester_id, (eventCounts.get(event.semester_id) ?? 0) + 1)
   }
 
   const memberCounts = new Map<string, number>()
   const summaryJtNames = new Map<string, Set<string>>()
-  for (const summary of summaries ?? []) {
+  for (const summary of summaries) {
     memberCounts.set(summary.semester_id, (memberCounts.get(summary.semester_id) ?? 0) + 1)
     if (summary.jt_family_name) {
       const names = summaryJtNames.get(summary.semester_id) ?? new Set<string>()
@@ -146,7 +158,7 @@ export async function listSemesters() {
 
   const jtsBySemester = new Map<string, SemesterJtFamily[]>()
   const activeJtFamilies: SemesterJtFamily[] = []
-  for (const jt of jtFamilies ?? []) {
+  for (const jt of jtFamilies) {
     if (jt.is_active) {
       activeJtFamilies.push({ name: jt.name, color: jt.color })
     }

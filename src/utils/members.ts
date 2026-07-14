@@ -5,6 +5,14 @@
  * self-registration are concatenated; admin CSV import maps "Full Name" directly.
  */
 
+export type MemberRole = 'member' | 'officer' | 'admin'
+
+export const MEMBER_ROLES: MemberRole[] = ['member', 'officer', 'admin']
+
+export function isMemberRole(value: string): value is MemberRole {
+  return (MEMBER_ROLES as readonly string[]).includes(value)
+}
+
 export function parseGoogleName(metadata: {
   full_name?: string
   given_name?: string

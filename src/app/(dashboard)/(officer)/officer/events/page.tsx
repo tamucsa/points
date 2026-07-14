@@ -1,25 +1,12 @@
-import { redirect } from 'next/navigation'
 import OfficerEventsClient from '@/app/(dashboard)/(officer)/officer/events/components/OfficerEventsClient'
 import { isMixerCategory } from '@/utils/events'
-import { createServerSupabase } from '@/utils/supabase/server'
+import { getActiveSemester, getCurrentMember } from '@/utils/supabase/auth'
 
 export default async function OfficerEventsPage() {
-  const supabase = await createServerSupabase()
-
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) redirect('/')
-
-  const { data: member } = await supabase
-    .from('members')
-    .select('role, jt_family_id')
-    .eq('auth_uid', user.id)
-    .single()
-
-  const { data: semester } = await supabase
-    .from('semesters')
-    .select('id, name')
-    .eq('is_active', true)
-    .single()
+  const [{ supabase, member }, semester] = await Promise.all([
+    getCurrentMember(),
+    getActiveSemester(),
+  ])
 
   const [{ data: events }, { data: spectatorEvents }, { data: jtFamilies }] = await Promise.all([
     supabase
@@ -68,15 +55,15 @@ export default async function OfficerEventsPage() {
     }
   }
 
-  const { data: counts } = await supabase
-    .from('attendance')
-    .select('event_id')
-    .eq('semester_id', semester?.id)
-
-  const attendanceCounts = (counts ?? []).reduce((acc, row) => {
-    acc[row.event_id] = (acc[row.event_id] ?? 0) + 1
-    return acc
-  }, {} as Record<string, number>)
+  const attendanceCounts: Record<string, number> = {}
+  if (semester?.id) {
+    const { data: counts } = await supabase.rpc('attendance_counts_for_semester', {
+      p_semester_id: semester.id,
+    })
+    for (const row of counts ?? []) {
+      attendanceCounts[row.event_id] = Number(row.attendance_count)
+    }
+  }
 
   return (
     <OfficerEventsClient
