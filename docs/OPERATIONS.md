@@ -4,26 +4,29 @@ Runbook for day-to-day CSA Points operations. Each section includes an **overvie
 
 ## Quick reference
 
-| Workflow | Who | Where in app |
-|----------|-----|--------------|
-| Member self-registration | Member | `/register` |
-| Bulk member import | Admin | `/admin/members` → Import |
-| Spring roster update (JT transfers) | Admin | `/admin/members` → Import → Spring update |
-| Close / start semester | Admin | `/admin/semesters` |
-| Activate pending member | Admin | `/admin/members` → Pending |
-| Create event | Officer/Admin | `/officer/events/new` |
-| Officer check-in | Officer/Admin | `/officer/events/[id]/checkin` |
-| QR / self check-in | Officer + Member | `/officer/events/[id]/qr` + `/checkin/[code]` |
-| View leaderboard | Member | `/leaderboard`, `/leaderboard/jiatings`, `/leaderboard/standings` |
-| View own points | Member | `/profile` |
-| Points rules (values, caps) | — | This doc → [Points rules](#points-rules) |
-| Browse events | Member | `/events` |
-| Browse / filter events | Officer/Admin | `/officer/events` |
-| Edit event date / time / location | Officer/Admin | `/officer/events/[id]` → When and Where |
-| Manage member roles | Admin | `/admin/members?tab=roles` |
-| Look up member points / sign-in status | Officer/Admin | `/officer/members` |
+
+| Workflow                               | Who              | Where in app                                                      |
+| -------------------------------------- | ---------------- | ----------------------------------------------------------------- |
+| Member self-registration               | Member           | `/register`                                                       |
+| Bulk member import                     | Admin            | `/admin/members` → Import                                         |
+| Spring roster update (JT transfers)    | Admin            | `/admin/members` → Import → Spring update                         |
+| Close / start semester                 | Admin            | `/admin/semesters`                                                |
+| Activate pending member                | Admin            | `/admin/members` → Pending                                        |
+| Create event                           | Officer/Admin    | `/officer/events/new`                                             |
+| Officer check-in                       | Officer/Admin    | `/officer/events/[id]/checkin`                                    |
+| QR / self check-in                     | Officer + Member | `/officer/events/[id]/qr` + `/checkin/[code]`                     |
+| View leaderboard                       | Member           | `/leaderboard`, `/leaderboard/jiatings`, `/leaderboard/standings` |
+| View own points                        | Member           | `/profile`                                                        |
+| Points rules (values, caps)            | —                | This doc → [Points rules](#points-rules)                          |
+| Browse events                          | Member           | `/events`                                                         |
+| Browse / filter events                 | Officer/Admin    | `/officer/events`                                                 |
+| Edit event date / time / location      | Officer/Admin    | `/officer/events/[id]` → When and Where                           |
+| Manage member roles                    | Admin            | `/admin/members?tab=roles`                                        |
+| Look up member points / sign-in status | Officer/Admin    | `/officer/members`                                                |
+
 
 Related docs:
+
 - User guides: `docs/ONBOARDING_MEMBERS.md`, `docs/ONBOARDING_OFFICERS.md`, `docs/ONBOARDING_ADMINS.md`
 - Deployment: `docs/DEPLOYMENT.md`
 - Points policy: `docs/OPERATIONS.md` → **Points rules**
@@ -45,9 +48,9 @@ New members authenticate with TAMU Google (`@tamu.edu`). The auth callback links
 2. Member signs in with a `@tamu.edu` account.
 3. If no `members` row exists, they are redirected to `/register`.
 4. Member fills in:
-   - First name and last name (required) — stored together as `full_name`
-   - Class (required)
-   - Phone (optional)
+  - First name and last name (required) — stored together as `full_name`
+  - Class (required)
+  - Phone (optional)
 5. Member submits the form.
 6. System creates a `members` row with `status = pending_jt` and `role = member`.
 7. Member is redirected to `/pending` until an admin activates them.
@@ -60,21 +63,21 @@ Use this at the start of a semester to pre-load the roster before members sign i
 2. Open the **Import** tab and select **Full roster (fall)**.
 3. Prepare a CSV with these column headers (order does not matter):
 
-   | Column | Required | Notes |
-   |--------|----------|-------|
-   | `Full Name` | Yes | Complete name as shown in the app |
-   | `TAMU Email` | Yes | Must be `@tamu.edu` |
-   | `Jiating` | Yes | Must match an active Jiating name in the system |
-   | `Phone` | Yes | Contact phone number |
-   | `Class` | Yes | Graduation year, e.g. `2027` |
+  | Column       | Required | Notes                                           |
+  | ------------ | -------- | ----------------------------------------------- |
+  | `Full Name`  | Yes      | Complete name as shown in the app               |
+  | `TAMU Email` | Yes      | Must be `@tamu.edu`                             |
+  | `Jiating`    | Yes      | Must match an active Jiating name in the system |
+  | `Phone`      | Yes      | Contact phone number                            |
+  | `Class`      | Yes      | Graduation year, e.g. `2027`                    |
 
 4. Upload the CSV file.
 5. Review the import summary:
-   - **Added** — new `members` rows created as `active` with Jiating assigned
-   - **Updated** — existing email matched; only changed fields are written
-   - **Unchanged** — row matched an existing member with identical data
-   - **Jiating transfers** — spring import only: existing member moved from one Jiating to another (logged to `jt_transfer_log`)
-   - **Errors** — invalid email, unknown Jiating, missing required fields, or DB failures
+  - **Added** — new `members` rows created as `active` with Jiating assigned
+  - **Updated** — existing email matched; only changed fields are written
+  - **Unchanged** — row matched an existing member with identical data
+  - **Jiating transfers** — spring import only: existing member moved from one Jiating to another (logged to `jt_transfer_log`)
+  - **Errors** — invalid email, unknown Jiating, missing required fields, or DB failures
 6. Tell members to sign in with Google; the auth callback links their account by email.
 
 ### Step-by-step: Admin spring roster update (partial CSV)
@@ -83,9 +86,9 @@ After fall semester close and Jiating re-sorting, upload only rows that changed.
 
 1. Admin goes to `/admin/members` → **Import** → **Spring update (partial)**.
 2. Prepare a CSV with the same columns as fall import, but include **only**:
-   - Members who transferred Jiating
-   - New members joining mid-year
-   - Rows where name, phone, or class needs correction
+  - Members who transferred Jiating
+  - New members joining mid-year
+  - Rows where name, phone, or class needs correction
 3. Upload the CSV.
 4. Review the summary (especially **Jiating transfers**). Unlisted members are not modified.
 5. Start the new spring semester from `/admin/semesters` if not already active.
@@ -101,12 +104,14 @@ After fall semester close and Jiating re-sorting, upload only rows that changed.
 
 ### Troubleshooting
 
-| Symptom | Likely cause | Action |
-|---------|--------------|--------|
-| Member stuck on `/pending` | Not activated or no Jiating assigned | Admin activates in `/admin/members` |
-| Member sent to `/register` after login | No member row and not imported | Member completes registration, or admin imports them |
-| Imported member shows "Not signed in" | CSV row exists but `auth_uid` not linked yet | Member signs in once with Google; auth callback links by email |
-| Non-TAMU email rejected | Domain enforcement in auth callback | Member must use `@tamu.edu` |
+
+| Symptom                                | Likely cause                                 | Action                                                         |
+| -------------------------------------- | -------------------------------------------- | -------------------------------------------------------------- |
+| Member stuck on `/pending`             | Not activated or no Jiating assigned         | Admin activates in `/admin/members`                            |
+| Member sent to `/register` after login | No member row and not imported               | Member completes registration, or admin imports them           |
+| Imported member shows "Not signed in"  | CSV row exists but `auth_uid` not linked yet | Member signs in once with Google; auth callback links by email |
+| Non-TAMU email rejected                | Domain enforcement in auth callback          | Member must use `@tamu.edu`                                    |
+
 
 ---
 
@@ -132,8 +137,8 @@ Closing a semester archives totals (via `close_semester` in the database) and ro
 3. Fill in semester name, start/end dates, and school year.
 4. Click **Start semester**.
 5. Verify in the app:
-   - Leaderboard shows data for the new semester (may be empty initially).
-   - Officer event creation uses the new semester.
+  - Leaderboard shows data for the new semester (may be empty initially).
+  - Officer event creation uses the new semester.
 6. Communicate the semester change to officers.
 
 ### Typical annual flow
@@ -153,6 +158,7 @@ The semester admin page shows the active term, a collapsible **Past semesters** 
 ### Overview
 
 Officers and admins create events tied to the active semester. Each event has:
+
 - **Category** (e.g., General Meeting, CSA-Wide, Sports) and **point value** (set automatically per category)
 - **Scope**: CSA-wide (`org`), JT shared (`jt_shared`), or JT-specific (`jt_specific`) — set automatically per category
 - **Check-in type**: officer, self (QR), or RSVP required — fixed for some categories; officer chooses for CSA-Wide and Sports
@@ -165,9 +171,9 @@ Sports events can optionally create a linked **Spectator** child event (1 point,
 2. Optionally search by event name.
 3. Use category tabs (**All** / **CSA** / **Jiating** / **Sports** / **Dance**) to filter.
 4. On the **Jiating** tab, use **Counts toward** to pick a family (defaults to the officer’s Jiating when assigned):
-   - Olympics count toward every family → always shown for a selected family
-   - Mixers count only toward participating families (`event_jt_families`)
-   - JT-specific events count only toward their `jt_family_id`
+  - Olympics count toward every family → always shown for a selected family
+  - Mixers count only toward participating families (`event_jt_families`)
+  - JT-specific events count only toward their `jt_family_id`
 5. Expand **Past Events** when checking in after the start time or verifying older attendance.
 6. Long lists paginate at **10 events per page** (upcoming and past separately). Prev/Next and the range label appear **above and below** the list when there is more than one page.
 
@@ -178,17 +184,17 @@ Member **Events** (`/events`) is narrower: only the member’s JT-specific event
 1. Officer/admin signs in and goes to **Officer Events** → `/officer/events`.
 2. Click **New Event** → `/officer/events/new`.
 3. Fill in the form:
-   - **Name** (required)
-   - **Category** and **point value**
-   - **Scope**:
-     - *CSA-Wide* — visible to all active members
-     - *JT Shared* — visible to all Jiatings
-     - *JT Specific* — select a Jiating; only that family sees the event
-   - **Check-in type**:
-     - *Officer* — manual check-in at the event
-     - *Self (QR)* — members scan a QR code
-     - *RSVP Required* — provide RSVP URL and deadline
-   - **Date**, **location**, **description** (as needed)
+  - **Name** (required)
+  - **Category** and **point value**
+  - **Scope**:
+    - *CSA-Wide* — visible to all active members
+    - *JT Shared* — visible to all Jiatings
+    - *JT Specific* — select a Jiating; only that family sees the event
+  - **Check-in type**:
+    - *Officer* — manual check-in at the event
+    - *Self (QR)* — members scan a QR code
+    - *RSVP Required* — provide RSVP URL and deadline
+  - **Date**, **location**, **description** (as needed)
 4. For **Sports** events, optionally enable **Spectator check-in** (creates a child spectator event).
 5. For **Mixers**, select at least two participating Jiatings (editable later on the event detail page).
 6. Submit the form.
@@ -247,31 +253,36 @@ Canonical scoring policy for CSA Points. Change here when club policy changes; k
 
 #### Category point values
 
-| Category | Points | Scope | Typical check-in |
-|----------|--------|-------|------------------|
-| General Meeting | 2 | CSA-wide | Self (QR) |
-| CSA-Wide | 3 | CSA-wide | Officer chooses / often self or officer |
-| Philanthropy | 3 | CSA-wide | Officer chooses |
-| Concessions | 3 | CSA-wide | Officer |
-| Jiating Olympics | 2 | JT shared | Officer |
-| Mixer | 2 | JT shared | Officer |
-| Jiating Event | 1 | JT specific | Officer |
-| Sports | 1 | CSA-wide | Officer (+ optional Spectator child) |
-| Dance | 1 | CSA-wide | Officer |
-| Sports Spectator | 1 | Linked child of Sports | Self (QR) |
+
+| Category         | Points | Scope                  | Typical check-in                        |
+| ---------------- | ------ | ---------------------- | --------------------------------------- |
+| General Meeting  | 2      | CSA-wide               | Self (QR)                               |
+| CSA-Wide         | 3      | CSA-wide               | Officer chooses / often self or officer |
+| Philanthropy     | 3      | CSA-wide               | Officer chooses                         |
+| Concessions      | 3      | CSA-wide               | Officer                                 |
+| Jiating Olympics | 2      | JT shared              | Officer                                 |
+| Mixer            | 2      | JT shared              | Officer                                 |
+| Jiating Event    | 1      | JT specific            | Officer                                 |
+| Sports           | 1      | CSA-wide               | Officer (+ optional Spectator child)    |
+| Dance            | 1      | CSA-wide               | Officer                                 |
+| Sports Spectator | 1      | Linked child of Sports | Self (QR)                               |
+
 
 Leaderboard buckets (approx.):
+
 - **CSA** — CSA-Wide, Philanthropy, Concessions  
 - **JT** — Jiating Olympics, Jiating Event, Mixer  
 - **Sports** — Sports / Sports Spectator  
-- **GM** — General Meeting  
+- **GM** — General Meeting
 
 #### Caps and `attendance.counted`
 
-| Rule | Status | Detail |
-|------|--------|--------|
-| **Sports Spectator semester cap** | **Enforced** | Per member, per active semester: counted Spectator points cannot exceed **10**. Extra Spectator check-ins record attendance with `counted = false` (DB trigger on insert). |
+
+| Rule                                 | Status       | Detail                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    |
+| ------------------------------------ | ------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Sports Spectator semester cap**    | **Enforced** | Per member, per active semester: counted Spectator points cannot exceed **10**. Extra Spectator check-ins record attendance with `counted = false` (DB trigger on insert).                                                                                                                                                                                                                                                                                                                                                                                                |
 | **Weekly Jiating Event + Mixer cap** | **Enforced** | Per member: at most **4** counting attendances for categories in `{Jiating Event, Mixer}` per week. Extra check-ins may still be recorded with `counted = false`. Week = **Monday 00:00 → Sunday 23:59**, America/Chicago. Prefer max points (`point_value` DESC, then `starts_at` ASC — Mixers before Jiating Events under current values). Live recompute on check-in / uncheck / relevant event `starts_at` or `category` changes (DB function + triggers). Hosting more than 4 events is allowed. **Jiating Olympics and all other categories are outside this cap.** |
+
 
 Attendance with `counted = false` still appears in history (profile / event detail) but does not add to leaderboard or totals.
 
@@ -305,8 +316,8 @@ Event start/end and weekly windows use **America/Chicago**.
 1. Officer goes to **Members** → `/officer/members`.
 2. Use search (name/email), **JT filter**, or **sign-in status filter** (Signed in / Not signed in).
 3. Review the **Sign-in** column:
-   - **Signed in** — member has linked their Google account (`auth_uid` set)
-   - **Not signed in** — roster-imported member who has not logged in yet
+  - **Signed in** — member has linked their Google account (`auth_uid` set)
+  - **Not signed in** — roster-imported member who has not logged in yet
 4. The page header shows how many active members have not signed in.
 5. Navigate pages (25 members per page).
 6. Click a member row → `/officer/members/[id]` for full breakdown, sign-in status, and attendance history.
@@ -323,8 +334,8 @@ There is no dedicated “undo check-in” UI yet. Corrections are handled at the
 
 1. Identify the incorrect `attendance` row (via event detail page or Supabase).
 2. Decide the correction:
-   - **Remove** the row entirely (member was never there), or
-   - Set `counted = false` (attendance recorded but points should not apply)
+  - **Remove** the row entirely (member was never there), or
+  - Set `counted = false` (attendance recorded but points should not apply)
 3. A developer or Supabase admin makes the change.
 4. Verify the member’s points updated on `/profile` and leaderboard.
 
@@ -343,9 +354,9 @@ Roles (`member`, `officer`, `admin`) control access to officer and admin pages. 
 1. Sign in as an admin and go to **Admin** → **Members** → **Roles** (`/admin/members?tab=roles`).
 2. Search by name/email and optionally filter by current role.
 3. Choose the new role (`Member`, `Officer`, or `Admin`) and click **Save**.
-   - Promoting to **Admin** asks for confirmation (full access including roles and semesters).
-   - Demoting yourself away from admin asks for confirmation.
-   - You cannot demote the **last remaining admin**.
+  - Promoting to **Admin** asks for confirmation (full access including roles and semesters).
+  - Demoting yourself away from admin asks for confirmation.
+  - You cannot demote the **last remaining admin**.
 4. The member should refresh (or sign out/in) so nav picks up officer/admin access.
 
 Only **active** members appear on the Roles tab. Pending JT members must be activated first.
@@ -394,3 +405,4 @@ Track the roadmap in [GitHub Issues](https://github.com/tamucsa/points/issues?q=
 Bugs and debt on existing behavior: [known-issue issues](https://github.com/tamucsa/points/issues?q=is%3Aissue+is%3Aopen+label%3Aknown-issue).
 
 > **Attendance corrections:** Officers can already uncheck from the check-in page. Broader UI (event detail / `counted`) is [#10](https://github.com/tamucsa/points/issues/10).
+
