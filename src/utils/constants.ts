@@ -33,7 +33,7 @@ export const CHECKIN_METHOD_LABELS: Record<string, string> = {
 
 export const POINT_BUCKET_LABELS = {
   csa: 'CSA',
-  jt: 'JT',
+  jt: 'Jiating',
   sports: 'Sports & Dance',
   gm: 'General Meeting',
 } as const

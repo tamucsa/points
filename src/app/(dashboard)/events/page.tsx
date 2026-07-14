@@ -12,10 +12,12 @@ export default async function MemberEventsPage() {
   if (!user) redirect('/')
   if (!member) redirect('/')
 
+  // Hide Spectator (and any other) child events — members see the parent Sports row only.
   const { data: events } = await supabase
     .from('events')
     .select('*')
     .eq('semester_id', semester?.id)
+    .is('parent_event_id', null)
     .or(`scope.in.(org,jt_shared),and(scope.eq.jt_specific,jt_family_id.eq.${member.jt_family_id})`)
     .order('starts_at', { ascending: true })
 
@@ -47,11 +49,19 @@ export default async function MemberEventsPage() {
 
   const { data: attended } = await supabase
     .from('attendance')
-    .select('event_id')
+    .select('event_id, events(parent_event_id)')
     .eq('member_id', member.id)
     .eq('semester_id', semester?.id)
 
-  const attendedIds = new Set(attended?.map(a => a.event_id) ?? [])
+  // Spectator check-in is on the child event; still mark the parent Sports card as attended.
+  const attendedIds = new Set<string>()
+  for (const row of attended ?? []) {
+    attendedIds.add(row.event_id)
+    const linked = Array.isArray(row.events) ? row.events[0] : row.events
+    if (linked?.parent_event_id) {
+      attendedIds.add(linked.parent_event_id)
+    }
+  }
 
   return (
     <MemberEventsClient

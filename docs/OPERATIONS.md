@@ -177,7 +177,7 @@ Sports events can optionally create a linked **Spectator** child event (1 point,
 5. Expand **Past Events** when checking in after the start time or verifying older attendance.
 6. Long lists paginate at **10 events per page** (upcoming and past separately). Prev/Next and the range label appear **above and below** the list when there is more than one page.
 
-Member **Events** (`/events`) is narrower: only the member’s JT-specific events plus shared/org events (and Mixers their Jiating participates in). Same category tabs, past-events collapse, and 10-per-page pagination (controls above and below); no family dropdown.
+Member **Events** (`/events`) is narrower: only the member’s JT-specific events plus shared/org events (and Mixers their Jiating participates in). Linked **Spectator** child events are hidden (members use the Spectator QR at the venue; the parent Sports card still shows **Attended** if they checked in that way). Same category tabs, past-events collapse, and 10-per-page pagination (controls above and below); no family dropdown.
 
 ### Step-by-step: Create an event
 
@@ -271,7 +271,7 @@ Canonical scoring policy for CSA Points. Change here when club policy changes; k
 Leaderboard buckets (UI label **Sports & Dance** for the sports column):
 
 - **CSA** — CSA-Wide, Philanthropy, Concessions  
-- **JT** — Jiating Olympics, Jiating Event, Mixer  
+- **Jiating** — Jiating Olympics, Jiating Event, Mixer  
 - **Sports & Dance** — Sports, Sports Spectator, and Dance  
 - **GM** — General Meeting
 
@@ -295,7 +295,7 @@ Event start/end and weekly windows use **America/Chicago**.
 ### Step-by-step: Member views their points
 
 1. Member goes to **My Points** → `/profile`.
-2. Review total points and category breakdown (CSA, JT, Sports & Dance, General Meeting).
+2. Review total points and category breakdown (CSA, Jiating, Sports & Dance, General Meeting).
 3. Scroll attendance history for the current semester.
 
 ### Step-by-step: Anyone views the leaderboard
