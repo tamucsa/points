@@ -45,6 +45,9 @@ interface Props {
   checkedInIds: string[]
   tabFamilies: TabFamily[]
   defaultTabId: string | null
+  /** When true, show RSVP tags and sort RSVPed first. */
+  hasRsvpList?: boolean
+  rsvpedMemberIds?: string[]
 }
 
 export default function OfficerCheckinClient({
@@ -53,6 +56,8 @@ export default function OfficerCheckinClient({
   checkedInIds,
   tabFamilies,
   defaultTabId,
+  hasRsvpList = false,
+  rsvpedMemberIds = [],
 }: Props) {
   const [search, setSearch] = useState('')
   const [checkedIn, setCheckedIn] = useState(() => new Set(checkedInIds))
@@ -64,17 +69,29 @@ export default function OfficerCheckinClient({
   const [activeTabId, setActiveTabId] = useState<string | null>(defaultTabId)
   const isJtSpecific = event.scope === 'jt_specific'
   const showTabs = event.scope === 'jt_shared' && tabFamilies.length > 0
+  const rsvpedSet = useMemo(() => new Set(rsvpedMemberIds), [rsvpedMemberIds])
 
   const filtered = useMemo(() => {
     const q = search.toLowerCase()
-    return members.filter(m => {
+    const list = members.filter(m => {
       if (showTabs && activeTabId && m.jt_family_id !== activeTabId) return false
       return (
         m.full_name.toLowerCase().includes(q) ||
         m.email.toLowerCase().includes(q)
       )
     })
-  }, [members, search, showTabs, activeTabId])
+
+    if (!hasRsvpList) {
+      return list
+    }
+
+    return [...list].sort((a, b) => {
+      const aR = rsvpedSet.has(a.id) ? 0 : 1
+      const bR = rsvpedSet.has(b.id) ? 0 : 1
+      if (aR !== bR) return aR - bR
+      return a.full_name.localeCompare(b.full_name, undefined, { sensitivity: 'base' })
+    })
+  }, [members, search, showTabs, activeTabId, hasRsvpList, rsvpedSet])
 
   const tabCheckedInCount = useMemo(() => {
     if (!showTabs || !activeTabId) return null
@@ -256,8 +273,21 @@ export default function OfficerCheckinClient({
                 color={m.jt_color}
               />
               <div className="min-w-0 flex-1">
-                <div className="truncate text-sm font-medium text-text">
-                  {displayName}
+                <div className="flex flex-wrap items-center gap-2">
+                  <div className="truncate text-sm font-medium text-text">
+                    {displayName}
+                  </div>
+                  {hasRsvpList && (
+                    <span
+                      className={`shrink-0 rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide ${
+                        rsvpedSet.has(m.id)
+                          ? 'bg-green-100 text-green-800'
+                          : 'bg-stone-100 text-stone-600'
+                      }`}
+                    >
+                      {rsvpedSet.has(m.id) ? 'RSVPed' : 'Not RSVPed'}
+                    </span>
+                  )}
                 </div>
                 <div className="truncate text-xs text-subtitle">
                   {m.email} · {m.role_label}

@@ -204,7 +204,7 @@ Member **Events** (`/events`) is narrower: only the member’s JT-specific event
   - **Check-in type**:
     - *Officer* — manual check-in at the event
     - *Self (QR)* — members scan a QR code
-    - *RSVP Required* — provide RSVP URL and deadline
+    - *RSVP Required* — provide RSVP URL and deadline; after the form closes, upload a Name/Email CSV on the event page to tag members as **RSVPed** / **Not RSVPed** on check-in (optional tags; does not filter or block check-in). Re-upload replaces the list. Unmatched emails can be matched manually or marked as guests.
   - **Date**, **location**, **description** (as needed)
 4. For **Sports** events, optionally enable **Spectator check-in** (creates a child spectator event).
 5. For **Mixers**, select at least two participating Jiatings (editable later on the event detail page).
@@ -222,11 +222,18 @@ Member **Events** (`/events`) is narrower: only the member’s JT-specific event
 
 1. Officer opens the event from `/officer/events`.
 2. Click **Check In** → `/officer/events/[id]/checkin`.
-3. Search or scroll the member list.
+3. Search or scroll the member list (RSVP events with an uploaded CSV sort **RSVPed** first, then alphabetically; tags hide until a CSV is uploaded).
 4. Click a member to check them in.
 5. System inserts an `attendance` row with `check_in_method = officer`.
 6. Already-checked-in members show as checked (duplicate inserts are blocked).
 
+### Step-by-step: Upload RSVP CSV tags
+
+1. Create an **RSVP Required** event with form URL and deadline.
+2. After responses are in (typically after the deadline), open the event detail page.
+3. Under **RSVP roster CSV**, upload a CSV with **Name** and **Email** (email is the match key). Replacing an existing list requires a two-step confirm.
+4. Review **Unmatched emails** — match to a member or mark as **Guest** (not a CSA member). Guests are intentional dismissals and do not create members.
+5. On check-in, RSVPed members show a green tag; others show Not RSVPed. Check-in works the same with or without a CSV.
 ### Step-by-step: Run QR / self check-in at an event
 
 **Officer setup:**

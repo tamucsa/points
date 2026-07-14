@@ -31,6 +31,7 @@ interface Event {
   location: string | null
   check_in_code: string | null
   jt_family_id: string | null
+  rsvp_deadline?: string | null
 }
 
 interface SpectatorEvent {
@@ -57,6 +58,7 @@ interface Props {
   jtFamilies: JtFamily[]
   mixerFamiliesByEventId: Record<string, string[]>
   officerJtFamilyId: string | null
+  eventsWithRsvpUpload?: Record<string, true>
 }
 
 const actionPrimaryClassName =
@@ -77,6 +79,7 @@ export default function OfficerEventsClient({
   jtFamilies,
   mixerFamiliesByEventId,
   officerJtFamilyId,
+  eventsWithRsvpUpload = {},
 }: Props) {
   const router = useRouter()
   const [qrEvent, setQrEvent] = useState<(Event | SpectatorEvent) | null>(null)
@@ -264,6 +267,14 @@ export default function OfficerEventsClient({
               </EventMetaItem>
             )}
           </EventMetaRow>
+          {event.check_in_type === 'rsvp_required' &&
+            event.rsvp_deadline &&
+            new Date(event.rsvp_deadline) <= new Date() &&
+            !eventsWithRsvpUpload[event.id] && (
+              <p className="mt-2 text-xs font-medium text-amber-800">
+                RSVP deadline passed — open the event to upload the responses CSV for check-in tags.
+              </p>
+            )}
         </div>
 
         <div

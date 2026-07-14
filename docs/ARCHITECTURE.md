@@ -33,6 +33,7 @@ Core tables (names reflect actual schema):
 - `members`: one row per person (email, role, status, jt family, auth uid)
 - `events`: point-earning opportunities; has scope (CSA-wide / JT shared / JT specific)
 - `event_jt_families`: which Jiatings participate in a Mixer (and similar multi-family events)
+- `event_rsvps`: optional RSVP CSV tags per event (`member_id` nullable; `is_guest` for dismissed non-members); used only for check-in badges, not attendance gating
 - `attendance`: joins members to events; source of points
 - `member_semester_points`: cached counted point totals per member per semester; maintained by triggers on attendance / event category·point changes; backing store for `v_current_leaderboard`
 - `semesters`: identifies the active semester

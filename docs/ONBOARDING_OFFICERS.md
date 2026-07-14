@@ -32,7 +32,7 @@ Officers must have `members.role` set to `officer`. If you can't see officer pag
   - Check-in type:
     - **Self/QR** (generates a check-in QR/link)
     - **Officer** (manual check-in)
-    - **RSVP** (manual check-in based on RSVP responses)
+    - **RSVP** (manual check-in; optional CSV tags RSVPed / Not RSVPed after the form closes — upload on the event page)
 
 The app currently allows any officer to create any category. Prefer following the ownership guidance below so the right chair/parents own each event type. The New Event form shows a soft hint for who typically creates each category.
 

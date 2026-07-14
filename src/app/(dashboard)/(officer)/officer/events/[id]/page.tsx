@@ -1,6 +1,7 @@
 import { notFound, redirect } from 'next/navigation'
 import EventDetailClient from '@/app/(dashboard)/(officer)/officer/events/components/EventDetailClient'
 import { getSnapshotForEvent } from '@/app/actions/jt-standings'
+import { listEventRsvps } from '@/app/actions/rsvp'
 import { isMixerCategory } from '@/utils/events'
 import { fetchAllPages } from '@/utils/supabase/fetchAll'
 import { getAuthUser } from '@/utils/supabase/auth'
@@ -102,6 +103,25 @@ export default async function EventDetailPage({ params }: { params: Promise<{ id
     spectatorEvent = spectator
   }
 
+  let rsvpRows: Awaited<ReturnType<typeof listEventRsvps>>['rows'] = []
+  let rsvpMatchMembers: { id: string; full_name: string; email: string }[] = []
+
+  if (event.check_in_type === 'rsvp_required') {
+    const [rsvpResult, members] = await Promise.all([
+      listEventRsvps(id),
+      fetchAllPages<{ id: string; full_name: string; email: string }>((from, to) =>
+        supabase
+          .from('members')
+          .select('id, full_name, email')
+          .eq('status', 'active')
+          .order('full_name')
+          .range(from, to),
+      ),
+    ])
+    rsvpRows = rsvpResult.rows
+    rsvpMatchMembers = members.data ?? []
+  }
+
   return (
     <EventDetailClient
       event={event}
@@ -111,6 +131,8 @@ export default async function EventDetailPage({ params }: { params: Promise<{ id
       jtFamilies={jtFamilies}
       mixerFamilyIds={mixerFamilyIds}
       spectatorEvent={spectatorEvent}
+      rsvpRows={rsvpRows}
+      rsvpMatchMembers={rsvpMatchMembers}
     />
   )
 }

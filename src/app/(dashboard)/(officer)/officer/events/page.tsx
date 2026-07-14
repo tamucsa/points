@@ -65,6 +65,22 @@ export default async function OfficerEventsPage() {
     }
   }
 
+  const rsvpEventIds = (events ?? [])
+    .filter(e => e.check_in_type === 'rsvp_required')
+    .map(e => e.id)
+
+  const eventsWithRsvpUpload: Record<string, true> = {}
+  if (rsvpEventIds.length > 0) {
+    const { data: rsvpRows } = await supabase
+      .from('event_rsvps')
+      .select('event_id')
+      .in('event_id', rsvpEventIds)
+
+    for (const row of rsvpRows ?? []) {
+      eventsWithRsvpUpload[row.event_id] = true
+    }
+  }
+
   return (
     <OfficerEventsClient
       events={events ?? []}
@@ -75,6 +91,7 @@ export default async function OfficerEventsPage() {
       jtFamilies={jtFamilies ?? []}
       mixerFamiliesByEventId={mixerFamiliesByEventId}
       officerJtFamilyId={member?.jt_family_id ?? null}
+      eventsWithRsvpUpload={eventsWithRsvpUpload}
     />
   )
 }
