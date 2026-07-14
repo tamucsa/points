@@ -326,7 +326,8 @@ Event start/end and weekly windows use **America/Chicago**.
 
 1. Member goes to **My Points** → `/profile`.
 2. Review total points and category breakdown (CSA, Jiating, Sports & Dance, General Meeting).
-3. Scroll attendance history for the current semester.
+3. Read **How points work** for per-category values and the Sports Spectator / weekly JT+Mixer caps (with usage bars).
+4. Scroll attendance history for the current semester.
 
 ### Step-by-step: Anyone views the leaderboard
 

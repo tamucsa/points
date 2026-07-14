@@ -6,6 +6,7 @@ import JtFamilyBadge from '@/app/(dashboard)/leaderboard/components/JtFamilyBadg
 import MemberAvatar from '@/app/components/MemberAvatar'
 import EmptyState from '@/app/components/EmptyState'
 import PageHeader from '@/app/components/PageHeader'
+import PointsGuide from '@/app/(dashboard)/profile/components/PointsGuide'
 import { AlertCircle, Calendar } from 'lucide-react'
 
 interface Member {
@@ -143,9 +144,12 @@ export default function ProfileClient({
       {/* Point Breakdown */}
       {!pointsLoadError && (
         <div className="mb-8">
-          <h2 className="mb-3 text-lg font-bold text-text">
+          <h2 className="mb-1 text-lg font-bold text-text">
             Point Breakdown
           </h2>
+          <p className="mb-3 text-sm text-subtitle">
+            Your earned totals by leaderboard bucket this semester.
+          </p>
           <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
             {breakdown.map(cat => (
               <div key={cat.label} className="rounded-3xl border border-home-border bg-white p-4 text-center shadow-sm">
@@ -159,6 +163,10 @@ export default function ProfileClient({
             ))}
           </div>
         </div>
+      )}
+
+      {!pointsLoadError && (
+        <PointsGuide attendance={attendanceLoadError ? [] : attendance} />
       )}
 
       {/* Attendance History */}

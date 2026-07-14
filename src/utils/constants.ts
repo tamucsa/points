@@ -38,6 +38,10 @@ export const POINT_BUCKET_LABELS = {
   gm: 'General Meeting',
 } as const
 
+/** Member-facing / UI constants — keep in sync with DB cap logic and OPERATIONS.md. */
+export const SPORTS_SPECTATOR_SEMESTER_CAP = 10
+export const JT_EVENT_MIXER_WEEKLY_ATTENDANCE_CAP = 4
+
 export const CATEGORY_COLORS: Record<string, string> = {
   'CSA-Wide': '#4779B8',
   'Jiating Olympics': '#f7934f',
