@@ -121,7 +121,7 @@ After fall semester close and Jiating re-sorting, upload only rows that changed.
 
 Points and leaderboards are scoped to the **active semester** (`semesters.is_active = true`). `v_current_leaderboard` reads cached totals from `member_semester_points` (refreshed when attendance is inserted/deleted/`counted` changes, or when an event’s `point_value` / `category` changes). `v_jt_leaderboard` still aggregates live for GM publish snapshots.
 
-Closing a semester archives totals (via `close_semester` in the database) and rolls up data into `semester_summaries`.
+Closing a semester archives totals (via `close_semester` in the database, which copies `member_semester_points` into `semester_summaries`) and deactivates the semester. The RPC is service-role only; the admin UI calls it through `createAdminSupabase` after an admin auth check.
 
 ### Step-by-step: Close the active semester
 
@@ -268,11 +268,11 @@ Canonical scoring policy for CSA Points. Change here when club policy changes; k
 | Sports Spectator | 1      | Linked child of Sports | Self (QR)                               |
 
 
-Leaderboard buckets (approx.):
+Leaderboard buckets (UI label **Sports & Dance** for the sports column):
 
 - **CSA** — CSA-Wide, Philanthropy, Concessions  
 - **JT** — Jiating Olympics, Jiating Event, Mixer  
-- **Sports** — Sports / Sports Spectator  
+- **Sports & Dance** — Sports, Sports Spectator, and Dance  
 - **GM** — General Meeting
 
 #### Caps and `attendance.counted`
@@ -280,8 +280,10 @@ Leaderboard buckets (approx.):
 
 | Rule                                 | Status       | Detail                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    |
 | ------------------------------------ | ------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Sports Spectator semester cap**    | **Enforced** | Per member, per active semester: counted Spectator points cannot exceed **10**. Extra Spectator check-ins record attendance with `counted = false` (DB trigger on insert).                                                                                                                                                                                                                                                                                                                                                                                                |
-| **Weekly Jiating Event + Mixer cap** | **Enforced** | Per member: at most **4** counting attendances for categories in `{Jiating Event, Mixer}` per week. Extra check-ins may still be recorded with `counted = false`. Week = **Monday 00:00 → Sunday 23:59**, America/Chicago. Prefer max points (`point_value` DESC, then `starts_at` ASC — Mixers before Jiating Events under current values). Live recompute on check-in / uncheck / relevant event `starts_at` or `category` changes (DB function + triggers). Hosting more than 4 events is allowed. **Jiating Olympics and all other categories are outside this cap.** |
+| **Sports Spectator semester cap**    | **Enforced** | Per member, per active semester: counted Spectator points cannot exceed **10**. Extra Spectator check-ins record attendance with `counted = false`. Live recompute on Spectator check-in / uncheck (and relevant category/point changes) so freeing a slot can promote earlier non-counted Spectator rows. |
+| **Weekly Jiating Event + Mixer cap** | **Enforced** | Per member: at most **4** counting attendances for categories in `{Jiating Event, Mixer}` per week. Extra check-ins may still be recorded with `counted = false`. Week = **Monday 00:00 → Sunday 23:59**, America/Chicago. Prefer max points (`point_value` DESC, then `starts_at` ASC — Mixers before Jiating Events under current values). Live recompute on check-in / uncheck / relevant event `starts_at`, `category`, or `point_value` changes (DB function + triggers). Hosting more than 4 events is allowed. **Jiating Olympics and all other categories are outside this cap.** |
+
+**Invariant — who owns `counted` for Jiating Event / Mixer:** `recompute_member_jt_week_cap` is the **sole writer** of `attendance.counted` for those categories within a Chicago week. Each recompute sets `counted = (rank ≤ 4)` for every in-scope row. Do not introduce a second “manual suppress” path on those rows without an override/lock column — a future recompute would wipe it. Sports Spectator uses a different category and its own semester recompute, so the two caps do not fight today.
 
 
 Attendance with `counted = false` still appears in history (profile / event detail) but does not add to leaderboard or totals.
@@ -293,7 +295,7 @@ Event start/end and weekly windows use **America/Chicago**.
 ### Step-by-step: Member views their points
 
 1. Member goes to **My Points** → `/profile`.
-2. Review total points and category breakdown (CSA, JT, Sports, General Meeting).
+2. Review total points and category breakdown (CSA, JT, Sports & Dance, General Meeting).
 3. Scroll attendance history for the current semester.
 
 ### Step-by-step: Anyone views the leaderboard

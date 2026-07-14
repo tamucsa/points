@@ -65,6 +65,7 @@ interface JTFamily {
 interface Props {
   event: Event
   attendance: AttendanceRow[]
+  attendanceLoadError?: string | null
   publishedSnapshot: PublishedSnapshot | null
   jtFamilies: JTFamily[]
   mixerFamilyIds: string[]
@@ -88,6 +89,7 @@ const btnSecondaryClassName =
 export default function EventDetailClient({
   event,
   attendance,
+  attendanceLoadError = null,
   publishedSnapshot,
   jtFamilies,
   mixerFamilyIds,
@@ -513,11 +515,18 @@ export default function EventDetailClient({
 
       <div className="mb-3 flex items-center justify-between">
         <h2 className="text-lg font-bold text-text">Attendance</h2>
-        <span className="text-sm text-subtitle">{attendance.length} checked in</span>
+        <span className="text-sm text-subtitle">
+          {attendanceLoadError ? '—' : `${attendance.length} checked in`}
+        </span>
       </div>
 
       <div className="overflow-hidden rounded-4xl border border-home-border bg-white shadow-sm">
-        {attendance.length === 0 && (
+        {attendanceLoadError && (
+          <div className="px-5 py-6 text-sm text-red-600">
+            Could not load attendance. Refresh the page to try again.
+          </div>
+        )}
+        {!attendanceLoadError && attendance.length === 0 && (
           <EmptyState
             icon={ClipboardList}
             title="No check-ins yet"
@@ -525,7 +534,7 @@ export default function EventDetailClient({
             compact
           />
         )}
-        {attendance.map(row => {
+        {!attendanceLoadError && attendance.map(row => {
           const displayName = row.members?.full_name ?? 'Unknown member'
           return (
           <div key={row.id} className="flex items-center gap-3 border-b border-home-border px-5 py-3 last:border-b-0 sm:gap-4">

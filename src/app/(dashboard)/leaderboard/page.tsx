@@ -1,11 +1,10 @@
 import LeaderboardClient from '@/app/(dashboard)/leaderboard/components/LeaderboardClient'
-import { getActiveSemester } from '@/utils/supabase/auth'
-import { createServerSupabase } from '@/utils/supabase/server'
+import { getActiveSemester, getAuthUser } from '@/utils/supabase/auth'
 
 export default async function LeaderboardPage() {
-  const supabase = await createServerSupabase()
+  const { supabase } = await getAuthUser()
 
-  const [{ data: members }, semester] = await Promise.all([
+  const [{ data: members, error: membersError }, semester] = await Promise.all([
     supabase
       .from('v_current_leaderboard')
       .select('id, full_name, profile_image_url, jt_family, jt_color, total_points')
@@ -14,10 +13,15 @@ export default async function LeaderboardPage() {
     getActiveSemester(),
   ])
 
+  if (membersError) {
+    console.error('Failed to load leaderboard:', membersError.message)
+  }
+
   return (
     <LeaderboardClient
-      members={members ?? []}
+      members={membersError ? [] : (members ?? [])}
       semester={semester ? { name: semester.name } : null}
+      loadError={membersError?.message ?? null}
     />
   )
 }

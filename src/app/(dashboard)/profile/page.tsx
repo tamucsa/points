@@ -11,12 +11,16 @@ export default async function ProfilePage() {
   if (!user) redirect('/')
   if (!member) redirect('/')
 
-  const [{ data: points }, { data: attendance }, { data: history }] = await Promise.all([
+  const [
+    { data: points, error: pointsError },
+    { data: attendance, error: attendanceError },
+    { data: history, error: historyError },
+  ] = await Promise.all([
     supabase
       .from('v_current_leaderboard')
       .select('total_points, csa_points, jt_points, sports_points, gm_points, jt_family, jt_color')
       .eq('id', member.id)
-      .single(),
+      .maybeSingle(),
     supabase
       .from('attendance')
       .select(`
@@ -42,18 +46,24 @@ export default async function ProfilePage() {
       .order('created_at', { ascending: false }),
   ])
 
-  const normalizedAttendance = (attendance ?? []).map((row) => ({
-    ...row,
-    events: Array.isArray(row.events)
-      ? (row.events[0] ?? {
-          name: '',
-          category: '',
-          point_value: 0,
-          starts_at: '',
-          ends_at: null,
-        })
-      : row.events,
-  }))
+  if (pointsError) console.error('Failed to load profile points:', pointsError.message)
+  if (attendanceError) console.error('Failed to load profile attendance:', attendanceError.message)
+  if (historyError) console.error('Failed to load profile history:', historyError.message)
+
+  const normalizedAttendance = attendanceError
+    ? []
+    : (attendance ?? []).map((row) => ({
+        ...row,
+        events: Array.isArray(row.events)
+          ? (row.events[0] ?? {
+              name: '',
+              category: '',
+              point_value: 0,
+              starts_at: '',
+              ends_at: null,
+            })
+          : row.events,
+      }))
 
   return (
     <ProfileClient
@@ -63,10 +73,13 @@ export default async function ProfilePage() {
         profile_image_url: member.profile_image_url,
         graduation_year: member.graduation_year ?? null,
       }}
-      points={points}
+      points={pointsError ? null : points}
       attendance={normalizedAttendance}
-      history={history ?? []}
+      history={historyError ? [] : (history ?? [])}
       semesterName={semester?.name ?? null}
+      pointsLoadError={pointsError?.message ?? null}
+      attendanceLoadError={attendanceError?.message ?? null}
+      historyLoadError={historyError?.message ?? null}
     />
   )
 }

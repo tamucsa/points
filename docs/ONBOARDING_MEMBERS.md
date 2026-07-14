@@ -43,6 +43,7 @@ On **Events** (`/events`):
 
 - Points are earned by attending events.
 - Your totals are computed for the **active semester**.
+- On **My Points**, the **Sports & Dance** bucket includes Sports, Sports Spectator, and Dance events (same as the leaderboard sports column).
 - Some attendance may be marked “not counted” if caps apply (Sports Spectator semester limit; Jiating Event / Mixer weekly limit of 4 counting events Mon–Sun). Officers/admins: full policy in `docs/OPERATIONS.md` → **Points rules**.
 
 ## Troubleshooting

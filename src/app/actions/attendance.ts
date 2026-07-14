@@ -2,7 +2,19 @@
 
 import { createActionSupabase } from '@/utils/supabase/action'
 
-export async function selfCheckIn(eventId: string, semesterId: string) {
+async function readCountedAfterTriggers(
+  supabase: Awaited<ReturnType<typeof createActionSupabase>>,
+  attendanceId: string,
+) {
+  const { data } = await supabase
+    .from('attendance')
+    .select('counted')
+    .eq('id', attendanceId)
+    .maybeSingle()
+  return data?.counted ?? true
+}
+
+export async function selfCheckIn(eventId: string, _semesterId?: string) {
   const supabase = await createActionSupabase()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return { success: false, error: 'Not authenticated.', counted: false }
@@ -18,15 +30,32 @@ export async function selfCheckIn(eventId: string, semesterId: string) {
     return { success: false, error: 'Your account must be active to check in.', counted: false }
   }
 
+  const { data: event } = await supabase
+    .from('events')
+    .select('id, semester_id, check_in_type')
+    .eq('id', eventId)
+    .maybeSingle()
+
+  if (!event) {
+    return { success: false, error: 'Event not found.', counted: false }
+  }
+  if (event.check_in_type !== 'self') {
+    return {
+      success: false,
+      error: 'This event does not support self check-in.',
+      counted: false,
+    }
+  }
+
   const { data: inserted, error } = await supabase
     .from('attendance')
     .insert({
       member_id: member.id,
       event_id: eventId,
-      semester_id: semesterId,
+      semester_id: event.semester_id,
       check_in_method: 'qr_scan',
     })
-    .select('counted')
+    .select('id')
     .single()
 
   if (error) {
@@ -36,13 +65,14 @@ export async function selfCheckIn(eventId: string, semesterId: string) {
     return { success: false, error: 'Check-in failed. Please try again or ask an officer.', counted: false }
   }
 
-  return { success: true, error: null, counted: inserted?.counted ?? true }
+  const counted = await readCountedAfterTriggers(supabase, inserted.id)
+  return { success: true, error: null, counted }
 }
 
-export async function officerCheckIn(eventId: string, semesterId: string, memberId: string) {
+export async function officerCheckIn(eventId: string, _semesterId: string, memberId: string) {
   const supabase = await createActionSupabase()
   const { data: { user } } = await supabase.auth.getUser()
-  if (!user) return { success: false, error: 'Not authenticated.' }
+  if (!user) return { success: false, error: 'Not authenticated.', counted: false }
 
   const { data: officer } = await supabase
     .from('members')
@@ -51,17 +81,17 @@ export async function officerCheckIn(eventId: string, semesterId: string, member
     .maybeSingle()
 
   if (!officer || !['officer', 'admin'].includes(officer.role)) {
-    return { success: false, error: 'Officer access required.' }
+    return { success: false, error: 'Officer access required.', counted: false }
   }
 
   const { data: event } = await supabase
     .from('events')
-    .select('scope, jt_family_id')
+    .select('scope, jt_family_id, semester_id')
     .eq('id', eventId)
     .maybeSingle()
 
   if (!event) {
-    return { success: false, error: 'Event not found.' }
+    return { success: false, error: 'Event not found.', counted: false }
   }
 
   const { data: member } = await supabase
@@ -71,7 +101,7 @@ export async function officerCheckIn(eventId: string, semesterId: string, member
     .maybeSingle()
 
   if (!member) {
-    return { success: false, error: 'Member not found.' }
+    return { success: false, error: 'Member not found.', counted: false }
   }
 
   if (event.scope === 'jt_specific' && event.jt_family_id) {
@@ -79,6 +109,7 @@ export async function officerCheckIn(eventId: string, semesterId: string, member
       return {
         success: false,
         error: 'Only members in this Jiating can be checked in to this event.',
+        counted: false,
       }
     }
   }
@@ -95,12 +126,14 @@ export async function officerCheckIn(eventId: string, semesterId: string, member
         return {
           success: false,
           error: 'Only members in the participating Jiatings can be checked in to this event.',
+          counted: false,
         }
       }
     } else if (!member.jt_family_id) {
       return {
         success: false,
         error: 'Only members assigned to a Jiating can be checked in to this event.',
+        counted: false,
       }
     }
   }
@@ -108,10 +141,10 @@ export async function officerCheckIn(eventId: string, semesterId: string, member
   const { data: inserted, error } = await supabase.from('attendance').insert({
     member_id: memberId,
     event_id: eventId,
-    semester_id: semesterId,
+    semester_id: event.semester_id,
     check_in_method: 'officer',
     recorded_by: officer.id,
-  }).select('counted').single()
+  }).select('id').single()
 
   if (error) {
     if (error.code === '23505') {
@@ -120,7 +153,8 @@ export async function officerCheckIn(eventId: string, semesterId: string, member
     return { success: false, error: 'Check-in failed. Please try again.', counted: false }
   }
 
-  return { success: true, error: null, counted: inserted?.counted ?? true }
+  const counted = await readCountedAfterTriggers(supabase, inserted.id)
+  return { success: true, error: null, counted }
 }
 
 export async function officerRemoveCheckIn(eventId: string, memberId: string) {

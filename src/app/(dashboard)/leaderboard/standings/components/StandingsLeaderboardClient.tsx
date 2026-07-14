@@ -5,7 +5,7 @@ import JtFamilyBadge from '@/app/(dashboard)/leaderboard/components/JtFamilyBadg
 import LeaderboardTabs from '@/app/(dashboard)/leaderboard/components/LeaderboardTabs'
 import EmptyState from '@/app/components/EmptyState'
 import PageHeader from '@/app/components/PageHeader'
-import { Medal } from 'lucide-react'
+import { AlertCircle, Medal } from 'lucide-react'
 
 interface Snapshot {
   id: string
@@ -26,6 +26,7 @@ interface Props {
   selectedSnapshotId: string | null
   selectedSnapshot: Snapshot | null
   rows: StandingsRow[]
+  loadError?: string | null
 }
 
 function formatSnapshotLabel(snapshot: Snapshot) {
@@ -43,6 +44,7 @@ export default function StandingsLeaderboardClient({
   selectedSnapshotId,
   selectedSnapshot,
   rows,
+  loadError = null,
 }: Props) {
   const router = useRouter()
 
@@ -56,7 +58,7 @@ export default function StandingsLeaderboardClient({
 
       <LeaderboardTabs />
 
-      {snapshots.length > 1 && (
+      {!loadError && snapshots.length > 1 && (
         <div className="mb-4">
           <label className="mb-1.5 block text-xs font-semibold uppercase tracking-[0.06em] text-subtitle">
             Snapshot
@@ -78,7 +80,7 @@ export default function StandingsLeaderboardClient({
         </div>
       )}
 
-      {selectedSnapshot && (
+      {!loadError && selectedSnapshot && (
         <p className="mb-4 text-xs text-subtitle">
           As of {new Date(selectedSnapshot.snapshot_at).toLocaleString('en-US', {
             month: 'long',
@@ -98,7 +100,15 @@ export default function StandingsLeaderboardClient({
           <div className="text-right">Total</div>
         </div>
 
-        {rows.length === 0 ? (
+        {loadError ? (
+          <EmptyState
+            icon={AlertCircle}
+            title="Couldn’t load standings"
+            description="Refresh the page to try again."
+            compact
+            className="px-8 py-12"
+          />
+        ) : rows.length === 0 ? (
           <EmptyState
             icon={Medal}
             title="No standings published yet for this semester"

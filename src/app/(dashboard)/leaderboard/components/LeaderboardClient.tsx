@@ -5,7 +5,7 @@ import MemberAvatar from '@/app/components/MemberAvatar'
 import EmptyState from '@/app/components/EmptyState'
 import PageHeader from '@/app/components/PageHeader'
 import LeaderboardTabs from '@/app/(dashboard)/leaderboard/components/LeaderboardTabs'
-import { Users } from 'lucide-react'
+import { AlertCircle, Users } from 'lucide-react'
 
 interface Member {
   id: string
@@ -19,9 +19,10 @@ interface Member {
 interface Props {
   members: Member[]
   semester: { name: string } | null
+  loadError?: string | null
 }
 
-export default function LeaderboardClient({ members, semester }: Props) {
+export default function LeaderboardClient({ members, semester, loadError = null }: Props) {
   return (
     <div className="mx-auto max-w-2xl px-6 py-8 lg:px-8">
       <PageHeader
@@ -39,7 +40,17 @@ export default function LeaderboardClient({ members, semester }: Props) {
           <div className="text-right">Total</div>
         </div>
 
-        {members.length === 0 && (
+        {loadError && (
+          <EmptyState
+            icon={AlertCircle}
+            title="Couldn’t load leaderboard"
+            description="Refresh the page to try again."
+            compact
+            className="px-10 py-12"
+          />
+        )}
+
+        {!loadError && members.length === 0 && (
           <EmptyState
             icon={Users}
             title="No active members yet"
@@ -49,7 +60,7 @@ export default function LeaderboardClient({ members, semester }: Props) {
           />
         )}
 
-        {members.map((m, i) => {
+        {!loadError && members.map((m, i) => {
           const displayName = m.full_name
 
           return (

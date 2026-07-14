@@ -24,7 +24,7 @@ This document explains how the system is structured, how requests flow through t
   - `action.ts`: Server Actions (writable cookies)
   - `admin.ts`: Service-role client for admin-only operations (semester close, roster import inserts, JT transfer logging)
   - `client.ts`: Browser client
-  - `auth.ts`: cached helpers to deduplicate auth/member lookups in a single request
+  - `auth.ts`: cached helpers (`getAuthUser`, `getCurrentMember`, `getActiveSemester`) to deduplicate auth/member lookups in a single request; prefer these in dashboard RSC pages over raw `createServerSupabase()` + `getUser()`
 - `supabase/migrations/`: SQL migrations for schema/views/security/indexes.
 
 ## Data model (high-level)
@@ -55,6 +55,8 @@ Derived views / RPCs (used by UI):
 - `v_current_leaderboard`: active members + points breakdown for the active semester from `member_semester_points` (not a live re-sum of all attendance); includes `account_linked` (`auth_uid IS NOT NULL`) for officer sign-in status (not shown on public leaderboard UI)
 - `v_jt_leaderboard`: per-jiating aggregation for the active semester (source for GM snapshot publish)
 - `attendance_counts_for_semester(semester_id)`: per-event attendance counts for Officer Events (SQL `GROUP BY`, not a full attendance row fetch)
+- `top_leaderboard_members_per_jt(limit)`: top N members per Jiating for `/leaderboard/jiatings` without loading the full leaderboard
+- `close_semester(semester_id)`: archives `member_semester_points` into `semester_summaries` and deactivates the semester (service role)
 
 ## Request flow
 
@@ -80,6 +82,13 @@ Most routes fetch data via Supabase server client.
 Performance note:
 - Use cached helpers in `src/utils/supabase/auth.ts` to avoid repeated `getUser()`/member queries.
 - `/profile` reuses those helpers and loads points, attendance, and history with `Promise.all` after member + semester are known.
+- Unbounded selects can silently truncate near PostgREST `max-rows` (~1000). Prefer `fetchAllPages` (`src/utils/supabase/fetchAll.ts`), SQL aggregation RPCs (e.g. `attendance_counts_for_semester`, `top_leaderboard_members_per_jt`), or `count`/`head` queries.
+
+## Schema / migrations ownership
+
+- New DB changes belong in `supabase/migrations/*.sql` and must be applied to production before code that depends on them.
+- Migrations are **not** a complete bootstrap of production. See `docs/LOCAL_SETUP.md` → **Baseline schema gap**.
+- Semester close archives cached totals via `close_semester(p_semester_id)` (service role only).
 
 ## Auth & onboarding
 

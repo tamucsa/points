@@ -2,7 +2,7 @@ import { redirect } from 'next/navigation'
 import AdminMembersClient from '@/app/(dashboard)/(admin)/admin/members/components/AdminMembersClient'
 import { OFFICER_MEMBERS_PAGE_SIZE } from '@/utils/constants'
 import { isMemberRole, type MemberRole } from '@/utils/members'
-import { createServerSupabase } from '@/utils/supabase/server'
+import { getCurrentMember } from '@/utils/supabase/auth'
 
 interface SearchParams {
   tab?: string
@@ -16,18 +16,8 @@ export default async function AdminMembersPage({
 }: {
   searchParams: Promise<SearchParams>
 }) {
-  const supabase = await createServerSupabase()
-
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) redirect('/')
-
-  const { data: adminMember } = await supabase
-    .from('members')
-    .select('id')
-    .eq('auth_uid', user.id)
-    .maybeSingle()
-
-  if (!adminMember) redirect('/')
+  const { supabase, user, member: adminMember } = await getCurrentMember()
+  if (!user || !adminMember) redirect('/')
 
   const {
     tab: tabParam,

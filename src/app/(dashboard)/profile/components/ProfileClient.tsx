@@ -6,7 +6,7 @@ import JtFamilyBadge from '@/app/(dashboard)/leaderboard/components/JtFamilyBadg
 import MemberAvatar from '@/app/components/MemberAvatar'
 import EmptyState from '@/app/components/EmptyState'
 import PageHeader from '@/app/components/PageHeader'
-import { Calendar } from 'lucide-react'
+import { AlertCircle, Calendar } from 'lucide-react'
 
 interface Member {
   id: string
@@ -52,6 +52,9 @@ interface Props {
   attendance: AttendanceRow[]
   history: SemmarySummary[]
   semesterName: string | null
+  pointsLoadError?: string | null
+  attendanceLoadError?: string | null
+  historyLoadError?: string | null
 }
 
 const CATEGORY_COLORS: Record<string, string> = {
@@ -68,7 +71,16 @@ const CHECKIN_LABELS: Record<string, string> = {
   self:    'Self',
 }
 
-export default function ProfileClient({ member, points, attendance, history, semesterName }: Props) {
+export default function ProfileClient({
+  member,
+  points,
+  attendance,
+  history,
+  semesterName,
+  pointsLoadError = null,
+  attendanceLoadError = null,
+  historyLoadError = null,
+}: Props) {
   const displayName = member.full_name
   const color = points?.jt_color ?? '#4779B8'
 
@@ -111,30 +123,43 @@ export default function ProfileClient({ member, points, attendance, history, sem
         </div>
         <div className="text-right">
           <div className="text-5xl font-extrabold tracking-[-2px] text-text">
-            {points?.total_points ?? 0}
+            {pointsLoadError ? '—' : (points?.total_points ?? 0)}
           </div>
           <div className="text-sm text-subtitle">total points</div>
         </div>
       </div>
 
-      {/* Point Breakdown */}
-      <div className="mb-8">
-        <h2 className="mb-3 text-lg font-bold text-text">
-          Point Breakdown
-        </h2>
-        <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-          {breakdown.map(cat => (
-            <div key={cat.label} className="rounded-3xl border border-home-border bg-white p-4 text-center shadow-sm">
-              <div className="text-3xl font-extrabold text-primary">
-                {cat.value}
-              </div>
-              <div className="mt-2 text-xs text-subtitle">
-                {cat.label}
-              </div>
-            </div>
-          ))}
+      {pointsLoadError && (
+        <div className="mb-8 overflow-hidden rounded-4xl border border-home-border bg-white shadow-sm">
+          <EmptyState
+            icon={AlertCircle}
+            title="Couldn’t load points"
+            description="Refresh the page to try again."
+            compact
+          />
         </div>
-      </div>
+      )}
+
+      {/* Point Breakdown */}
+      {!pointsLoadError && (
+        <div className="mb-8">
+          <h2 className="mb-3 text-lg font-bold text-text">
+            Point Breakdown
+          </h2>
+          <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+            {breakdown.map(cat => (
+              <div key={cat.label} className="rounded-3xl border border-home-border bg-white p-4 text-center shadow-sm">
+                <div className="text-3xl font-extrabold text-primary">
+                  {cat.value}
+                </div>
+                <div className="mt-2 text-xs text-subtitle">
+                  {cat.label}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* Attendance History */}
       <div className="mb-8">
@@ -142,7 +167,15 @@ export default function ProfileClient({ member, points, attendance, history, sem
           This Semester
         </h2>
         <div className="overflow-hidden rounded-4xl border border-home-border bg-white shadow-sm">
-          {attendance.length === 0 && (
+          {attendanceLoadError && (
+            <EmptyState
+              icon={AlertCircle}
+              title="Couldn’t load attendance"
+              description="Refresh the page to try again."
+              compact
+            />
+          )}
+          {!attendanceLoadError && attendance.length === 0 && (
             <EmptyState
               icon={Calendar}
               title="No events attended yet this semester"
@@ -150,7 +183,7 @@ export default function ProfileClient({ member, points, attendance, history, sem
               compact
             />
           )}
-          {attendance.map((row, i) => {
+          {!attendanceLoadError && attendance.map((row) => {
             const cat = row.events?.category ?? 'default'
             const catColor = CATEGORY_COLORS[cat] ?? CATEGORY_COLORS.default
             return (
@@ -193,13 +226,23 @@ export default function ProfileClient({ member, points, attendance, history, sem
       </div>
 
       {/* Semester History */}
-      {history.length > 0 && (
+      {historyLoadError && (
+        <div className="mb-8 overflow-hidden rounded-4xl border border-home-border bg-white shadow-sm">
+          <EmptyState
+            icon={AlertCircle}
+            title="Couldn’t load past semesters"
+            description="Refresh the page to try again."
+            compact
+          />
+        </div>
+      )}
+      {!historyLoadError && history.length > 0 && (
         <div>
           <h2 className="mb-3 text-lg font-bold text-text">
             Past Semesters
           </h2>
           <div className="overflow-hidden rounded-4xl border border-home-border bg-white shadow-sm">
-            {history.map((sem, i) => (
+            {history.map((sem) => (
               <div key={sem.id} className="flex items-center justify-between border-b border-home-border px-5 py-4 last:border-b-0">
                 <div>
                   <div className="text-sm font-medium text-text">
