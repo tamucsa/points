@@ -12,7 +12,7 @@ export default async function DashboardLayout({
   if (!user) redirect('/')
   if (!member) redirect('/register')
 
-  if (member.status === 'pending_jt') redirect('/pending')
+  if (member.status === 'pending_member' || member.status === 'pending_jt') redirect('/pending')
 
   return (
     <div className="flex min-h-screen bg-bg text-text lg:h-screen lg:overflow-hidden">

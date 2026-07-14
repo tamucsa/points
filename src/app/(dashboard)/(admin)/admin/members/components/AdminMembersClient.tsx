@@ -2,7 +2,13 @@
 import { useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { FileText, ChevronDown } from 'lucide-react'
-import { activateMember, importMembers, type ImportMode, type JtChange } from '@/app/actions/members'
+import {
+  approvePendingMember,
+  assignMemberJt,
+  importMembers,
+  type ImportMode,
+  type JtChange,
+} from '@/app/actions/members'
 import AdminRolesPanel, {
   type RoleMember,
 } from '@/app/(dashboard)/(admin)/admin/members/components/AdminRolesPanel'
@@ -22,10 +28,11 @@ interface JTFamily {
   name: string
 }
 
-type AdminTab = 'pending' | 'import' | 'roles'
+type AdminTab = 'pending' | 'signups' | 'import' | 'roles'
 
 interface Props {
-  pending: PendingMember[]
+  pendingJt: PendingMember[]
+  pendingSignups: PendingMember[]
   jtFamilies: JTFamily[]
   initialTab: AdminTab
   currentAdminId: string
@@ -59,8 +66,8 @@ function buildMemberImportTemplate(jtFamilies: JTFamily[]) {
   const jt2 = jtFamilies[1]?.name ?? jt1
   return `Full Name,TAMU Email,Jiating,Phone,Class
 John Smith,john.smith@tamu.edu,${jt1},(979) 555-0101,2027
-Jane Doe,jane.doe@tamu.edu,${jt2},(979) 555-0102,2028
-Alex Chen,alex.chen@tamu.edu,${jt1},979-555-0199,2026`
+Jane Doe,jane.doe@tamu.edu,,(979) 555-0102,2028
+Alex Chen,alex.chen@tamu.edu,${jt2},979-555-0199,2026`
 }
 
 function downloadMemberImportTemplate(jtFamilies: JTFamily[]) {
@@ -101,7 +108,8 @@ function tabHref(tab: AdminTab) {
 }
 
 export default function AdminMembersClient({
-  pending: initialPending,
+  pendingJt: initialPendingJt,
+  pendingSignups: initialPendingSignups,
   jtFamilies,
   initialTab,
   currentAdminId,
@@ -113,7 +121,8 @@ export default function AdminMembersClient({
   roleFilter,
 }: Props) {
   const router = useRouter()
-  const [pending, setPending] = useState(initialPending)
+  const [pendingJt, setPendingJt] = useState(initialPendingJt)
+  const [pendingSignups, setPendingSignups] = useState(initialPendingSignups)
   const [assignments, setAssignments] = useState<Record<string, string>>({})
   const [saving, setSaving] = useState<string | null>(null)
   const [importResult, setImportResult] = useState<ImportResult | null>(null)
@@ -131,12 +140,32 @@ export default function AdminMembersClient({
 
     setSaving(memberId)
 
-    const result = await activateMember(memberId, jtFamilyId)
+    const result = await assignMemberJt(memberId, jtFamilyId)
     setSaving(null)
 
     if (!result.success) return
 
-    setPending(p => p.filter(m => m.id !== memberId))
+    setPendingJt(p => p.filter(m => m.id !== memberId))
+  }
+
+  const approveSignup = async (memberId: string) => {
+    const jtFamilyId = assignments[memberId] || null
+    setSaving(memberId)
+
+    const result = await approvePendingMember(memberId, jtFamilyId)
+    setSaving(null)
+
+    if (!result.success) return
+
+    setPendingSignups(p => p.filter(m => m.id !== memberId))
+    // If approved without JT, they appear under Pending JT.
+    if (!jtFamilyId) {
+      const approved = initialPendingSignups.find(m => m.id === memberId)
+        ?? pendingSignups.find(m => m.id === memberId)
+      if (approved) {
+        setPendingJt(p => [...p, approved].sort((a, b) => a.full_name.localeCompare(b.full_name)))
+      }
+    }
   }
 
   const processCsvFile = async (file: File) => {
@@ -221,14 +250,16 @@ export default function AdminMembersClient({
       <div className="mb-6">
         <h1 className="text-3xl font-bold tracking-tight text-text">Member Admin</h1>
         <div className="mt-1 text-sm text-subtitle">
-          {pending.length} pending JT assignment{pending.length === 1 ? '' : 's'} · Roles · CSV import
+          {pendingJt.length} awaiting JT · {pendingSignups.length} pending signup
+          {pendingSignups.length === 1 ? '' : 's'} · Roles · CSV import
         </div>
       </div>
 
       {/* Tabs */}
-      <div className="mb-6 inline-flex rounded-2xl border border-home-border bg-white p-1 shadow-sm">
+      <div className="mb-6 inline-flex flex-wrap rounded-2xl border border-home-border bg-white p-1 shadow-sm">
         {([
-          { id: 'pending' as const, label: `Pending JT (${pending.length})` },
+          { id: 'pending' as const, label: `Pending JT (${pendingJt.length})` },
+          { id: 'signups' as const, label: `Pending signup (${pendingSignups.length})` },
           { id: 'roles' as const, label: 'Roles' },
           { id: 'import' as const, label: 'CSV Import' },
         ]).map(t => (
@@ -243,15 +274,18 @@ export default function AdminMembersClient({
         ))}
       </div>
 
-      {/* Pending tab */}
+      {/* Pending JT — active members without a Jiating */}
       {tab === 'pending' && (
         <div className="overflow-hidden rounded-4xl border border-home-border bg-white shadow-sm">
-          {pending.length === 0 && (
+          <div className="border-b border-home-border bg-bg px-5 py-3 text-xs leading-5 text-subtitle">
+            Active members who can use the site but still need a Jiating (e.g. imported after dues, before sorting).
+          </div>
+          {pendingJt.length === 0 && (
             <div className="px-8 py-10 text-center text-sm text-subtitle">
-              No members pending JT assignment.
+              No active members waiting on a Jiating assignment.
             </div>
           )}
-          {pending.map(m => (
+          {pendingJt.map(m => (
             <div key={m.id} className="flex items-center gap-4 border-b border-home-border px-5 py-4 last:border-b-0">
               <MemberAvatar name={m.full_name} />
               <div className="flex-1">
@@ -280,11 +314,62 @@ export default function AdminMembersClient({
                 />
               </div>
               <button
-                onClick={() => assignJT(m.id)}
+                onClick={() => void assignJT(m.id)}
                 disabled={!assignments[m.id] || saving === m.id}
                 className="rounded-xl bg-primary px-4 py-2 text-sm font-semibold text-white transition disabled:cursor-not-allowed disabled:bg-[#9cb8d8]"
               >
-                {saving === m.id ? 'Saving…' : 'Activate'}
+                {saving === m.id ? 'Saving…' : 'Assign'}
+              </button>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* Pending signup — self-registered, gated from the site */}
+      {tab === 'signups' && (
+        <div className="overflow-hidden rounded-4xl border border-home-border bg-white shadow-sm">
+          <div className="border-b border-home-border bg-bg px-5 py-3 text-xs leading-5 text-subtitle">
+            Self-registered accounts waiting for membership approval. Approving makes them active; JT is optional.
+          </div>
+          {pendingSignups.length === 0 && (
+            <div className="px-8 py-10 text-center text-sm text-subtitle">
+              No pending signups.
+            </div>
+          )}
+          {pendingSignups.map(m => (
+            <div key={m.id} className="flex flex-col gap-3 border-b border-home-border px-5 py-4 last:border-b-0 sm:flex-row sm:items-center">
+              <MemberAvatar name={m.full_name} />
+              <div className="min-w-0 flex-1">
+                <div className="text-sm font-medium text-text">
+                  {m.full_name}
+                </div>
+                <div className="text-xs text-subtitle">{m.email}</div>
+                {m.graduation_year && (
+                  <div className="text-xs text-subtitle/80">Class of {m.graduation_year}</div>
+                )}
+              </div>
+              <div className="relative">
+                <select
+                  value={assignments[m.id] ?? ''}
+                  onChange={e => setAssignments(a => ({ ...a, [m.id]: e.target.value }))}
+                  className="cursor-pointer appearance-none rounded-xl border border-home-border bg-white py-2 pl-3 pr-10 text-sm text-text shadow-sm"
+                >
+                  <option value="">JT optional…</option>
+                  {jtFamilies.map(jt => (
+                    <option key={jt.id} value={jt.id}>{jt.name}</option>
+                  ))}
+                </select>
+                <ChevronDown
+                  className="pointer-events-none absolute right-3 top-1/2 size-4 -translate-y-1/2 text-subtitle"
+                  aria-hidden
+                />
+              </div>
+              <button
+                onClick={() => void approveSignup(m.id)}
+                disabled={saving === m.id}
+                className="rounded-xl bg-primary px-4 py-2 text-sm font-semibold text-white transition disabled:cursor-not-allowed disabled:bg-[#9cb8d8]"
+              >
+                {saving === m.id ? 'Saving…' : 'Approve'}
               </button>
             </div>
           ))}
@@ -332,8 +417,8 @@ export default function AdminMembersClient({
 
           <p className="mb-4 text-sm leading-6 text-subtitle">
             {importMode === 'full'
-              ? 'Upload the full CSA roster at the start of fall. New members are created; existing emails are updated only where CSV values differ.'
-              : 'Upload only changed rows for spring (JT transfers, new members, or profile fixes). Unlisted members are left unchanged.'}
+              ? 'Upload the CSA roster after dues. New members are created as active (portal access). Jiating may be blank until sorting — leave it empty or fill it later with another import / Pending JT.'
+              : 'Upload only changed rows for spring (JT transfers, new members, or profile fixes). Unlisted members are left unchanged. Blank Jiating keeps the existing assignment.'}
           </p>
 
           <div className="mb-4 overflow-hidden rounded-2xl border border-home-border bg-bg text-sm">
@@ -344,7 +429,7 @@ export default function AdminMembersClient({
               {[
                 { name: 'Full Name', required: true, note: 'Complete name as shown in the app' },
                 { name: 'TAMU Email', required: true, note: 'Must be a @tamu.edu address' },
-                { name: 'Jiating', required: true, note: 'Must match an active Jiating name (see below)' },
+                { name: 'Jiating', required: false, note: 'Optional — match an active Jiating name, or leave blank until sorting' },
                 { name: 'Phone', required: true, note: 'Contact phone number' },
                 { name: 'Class', required: true, note: 'Graduation year, e.g. 2027' },
               ].map(col => (

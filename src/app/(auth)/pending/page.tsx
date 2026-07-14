@@ -22,6 +22,10 @@ export default async function PendingPage() {
     redirect('/leaderboard')
   }
 
+  if (member?.status !== 'pending_member' && member?.status !== 'pending_jt') {
+    redirect('/')
+  }
+
   return (
     <PublicPageShell showFooter={false}>
       <div className="flex min-h-[calc(100vh-5rem)] items-center justify-center">
@@ -39,10 +43,13 @@ export default async function PendingPage() {
                 You&apos;re registered!
               </h1>
               <p className="mx-auto mt-4 max-w-lg text-base leading-7 text-subtitle sm:text-lg">
-                This dashboard will be available to you once you join your jiating after the reveal! You&apos;ll get full access to the leaderboard and events once that&apos;s done.
+                An admin still needs to confirm your CSA membership before you can use the points
+                dashboard. If you already paid dues, make sure your email is on the roster — rostered
+                members skip this step after Google sign-in.
               </p>
               <p className="mx-auto mt-4 max-w-lg text-base leading-7 text-subtitle sm:text-lg">
-                Note that this is not the same as the registration form. If you haven&apos;t filled out the registration form yet and payed dues, please make sure to complete that!
+                Note that this is not the same as the registration form. If you haven&apos;t filled
+                out the membership registration form and paid dues, please make sure to complete that!
               </p>
             </div>
 
@@ -50,13 +57,13 @@ export default async function PendingPage() {
               <div className="rounded-2xl border border-home-border bg-white/85 p-4 shadow-sm">
                 <div className="text-sm font-semibold text-primary">Next Step</div>
                 <div className="mt-1 text-sm leading-6 text-subtitle">
-                  Wait for Jiating Reveal!
+                  Wait for an admin to approve your account.
                 </div>
               </div>
               <div className="rounded-2xl border border-home-border bg-white/85 p-4 shadow-sm">
                 <div className="text-sm font-semibold text-accent">Access</div>
                 <div className="mt-1 text-sm leading-6 text-subtitle">
-                  Your leaderboard event list will unlock after sorting.
+                  Leaderboard and events unlock once you&apos;re an active member.
                 </div>
               </div>
             </div>

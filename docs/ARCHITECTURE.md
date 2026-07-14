@@ -49,7 +49,7 @@ Core tables (names reflect actual schema):
 `members.full_name` is the only name column — shown on the leaderboard, member lists, and profile.
 
 - **Self-registration** (`/register`): first and last name from the form are concatenated into `full_name`.
-- **Admin CSV import**: roster columns map to `full_name`, email, phone, class (stored as `graduation_year`), and **Jiating** (resolved to `jt_family_id`). New rows are inserted as `active`; existing emails get diff-based updates only. Jiating transfers are logged to `jt_transfer_log`. Inserts use the service-role client after an admin server-action check.
+- **Admin CSV import**: roster columns map to `full_name`, email, phone, class (stored as `graduation_year`), and optional **Jiating** (resolved to `jt_family_id`). New rows are inserted as `active` even without a Jiating so dues-paid members can use the portal before sorting. Existing emails get diff-based updates only (blank Jiating does not clear an existing assignment). Jiating transfers are logged to `jt_transfer_log`. Inserts use the service-role client after an admin server-action check.
 
 Registration helpers live in `src/utils/members.ts`.
 
@@ -73,7 +73,7 @@ Public routes (no sign-in required): `/`, `/login` (redirects to `/` when logged
 ### 2) Layout gating
 `src/app/(dashboard)/layout.tsx` loads the current member (`getCurrentMember`) and:
 - redirects missing members to `/register`
-- redirects `pending_jt` to `/pending`
+- redirects `pending_member` (and legacy `pending_jt`) to `/pending`
 - renders the app shell (`Sidebar` + page content)
 
 `pending` page redirects active members to `/leaderboard`. Officer/admin sections have their own layouts that enforce role membership.
@@ -103,13 +103,14 @@ Performance note:
   - then by email
 - Redirects users to:
   - `/register` if no member row exists,
-  - `/pending` if member is pending JT assignment,
+  - `/pending` if member is not `active` (e.g. `pending_member`),
   - `/leaderboard` otherwise.
 
 ### Member lifecycle states
 `members.status` is an enum-like field used for gating:
-- `pending_jt`: needs admin assignment to a Jiating
-- `active`: full access
+- `pending_member`: self-registered; needs admin approval before dashboard access
+- `active`: full access (Jiating may still be null — use admin **Pending JT** to assign)
+- Legacy `pending_jt` may still redirect to `/pending` if present
 - (others may exist: alumni/inactive, depending on schema)
 
 ## Role model

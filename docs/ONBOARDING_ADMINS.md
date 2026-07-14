@@ -12,41 +12,44 @@ Admins must have `members.role = 'admin'`. Admin pages are under `/admin/*`.
 - Confirm the active semester is correct.
 - Confirm the Jiating list for the active school year is accurate (`/admin/semesters` — edit names/colors as needed).
 
-## Member onboarding workflow (pending → active)
+## Member onboarding workflows
 
-### 1) Review pending members
-Pending members are `members.status = 'pending_jt'`.
+### Self-registration (pending_member → active)
 
-### 2) Assign Jiating
-- Set `members.jt_family_id` for the member.
+1. Review **Pending signup** (`/admin/members?tab=signups`). These are `members.status = 'pending_member'`.
+2. Optionally assign a Jiating.
+3. Click **Approve** → status becomes `active` (JT optional). Member gains dashboard access.
 
-### 3) Activate
-- Change status to `active`.
+### Pending JT (active, no Jiating)
 
-Result:
+1. Open **Pending JT** (`/admin/members`). These are `active` members with `jt_family_id` null.
+2. Assign a Jiating and click **Assign**.
+3. Access does not change — they were already active (e.g. CSV import before sorting).
+
+Result of approval:
 - Member gains access to dashboard pages (leaderboard/events/profile).
 
 ## CSV member import
 
-Bulk import is the primary way to load the full CSA roster after Jiating sorting.
+Bulk import is the primary way to load the CSA roster after dues (Jiating can wait until sorting).
 
 | Column | Required | Notes |
 |--------|----------|-------|
 | `Full Name` | Yes | Complete name as shown in the app |
 | `TAMU Email` | Yes | Must be `@tamu.edu` |
-| `Jiating` | Yes | Must match an active Jiating in `jt_families` |
+| `Jiating` | No | Optional; must match an active Jiating when provided. Leave blank until sorting — member is still created as `active` and can use the portal |
 | `Phone` | Yes | Contact phone number |
 | `Class` | Yes | Graduation year, e.g. `2027` (stored as `graduation_year`) |
 
-- **New emails** → inserted as `active` with `jt_family_id` set.
-- **Existing emails** → only changed fields are updated; unchanged rows are skipped.
+- **New emails** → inserted as `active` with `jt_family_id` set when provided (otherwise null until assigned later).
+- **Existing emails** → only changed fields are updated; unchanged rows are skipped. A blank Jiating column does **not** clear an existing assignment.
 - **Jiating transfers** — spring import only, when a member already had a Jiating and moves to a different one; logged in `jt_transfer_log`. Fall roster assignment and first-time Jiating assignment are not transfers.
 
-Use **Full roster (fall)** for the start-of-year import. Use **Spring update (partial)** after fall close for JT transfers and mid-year additions only.
+Use **Full roster (fall)** for the start-of-year import (often before Jiating reveal). Use **Spring update (partial)** after fall close for JT transfers and mid-year additions only.
 
-Roster imports create `active` members with Jiating assigned. New rows are inserted via the server service role after an admin check (RLS allows admin bulk import of `active` members with `auth_uid IS NULL`).
+Roster imports create `active` members (Jiating optional). New rows are inserted via the server service role after an admin check.
 
-Members still sign in with Google once to link `auth_uid`. They skip the self-registration form — name, phone, class, and Jiating are already on the roster row — and land in the app as `active` after that first login.
+Members still sign in with Google once to link `auth_uid`. They skip the self-registration form — name, phone, and class are already on the roster row — and land in the app as `active` after that first login.
 
 ## Semester management
 

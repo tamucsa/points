@@ -27,7 +27,7 @@ export default async function AdminMembersPage({
   } = await searchParams
 
   const tab =
-    tabParam === 'import' || tabParam === 'roles' || tabParam === 'pending'
+    tabParam === 'import' || tabParam === 'roles' || tabParam === 'pending' || tabParam === 'signups'
       ? tabParam
       : 'pending'
   const page = Math.max(1, Number(pageParam) || 1)
@@ -35,11 +35,21 @@ export default async function AdminMembersPage({
   const roleFilter: 'all' | MemberRole =
     roleParam === 'all' || !isMemberRole(roleParam) ? 'all' : roleParam
 
-  const [{ data: pending }, { data: jtFamilies }] = await Promise.all([
+  const [
+    { data: pendingJt },
+    { data: pendingSignups },
+    { data: jtFamilies },
+  ] = await Promise.all([
     supabase
       .from('members')
       .select('id, full_name, email, graduation_year, created_at')
-      .eq('status', 'pending_jt')
+      .eq('status', 'active')
+      .is('jt_family_id', null)
+      .order('full_name', { ascending: true }),
+    supabase
+      .from('members')
+      .select('id, full_name, email, graduation_year, created_at')
+      .eq('status', 'pending_member')
       .order('created_at', { ascending: true }),
     supabase
       .from('jt_families')
@@ -90,7 +100,8 @@ export default async function AdminMembersPage({
 
   return (
     <AdminMembersClient
-      pending={pending ?? []}
+      pendingJt={pendingJt ?? []}
+      pendingSignups={pendingSignups ?? []}
       jtFamilies={jtFamilies ?? []}
       initialTab={tab}
       currentAdminId={adminMember.id}

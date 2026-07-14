@@ -38,9 +38,14 @@ Related docs:
 
 ### Overview
 
-New members authenticate with TAMU Google (`@tamu.edu`). The auth callback links their Supabase auth account to a `members` row (by `auth_uid` or email). Until an admin assigns a Jiating and activates them, they remain `pending_jt` and can only access onboarding routes.
+New members authenticate with TAMU Google (`@tamu.edu`). The auth callback links their Supabase auth account to a `members` row (by `auth_uid` or email).
 
-**States:** `pending_jt` → `active` (after admin assigns Jiating)
+**Access vs Jiating are separate:**
+- **CSV import** → always `active` (full site access), with or without a Jiating
+- **Self-registration** → `pending_member` (gated to `/pending`) until an admin approves → `active`
+- **Pending JT** in admin is for `active` members who still need `jt_family_id` assigned (not an access gate)
+
+**States (self-reg):** `pending_member` → `active` (after admin approval; JT optional)
 
 ### Step-by-step: Member self-registers
 
@@ -52,8 +57,8 @@ New members authenticate with TAMU Google (`@tamu.edu`). The auth callback links
   - Class (required)
   - Phone (optional)
 5. Member submits the form.
-6. System creates a `members` row with `status = pending_jt` and `role = member`.
-7. Member is redirected to `/pending` until an admin activates them.
+6. System creates a `members` row with `status = pending_member` and `role = member`.
+7. Member is redirected to `/pending` until an admin approves membership.
 
 ### Step-by-step: Admin bulk-imports members (CSV)
 
@@ -67,13 +72,13 @@ Use this at the start of a semester to pre-load the roster before members sign i
   | ------------ | -------- | ----------------------------------------------- |
   | `Full Name`  | Yes      | Complete name as shown in the app               |
   | `TAMU Email` | Yes      | Must be `@tamu.edu`                             |
-  | `Jiating`    | Yes      | Must match an active Jiating name in the system |
+  | `Jiating`    | No       | Optional; must match an active Jiating when set. Blank = no JT yet (still `active`, portal access). On update, blank keeps the existing JT |
   | `Phone`      | Yes      | Contact phone number                            |
   | `Class`      | Yes      | Graduation year, e.g. `2027`                    |
 
 4. Upload the CSV file.
 5. Review the import summary:
-  - **Added** — new `members` rows created as `active` with Jiating assigned
+  - **Added** — new `members` rows created as `active` (with or without Jiating)
   - **Updated** — existing email matched; only changed fields are written
   - **Unchanged** — row matched an existing member with identical data
   - **Jiating transfers** — spring import only: existing member moved from one Jiating to another (logged to `jt_transfer_log`)
@@ -93,21 +98,28 @@ After fall semester close and Jiating re-sorting, upload only rows that changed.
 4. Review the summary (especially **Jiating transfers**). Unlisted members are not modified.
 5. Start the new spring semester from `/admin/semesters` if not already active.
 
-### Step-by-step: Admin activates a pending member
+### Step-by-step: Admin approves a self-registered member
 
-1. Admin goes to `/admin/members` → **Pending** tab.
-2. Find the member in the pending list.
-3. Select their **Jiating** from the dropdown.
-4. Click **Activate** (or equivalent action for that row).
-5. System sets `jt_family_id` and `status = active`.
-6. Member can now access leaderboard, events, and profile on next visit.
+1. Admin goes to `/admin/members` → **Pending signup** tab.
+2. Find the member in the list.
+3. Optionally select a **Jiating** (not required for access).
+4. Click **Approve**.
+5. System sets `status = active` (and `jt_family_id` if chosen).
+6. Member can access leaderboard, events, and profile on next visit. If approved without a JT, they also appear under **Pending JT**.
+
+### Step-by-step: Admin assigns a Jiating (Pending JT)
+
+1. Admin goes to `/admin/members` → **Pending JT** tab.
+2. List shows `active` members with no `jt_family_id` (e.g. imported before sorting, or approved without JT).
+3. Select a Jiating and click **Assign**.
+4. Member stays `active`; only `jt_family_id` is updated. Site access does not change.
 
 ### Troubleshooting
 
 
 | Symptom                                | Likely cause                                 | Action                                                         |
 | -------------------------------------- | -------------------------------------------- | -------------------------------------------------------------- |
-| Member stuck on `/pending`             | Not activated or no Jiating assigned         | Admin activates in `/admin/members`                            |
+| Member stuck on `/pending`             | Still `pending_member` (self-reg)            | Admin approves in `/admin/members` → **Pending signup**        |
 | Member sent to `/register` after login | No member row and not imported               | Member completes registration, or admin imports them           |
 | Imported member shows "Not signed in"  | CSV row exists but `auth_uid` not linked yet | Member signs in once with Google; auth callback links by email |
 | Non-TAMU email rejected                | Domain enforcement in auth callback          | Member must use `@tamu.edu`                                    |
@@ -123,7 +135,7 @@ Points and leaderboards are scoped to the **active semester** (`semesters.is_act
 
 Closing a semester archives totals (via `close_semester` in the database, which copies `member_semester_points` into `semester_summaries`) and deactivates the semester. The RPC is service-role only; the admin UI calls it through `createAdminSupabase` after an admin auth check.
 
-**Spring close** (semester `start_date` month January–July): after archiving, clears `members.jt_family_id` for all **active** members. Status stays `active` (they are not moved to `pending_jt`). Fall close leaves Jiating assignments in place for the shared school year.
+**Spring close** (semester `start_date` month January–July): after archiving, clears `members.jt_family_id` for all **active** members. Status stays `active` (they are not moved to `pending_member`). Fall close leaves Jiating assignments in place for the shared school year.
 
 ### Step-by-step: Close the active semester
 
@@ -153,7 +165,7 @@ Closing a semester archives totals (via `close_semester` in the database, which 
 
 ### Typical annual flow
 
-1. **Late summer:** Start fall semester (placeholder Jiatings OK). Rename/recolor Jiatings when themes are decided. Full roster CSV after sorting → members sign in with Google.
+1. **Late summer:** Start fall semester (placeholder Jiatings OK). Import dues roster (Jiating optional) so members can sign in. Rename/recolor Jiatings when themes are decided, then assign Jiatings via a follow-up CSV or Pending JT.
 2. **End of fall:** Close fall semester on `/admin/semesters` (Jiating assignments kept).
 3. **Spring:** Spring partial CSV (JT transfers + new members) → start spring semester (same school-year Jiatings).
 4. **End of spring:** Close spring semester — archives totals and **clears** every active member’s Jiating (status stays active). New fall creates new-year Jiatings; fall roster reassigns members.
@@ -248,7 +260,7 @@ Member **Events** (`/events`) is narrower: only the member’s JT-specific event
 2. Member signs in if not already authenticated.
 3. Member confirms check-in on the check-in page.
 4. System inserts `attendance` with `check_in_method = qr_scan`.
-5. If the member is `pending_jt`, check-in is blocked with an error message.
+5. If the member is `pending_member`, check-in is blocked with an error message.
 
 ### Step-by-step: Verify attendance after an event
 
@@ -377,7 +389,7 @@ Roles (`member`, `officer`, `admin`) control access to officer and admin pages. 
   - You cannot demote the **last remaining admin**.
 4. The member should refresh (or sign out/in) so nav picks up officer/admin access.
 
-Only **active** members appear on the Roles tab. Pending JT members must be activated first.
+Only **active** members appear on the Roles tab. Self-registered users must be approved (`pending_member` → `active`) first.
 
 ---
 

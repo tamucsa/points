@@ -40,7 +40,7 @@ Operational recommendation:
 - Sign-in works (TAMU domain enforcement).
 - Redirects behave correctly for:
   - unauthenticated users
-  - `pending_jt` members
+  - `pending_member` members
   - active members
 - Officer routes are inaccessible to non-officers.
 - Admin routes are inaccessible to non-admins.
