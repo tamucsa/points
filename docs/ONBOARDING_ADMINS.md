@@ -46,7 +46,7 @@ Use **Full roster (fall)** for the start-of-year import. Use **Spring update (pa
 
 Roster imports create `active` members with Jiating assigned. New rows are inserted via the server service role after an admin check (RLS allows admin bulk import of `active` members with `auth_uid IS NULL`).
 
-Members still sign in with Google once to link `auth_uid`.
+Members still sign in with Google once to link `auth_uid`. They skip the self-registration form — name, phone, class, and Jiating are already on the roster row — and land in the app as `active` after that first login.
 
 ## Semester management
 

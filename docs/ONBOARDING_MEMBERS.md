@@ -6,18 +6,19 @@ This guide is for CSA members using the points system.
 
 1. Go to the site and click **Sign in with Google**.
 2. Use your **`@tamu.edu`** email.
-3. If prompted to register, complete the registration form.
-4. If you land on a “Pending Jiating” page, wait for an admin to assign you to a Jiating.
-5. Once active, you can view:
+3. If you were **already on the CSA roster** (CSV import), you skip the registration form — Google sign-in links your account and you go straight into the app (usually the leaderboard).
+4. If you were **not** on the roster, complete the registration form when prompted.
+5. If you land on a “Pending Jiating” page, wait for an admin to assign you to a Jiating.
+6. Once active, you can view:
    - **Leaderboard**
    - **Events**
    - **My Points**
 
-If you were added to the roster by an admin before signing in, you still need to **sign in with Google once** so your account links to your roster row. Until then, officers will see you as **Not signed in** on the member list.
+Roster-imported members still must **sign in with Google once** so their account links to the existing roster row. They do **not** fill out registration (name, class, and phone already came from the CSV). Until that first login, officers will see them as **Not signed in** on the member list.
 
 ## Registration form (name fields)
 
-The registration form asks for **first name** and **last name** separately (both required). They are combined and stored as your **full name** — this is what appears on the leaderboard and member lists.
+The registration form is only for members who were **not** pre-loaded via CSV import. It asks for **first name** and **last name** separately (both required). They are combined and stored as your **full name** — this is what appears on the leaderboard and member lists.
 
 Names are pre-filled from your Google account when possible; review and correct them before submitting.
 
