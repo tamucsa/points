@@ -58,6 +58,7 @@ export default function OfficerCheckinClient({
   const [checkedIn, setCheckedIn] = useState(() => new Set(checkedInIds))
   const [saving, setSaving] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
+  const [notice, setNotice] = useState<string | null>(null)
   const [uncheckTarget, setUncheckTarget] = useState<Member | null>(null)
   const [uncheckError, setUncheckError] = useState<string | null>(null)
   const [activeTabId, setActiveTabId] = useState<string | null>(defaultTabId)
@@ -89,6 +90,7 @@ export default function OfficerCheckinClient({
   const checkInMember = async (memberId: string) => {
     if (checkedIn.has(memberId)) return
     setError(null)
+    setNotice(null)
     setSaving(memberId)
 
     const result = await officerCheckIn(event.id, event.semester_id, memberId)
@@ -100,6 +102,12 @@ export default function OfficerCheckinClient({
     }
 
     setCheckedIn(prev => new Set([...prev, memberId]))
+    if (result.counted === false) {
+      const memberName = members.find(m => m.id === memberId)?.full_name ?? 'Member'
+      setNotice(
+        `${memberName} is checked in, but this attendance does not add points under current caps.`,
+      )
+    }
     setSaving(null)
   }
 
@@ -207,6 +215,12 @@ export default function OfficerCheckinClient({
       {error && (
         <div className="mb-4 rounded-2xl border border-[#f5b0b0] bg-[#fff4f4] p-3">
           <p className="text-sm text-[#c94b4b]">{error}</p>
+        </div>
+      )}
+
+      {notice && (
+        <div className="mb-4 rounded-2xl border border-primary/20 bg-primary/5 p-3">
+          <p className="text-sm text-subtitle">{notice}</p>
         </div>
       )}
 

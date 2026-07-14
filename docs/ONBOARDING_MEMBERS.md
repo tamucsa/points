@@ -43,7 +43,7 @@ On **Events** (`/events`):
 
 - Points are earned by attending events.
 - Your totals are computed for the **active semester**.
-- Some attendance may be marked “not counted” if caps/rules apply (e.g., specific spectator caps).
+- Some attendance may be marked “not counted” if caps apply (Sports Spectator semester limit; Jiating Event / Mixer weekly limit of 4 counting events Mon–Sun). Officers/admins: full policy in `docs/OPERATIONS.md` → **Points rules**.
 
 ## Troubleshooting
 

@@ -73,6 +73,7 @@ If you need an event outside your usual categories, create it only when the resp
 ### 3) Verify attendance
 - Confirm attendance count on the event detail page.
 - If there are duplicates or errors, coordinate with the Secretary for correction policies.
+- Jiating Event / Mixer check-ins may show as recorded but not counted after a member already has 4 counting JT Event/Mixer attendances that Mon–Sun week (America/Chicago). Cap details: `docs/OPERATIONS.md` → **Points rules**.
 
 ### 4) Publish Jiating standings (General Meeting only)
 - On a **General Meeting** event detail page, click **Publish Jiating standings** after check-in wraps up.

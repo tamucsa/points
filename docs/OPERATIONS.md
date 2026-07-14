@@ -16,6 +16,7 @@ Runbook for day-to-day CSA Points operations. Each section includes an **overvie
 | QR / self check-in | Officer + Member | `/officer/events/[id]/qr` + `/checkin/[code]` |
 | View leaderboard | Member | `/leaderboard`, `/leaderboard/jiatings`, `/leaderboard/standings` |
 | View own points | Member | `/profile` |
+| Points rules (values, caps) | — | This doc → [Points rules](#points-rules) |
 | Browse events | Member | `/events` |
 | Browse / filter events | Officer/Admin | `/officer/events` |
 | Edit event date / time / location | Officer/Admin | `/officer/events/[id]` → When and Where |
@@ -25,6 +26,7 @@ Runbook for day-to-day CSA Points operations. Each section includes an **overvie
 Related docs:
 - User guides: `docs/ONBOARDING_MEMBERS.md`, `docs/ONBOARDING_OFFICERS.md`, `docs/ONBOARDING_ADMINS.md`
 - Deployment: `docs/DEPLOYMENT.md`
+- Points policy: `docs/OPERATIONS.md` → **Points rules**
 - Known issues & planned features: [GitHub Issues](https://github.com/tamucsa/points/issues) (`known-issue`, `planned-feature` labels)
 
 ---
@@ -155,7 +157,7 @@ Officers and admins create events tied to the active semester. Each event has:
 - **Scope**: CSA-wide (`org`), JT shared (`jt_shared`), or JT-specific (`jt_specific`) — set automatically per category
 - **Check-in type**: officer, self (QR), or RSVP required — fixed for some categories; officer chooses for CSA-Wide and Sports
 
-Sports events can optionally create a linked **Spectator** child event (1 point, self check-in, capped at 10 points/semester per member via `attendance.counted`).
+Sports events can optionally create a linked **Spectator** child event (1 point, self check-in). Spectator semester point caps are under **[Points rules](#points-rules)**.
 
 ### Step-by-step: Browse Officer Events
 
@@ -237,7 +239,45 @@ Member **Events** (`/events`) is narrower: only the member’s JT-specific event
 
 ### Overview
 
-Points are earned through `attendance` rows linked to `events`. The `attendance.counted` flag supports rules like the Sports Spectator cap (max 10 points/semester). Leaderboards read from database views for the active semester.
+Points are earned through `attendance` rows linked to `events`. Only rows with `attendance.counted = true` add to totals. Leaderboards read from database views for the active semester. Category point values live in code (`src/utils/events.ts` → `CATEGORY_CONFIG`).
+
+### Points rules
+
+Canonical scoring policy for CSA Points. Change here when club policy changes; keep `CATEGORY_CONFIG` and DB triggers/jobs in sync.
+
+#### Category point values
+
+| Category | Points | Scope | Typical check-in |
+|----------|--------|-------|------------------|
+| General Meeting | 2 | CSA-wide | Self (QR) |
+| CSA-Wide | 3 | CSA-wide | Officer chooses / often self or officer |
+| Philanthropy | 3 | CSA-wide | Officer chooses |
+| Concessions | 3 | CSA-wide | Officer |
+| Jiating Olympics | 2 | JT shared | Officer |
+| Mixer | 2 | JT shared | Officer |
+| Jiating Event | 1 | JT specific | Officer |
+| Sports | 1 | CSA-wide | Officer (+ optional Spectator child) |
+| Dance | 1 | CSA-wide | Officer |
+| Sports Spectator | 1 | Linked child of Sports | Self (QR) |
+
+Leaderboard buckets (approx.):
+- **CSA** — CSA-Wide, Philanthropy, Concessions  
+- **JT** — Jiating Olympics, Jiating Event, Mixer  
+- **Sports** — Sports / Sports Spectator  
+- **GM** — General Meeting  
+
+#### Caps and `attendance.counted`
+
+| Rule | Status | Detail |
+|------|--------|--------|
+| **Sports Spectator semester cap** | **Enforced** | Per member, per active semester: counted Spectator points cannot exceed **10**. Extra Spectator check-ins record attendance with `counted = false` (DB trigger on insert). |
+| **Weekly Jiating Event + Mixer cap** | **Enforced** | Per member: at most **4** counting attendances for categories in `{Jiating Event, Mixer}` per week. Extra check-ins may still be recorded with `counted = false`. Week = **Monday 00:00 → Sunday 23:59**, America/Chicago. Prefer max points (`point_value` DESC, then `starts_at` ASC — Mixers before Jiating Events under current values). Live recompute on check-in / uncheck / relevant event `starts_at` or `category` changes (DB function + triggers). Hosting more than 4 events is allowed. **Jiating Olympics and all other categories are outside this cap.** |
+
+Attendance with `counted = false` still appears in history (profile / event detail) but does not add to leaderboard or totals.
+
+#### Timezone
+
+Event start/end and weekly windows use **America/Chicago**.
 
 ### Step-by-step: Member views their points
 

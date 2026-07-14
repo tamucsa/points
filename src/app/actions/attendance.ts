@@ -105,22 +105,22 @@ export async function officerCheckIn(eventId: string, semesterId: string, member
     }
   }
 
-  const { error } = await supabase.from('attendance').insert({
+  const { data: inserted, error } = await supabase.from('attendance').insert({
     member_id: memberId,
     event_id: eventId,
     semester_id: semesterId,
     check_in_method: 'officer',
     recorded_by: officer.id,
-  })
+  }).select('counted').single()
 
   if (error) {
     if (error.code === '23505') {
-      return { success: false, error: 'Member already checked in.' }
+      return { success: false, error: 'Member already checked in.', counted: false }
     }
-    return { success: false, error: 'Check-in failed. Please try again.' }
+    return { success: false, error: 'Check-in failed. Please try again.', counted: false }
   }
 
-  return { success: true, error: null }
+  return { success: true, error: null, counted: inserted?.counted ?? true }
 }
 
 export async function officerRemoveCheckIn(eventId: string, memberId: string) {
