@@ -328,18 +328,16 @@ Event start/end and weekly windows use **America/Chicago**.
 
 ### Overview
 
-There is no dedicated “undo check-in” UI yet. Corrections are handled at the database level or by marking attendance as not counted.
+**Presence** is officer-managed: check in or remove a check-in. **Points** (`attendance.counted`) are system-managed by caps (Sports Spectator semester limit; weekly Jiating Event / Mixer limit). Cap-limited attendance stays on the list with a Cap reached badge and does not add points — do not remove someone just because they hit a cap.
 
-### Step-by-step: Correct a mistaken check-in (interim)
+### Step-by-step: Correct a mistaken check-in
 
-1. Identify the incorrect `attendance` row (via event detail page or Supabase).
-2. Decide the correction:
-  - **Remove** the row entirely (member was never there), or
-  - Set `counted = false` (attendance recorded but points should not apply)
-3. A developer or Supabase admin makes the change.
-4. Verify the member’s points updated on `/profile` and leaderboard.
+1. Open the event on Officer Events → event detail, or use the check-in page.
+2. Find the person who was checked in by mistake.
+3. Click **Remove** (event detail) or uncheck (check-in page) and confirm.
+4. That deletes their attendance for the event. If the check-in was counting toward points, their total updates after refresh.
 
-> **Planned:** Broader admin/event-detail correction UI — [#10](https://github.com/tamucsa/points/issues/10) (PF-001). Officers can already remove mistaken check-ins from the check-in page.
+Use remove only when they were **not** at the event. If they attended but points do not apply because of a cap, leave the row.
 
 ---
 
@@ -404,5 +402,5 @@ Track the roadmap in [GitHub Issues](https://github.com/tamucsa/points/issues?q=
 
 Bugs and debt on existing behavior: [known-issue issues](https://github.com/tamucsa/points/issues?q=is%3Aissue+is%3Aopen+label%3Aknown-issue).
 
-> **Attendance corrections:** Officers can already uncheck from the check-in page. Broader UI (event detail / `counted`) is [#10](https://github.com/tamucsa/points/issues/10).
+> **Attendance corrections:** Officers remove mistaken check-ins from the check-in page or event detail. `counted` is set by caps, not by officers.
 

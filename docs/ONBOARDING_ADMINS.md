@@ -77,7 +77,8 @@ Security note:
 
 ### Attendance corrections
 If a member was checked in incorrectly:
-- Decide whether to remove attendance, mark it unverified, or mark it `counted = false` depending on the policy.
+- Officers/admins remove the check-in from event detail or the check-in page (presence corrections).
+- `counted = false` is set automatically by point caps; do not remove attendees just because they hit a cap.
 
 ## Security operations
 

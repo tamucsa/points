@@ -23,6 +23,7 @@ export default async function EventDetailPage({ params }: { params: Promise<{ id
     .from('attendance')
     .select(`
       id,
+      member_id,
       check_in_method,
       verified,
       counted,
