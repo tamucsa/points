@@ -51,9 +51,10 @@ Core tables (names reflect actual schema):
 
 Registration helpers live in `src/utils/members.ts`.
 
-Derived views (used by UI):
+Derived views / RPCs (used by UI):
 - `v_current_leaderboard`: active members + points breakdown for the active semester from `member_semester_points` (not a live re-sum of all attendance); includes `account_linked` (`auth_uid IS NOT NULL`) for officer sign-in status (not shown on public leaderboard UI)
 - `v_jt_leaderboard`: per-jiating aggregation for the active semester (source for GM snapshot publish)
+- `attendance_counts_for_semester(semester_id)`: per-event attendance counts for Officer Events (SQL `GROUP BY`, not a full attendance row fetch)
 
 ## Request flow
 
