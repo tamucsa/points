@@ -271,7 +271,7 @@ Canonical scoring policy for CSA Points. Change here when club policy changes; k
 Leaderboard buckets (UI label **Sports & Dance** for the sports column):
 
 - **CSA** — CSA-Wide, Philanthropy, Concessions  
-- **JT** — Jiating Olympics, Jiating Event, Mixer  
+- **Jiating** — Jiating Olympics, Jiating Event, Mixer  
 - **Sports & Dance** — Sports, Sports Spectator, and Dance  
 - **GM** — General Meeting
 
@@ -295,7 +295,7 @@ Event start/end and weekly windows use **America/Chicago**.
 ### Step-by-step: Member views their points
 
 1. Member goes to **My Points** → `/profile`.
-2. Review total points and category breakdown (CSA, JT, Sports & Dance, General Meeting).
+2. Review total points and category breakdown (CSA, Jiating, Sports & Dance, General Meeting).
 3. Scroll attendance history for the current semester.
 
 ### Step-by-step: Anyone views the leaderboard

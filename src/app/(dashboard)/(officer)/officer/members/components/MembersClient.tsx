@@ -140,8 +140,8 @@ export default function MembersClient({
           <div>Sign-in</div>
           <div>JT</div>
           <div className="text-right">Total</div>
-          <div className="text-right">CSA</div>
-          <div className="text-right">JT</div>
+          <div className="text-right">{POINT_BUCKET_LABELS.csa}</div>
+          <div className="text-right">{POINT_BUCKET_LABELS.jt}</div>
           <div className="text-right">{POINT_BUCKET_LABELS.sports}</div>
           <div className="text-right">Gen. Mtg.</div>
         </div>
