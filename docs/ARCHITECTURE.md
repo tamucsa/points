@@ -60,13 +60,19 @@ Derived views / RPCs (used by UI):
 
 ### 1) Middleware gating
 `middleware.ts` enforces:
+- Session cookie refresh via `getUser()` (no `members` DB lookup).
 - Unauthenticated users are redirected to `/` (except public routes).
-- `pending_jt` users are restricted to onboarding routes.
+- Signed-in users hitting `/` or `/login` go to `/leaderboard`.
 
-Public routes (no sign-in required): `/`, `/login` (redirects to `/`), `/register`, `/pending`, `/privacy`, `/terms`, `/checkin/*`, `/api/auth/*`.
+Public routes (no sign-in required): `/`, `/login` (redirects to `/` when logged out; signed-in users go to `/leaderboard`), `/register`, `/pending`, `/privacy`, `/terms`, `/checkin/*`, `/api/auth/*`.
 
 ### 2) Layout gating
-`src/app/(dashboard)/layout.tsx` loads the current member and renders the app shell (`Sidebar` + page content). Officer/admin sections have their own layouts that enforce role membership.
+`src/app/(dashboard)/layout.tsx` loads the current member (`getCurrentMember`) and:
+- redirects missing members to `/register`
+- redirects `pending_jt` to `/pending`
+- renders the app shell (`Sidebar` + page content)
+
+`pending` page redirects active members to `/leaderboard`. Officer/admin sections have their own layouts that enforce role membership.
 
 ### 3) Data fetching
 Most routes fetch data via Supabase server client.
