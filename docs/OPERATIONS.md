@@ -177,7 +177,7 @@ Sports events can optionally create a linked **Spectator** child event (1 point,
 5. Expand **Past Events** when checking in after the start time or verifying older attendance.
 6. Long lists paginate at **10 events per page** (upcoming and past separately). Prev/Next and the range label appear **above and below** the list when there is more than one page.
 
-Member **Events** (`/events`) is narrower: only the member’s JT-specific events plus shared/org events (and Mixers their Jiating participates in). Same category tabs, past-events collapse, and 10-per-page pagination (controls above and below); no family dropdown.
+Member **Events** (`/events`) is narrower: only the member’s JT-specific events plus shared/org events (and Mixers their Jiating participates in). Linked **Spectator** child events are hidden (members use the Spectator QR at the venue; the parent Sports card still shows **Attended** if they checked in that way). Same category tabs, past-events collapse, and 10-per-page pagination (controls above and below); no family dropdown.
 
 ### Step-by-step: Create an event
 
