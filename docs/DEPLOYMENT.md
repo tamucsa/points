@@ -22,7 +22,7 @@ Each environment should have:
 ## Secrets & configuration
 
 - Store secrets only in your hosting provider’s secret manager.
-- Never expose `SUPABASE_SERVICE_ROLE_KEY` to clients.
+- Never expose `SUPABASE_SERVICE_ROLE_KEY` or `GOOGLE_SERVICE_ACCOUNT_PRIVATE_KEY` to clients.
 - `NEXT_PUBLIC_*` variables are public by definition.
 
 ## Database migrations
@@ -65,4 +65,16 @@ Operational notes:
 - Brand verification in Google Cloud improves consent-screen trust (app name/logo); a Supabase custom auth domain requires a paid Supabase plan and is optional.
 
 See `docs/ARCHITECTURE.md` for auth flow details and ownership transfer checklist.
+
+## Google Calendar sync (CSA Member Calendar)
+
+Eligible org events can be pushed to the shared CSA Member Calendar via a **service account** (not member OAuth). Sign-in scopes stay `openid` / `email` / `profile` only.
+
+Before enabling in an environment:
+
+1. Apply the migration that adds `events.google_event_id` (and related columns).
+2. Complete the Google Calendar sharing steps and set `GOOGLE_*` variables described in `docs/ENVIRONMENT.md`.
+3. Set `GOOGLE_CALENDAR_SYNC_ENABLED=true` only after the service account can write to the calendar.
+
+Verify after enable: create an eligible test event (e.g. General Meeting), confirm it appears on the CSA Member Calendar, then edit schedule/location and delete it — Calendar should update/remove accordingly. Mixer and Jiating Event must not appear.
 
