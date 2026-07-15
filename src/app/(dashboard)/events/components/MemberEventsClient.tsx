@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useMemo, useState } from 'react'
-import IconLabel, { CheckInTypeBadge } from '@/app/components/IconLabel'
+import IconLabel, { CategoryBadge, CheckInTypeBadge } from '@/app/components/IconLabel'
 import EmptyState from '@/app/components/EmptyState'
 import EventFilterTabs from '@/app/components/EventFilterTabs'
 import EventListPager, { paginateItems } from '@/app/components/EventListPager'
@@ -13,7 +13,7 @@ import {
   eventMatchesFilter,
   type EventFilterTabId,
 } from '@/utils/events'
-import { Calendar, Clock, MapPin } from 'lucide-react'
+import { Calendar, Clock, MapPin, X } from 'lucide-react'
 
 interface Event {
   id: string
@@ -26,6 +26,7 @@ interface Event {
   ends_at: string | null
   location: string | null
   location_maps_url?: string | null
+  description: string | null
   rsvp_url: string | null
   rsvp_deadline: string | null
 }
@@ -33,35 +34,66 @@ interface Event {
 interface Props {
   events: Event[]
   attendedIds: Set<string>
+  rsvpedIds: Set<string>
   semester: { name: string } | null
 }
 
-function EventCard({ event, attended }: { event: Event; attended: boolean }) {
+function EventCard({
+  event,
+  attended,
+  rsvped,
+  onOpen,
+}: {
+  event: Event
+  attended: boolean
+  rsvped: boolean
+  onOpen: () => void
+}) {
   const isPast = isEventPast(event.starts_at)
   const rsvpOpen = event.rsvp_url && event.rsvp_deadline && new Date(event.rsvp_deadline) > new Date()
   const rsvpClosed = event.rsvp_url && event.rsvp_deadline && new Date(event.rsvp_deadline) <= new Date()
 
   return (
     <div
-      className="flex items-center gap-4 rounded-3xl border border-home-border bg-white px-5 py-4 shadow-sm"
-      style={{ opacity: isPast && !attended ? 0.65 : 1 }}
+      role="button"
+      tabIndex={0}
+      aria-label={`View details for ${event.name}`}
+      onClick={onOpen}
+      onKeyDown={e => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault()
+          onOpen()
+        }
+      }}
+      className={`flex w-full cursor-pointer items-center gap-4 rounded-3xl border border-home-border bg-white px-5 py-4 text-left shadow-sm transition hover:border-primary/25 hover:shadow-[0_8px_28px_rgba(71,121,184,0.1)] ${
+        isPast && !attended ? 'opacity-[0.65]' : ''
+      }`}
     >
       <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-primary/10 text-lg font-extrabold text-primary">
         {event.point_value}
       </div>
 
       <div className="min-w-0 flex-1">
-        <div className="flex flex-wrap items-center gap-2">
+        <div className="flex flex-wrap items-center gap-x-2 gap-y-1.5">
           <span className="text-sm font-semibold text-text">{event.name}</span>
           {attended && (
             <span className="inline-flex items-center rounded-full bg-primary/10 px-2 py-0.5 text-[11px] font-semibold leading-none text-primary">
               ✓ Attended
             </span>
           )}
+          {rsvped && (
+            <span className="inline-flex items-center rounded-full bg-green-100 px-2 py-0.5 text-[11px] font-semibold leading-none text-green-800">
+              RSVPed
+            </span>
+          )}
         </div>
         <EventMetaRow className="mt-2">
           <EventMetaItem>
-            <IconLabel icon={Clock} label={formatEventSchedule(event.starts_at, event.ends_at)} size="sm" />
+            <IconLabel
+              icon={Clock}
+              label={formatEventSchedule(event.starts_at, event.ends_at)}
+              size="sm"
+            />
           </EventMetaItem>
           {event.location && (
             <EventMetaItem>
@@ -70,6 +102,7 @@ function EventCard({ event, attended }: { event: Event; attended: boolean }) {
                 label={event.location}
                 size="sm"
                 href={event.location_maps_url}
+                onClick={e => e.stopPropagation()}
               />
             </EventMetaItem>
           )}
@@ -84,6 +117,7 @@ function EventCard({ event, attended }: { event: Event; attended: boolean }) {
           href={event.rsvp_url!}
           target="_blank"
           rel="noopener noreferrer"
+          onClick={e => e.stopPropagation()}
           className="shrink-0 rounded-xl bg-primary px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-[#35679e]"
         >
           Sign Up
@@ -98,12 +132,162 @@ function EventCard({ event, attended }: { event: Event; attended: boolean }) {
   )
 }
 
-export default function MemberEventsClient({ events, attendedIds, semester }: Props) {
+function EventDetailModal({
+  event,
+  attended,
+  rsvped,
+  onClose,
+}: {
+  event: Event
+  attended: boolean
+  rsvped: boolean
+  onClose: () => void
+}) {
+  const rsvpOpen = event.rsvp_url && event.rsvp_deadline && new Date(event.rsvp_deadline) > new Date()
+  const rsvpClosed = event.rsvp_url && event.rsvp_deadline && new Date(event.rsvp_deadline) <= new Date()
+
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') onClose()
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [onClose])
+
+  return (
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4"
+      onClick={onClose}
+    >
+      <div
+        className="max-h-[90vh] w-full max-w-lg overflow-y-auto rounded-4xl border border-home-border bg-white p-6 shadow-xl sm:p-8"
+        onClick={e => e.stopPropagation()}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="member-event-detail-title"
+      >
+        <div className="flex items-start justify-between gap-3">
+          <div className="min-w-0 flex-1">
+            <div className="flex flex-wrap items-center gap-2">
+              <h2
+                id="member-event-detail-title"
+                className="text-xl font-bold text-text"
+              >
+                {event.name}
+              </h2>
+              {attended && (
+                <span className="inline-flex items-center rounded-full bg-primary/10 px-2 py-0.5 text-[11px] font-semibold leading-none text-primary">
+                  ✓ Attended
+                </span>
+              )}
+              {rsvped && (
+                <span className="inline-flex items-center rounded-full bg-green-100 px-2 py-0.5 text-[11px] font-semibold leading-none text-green-800">
+                  RSVPed
+                </span>
+              )}
+            </div>
+            <p className="mt-1 text-sm text-subtitle">
+              {event.point_value} pt{event.point_value === 1 ? '' : 's'}
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={onClose}
+            className="shrink-0 rounded-xl border border-home-border bg-bg p-2 text-subtitle transition hover:border-primary/30 hover:text-primary"
+            aria-label="Close"
+          >
+            <X className="size-4" aria-hidden />
+          </button>
+        </div>
+
+        <div className="mt-5 flex flex-col gap-3 text-sm text-text">
+          <div className="flex items-center">
+            <CategoryBadge category={event.category} />
+          </div>
+          <div className="flex items-center">
+            <IconLabel
+              icon={Clock}
+              label={formatEventSchedule(event.starts_at, event.ends_at)}
+            />
+          </div>
+          {event.location && (
+            <div className="flex items-center">
+              <IconLabel
+                icon={MapPin}
+                label={event.location}
+                href={event.location_maps_url}
+              />
+            </div>
+          )}
+          <div className="flex items-center">
+            <CheckInTypeBadge checkInType={event.check_in_type} />
+          </div>
+        </div>
+
+        {event.description ? (
+          <p className="mt-5 whitespace-pre-wrap text-sm leading-6 text-subtitle">
+            {event.description}
+          </p>
+        ) : (
+          <p className="mt-5 text-sm italic text-subtitle">No description provided.</p>
+        )}
+
+        {event.rsvp_url && (
+          <div className="mt-6 rounded-2xl border border-home-border bg-bg p-4">
+            <div className="text-xs font-semibold uppercase tracking-wide text-subtitle">
+              RSVP
+            </div>
+            {event.rsvp_deadline && (
+              <p className="mt-1 text-sm text-text">
+                Deadline:{' '}
+                {new Date(event.rsvp_deadline).toLocaleString(undefined, {
+                  dateStyle: 'medium',
+                  timeStyle: 'short',
+                })}
+              </p>
+            )}
+            {rsvpOpen && (
+              <a
+                href={event.rsvp_url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="mt-3 inline-flex rounded-xl bg-primary px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-[#35679e]"
+              >
+                Open RSVP form
+              </a>
+            )}
+            {rsvpClosed && (
+              <p className="mt-2 text-sm font-medium text-subtitle">RSVP is closed.</p>
+            )}
+            {!event.rsvp_deadline && (
+              <a
+                href={event.rsvp_url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="mt-3 inline-flex rounded-xl bg-primary px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-[#35679e]"
+              >
+                Open RSVP form
+              </a>
+            )}
+          </div>
+        )}
+      </div>
+    </div>
+  )
+}
+
+export default function MemberEventsClient({
+  events,
+  attendedIds,
+  rsvpedIds,
+  semester,
+}: Props) {
   const [showPast, setShowPast] = useState(false)
   const [filter, setFilter] = useState<EventFilterTabId>('all')
   const [search, setSearch] = useState('')
   const [upcomingPage, setUpcomingPage] = useState(1)
   const [pastPage, setPastPage] = useState(1)
+  const [detailEvent, setDetailEvent] = useState<Event | null>(null)
 
   const filteredEvents = useMemo(() => {
     const q = search.trim().toLowerCase()
@@ -203,6 +387,8 @@ export default function MemberEventsClient({ events, attendedIds, semester }: Pr
                 key={event.id}
                 event={event}
                 attended={attendedIds.has(event.id)}
+                rsvped={rsvpedIds.has(event.id)}
+                onOpen={() => setDetailEvent(event)}
               />
             ))}
           </div>
@@ -243,6 +429,8 @@ export default function MemberEventsClient({ events, attendedIds, semester }: Pr
                     key={event.id}
                     event={event}
                     attended={attendedIds.has(event.id)}
+                    rsvped={rsvpedIds.has(event.id)}
+                    onOpen={() => setDetailEvent(event)}
                   />
                 ))}
               </div>
@@ -254,6 +442,15 @@ export default function MemberEventsClient({ events, attendedIds, semester }: Pr
             </div>
           )}
         </div>
+      )}
+
+      {detailEvent && (
+        <EventDetailModal
+          event={detailEvent}
+          attended={attendedIds.has(detailEvent.id)}
+          rsvped={rsvpedIds.has(detailEvent.id)}
+          onClose={() => setDetailEvent(null)}
+        />
       )}
     </div>
   )

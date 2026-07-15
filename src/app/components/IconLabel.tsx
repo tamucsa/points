@@ -5,6 +5,7 @@ import {
   SCOPE_LABELS,
 } from "@/utils/constants";
 import {
+  CATEGORY_ICONS,
   CHECKIN_METHOD_ICONS,
   CHECKIN_TYPE_ICONS,
   ICON_SIZES,
@@ -22,6 +23,7 @@ interface IconLabelProps {
   labelClassName?: string;
   /** When set, label becomes an external link (e.g. Google Maps). */
   href?: string | null;
+  onClick?: React.MouseEventHandler<HTMLAnchorElement>;
 }
 
 export default function IconLabel({
@@ -32,12 +34,14 @@ export default function IconLabel({
   iconClassName = "text-subtitle",
   labelClassName = "",
   href,
+  onClick,
 }: IconLabelProps) {
   const text = href ? (
     <a
       href={href}
       target="_blank"
       rel="noopener noreferrer"
+      onClick={onClick}
       className={`font-medium text-primary underline-offset-2 hover:underline ${labelClassName}`}
     >
       {label}
@@ -79,6 +83,22 @@ export function ScopeBadge({
   return (
     <span className={`inline-flex items-center leading-none ${className}`}>
       <IconLabel icon={Icon} label={label} size="sm" />
+    </span>
+  );
+}
+
+export function CategoryBadge({
+  category,
+  className = "",
+}: {
+  category: string;
+  className?: string;
+}) {
+  const Icon = CATEGORY_ICONS[category];
+  if (!Icon) return <span className={className}>{category}</span>;
+  return (
+    <span className={`inline-flex items-center leading-none ${className}`}>
+      <IconLabel icon={Icon} label={category} size="sm" />
     </span>
   );
 }

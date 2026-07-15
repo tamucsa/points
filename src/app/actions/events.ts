@@ -370,6 +370,7 @@ export async function updateEventSchedule(
     endTime: string | null;
     location: string;
     locationMapsUrl?: string | null;
+    description?: string | null;
   },
 ) {
   if (!eventId) return { success: false, error: "Event not found." };
@@ -417,11 +418,16 @@ export async function updateEventSchedule(
 
   const location = input.location.trim();
   const locationMapsUrl = input.locationMapsUrl?.trim() || null;
+  const description =
+    input.description !== undefined
+      ? input.description?.trim() || null
+      : event.description;
   const patch = {
     starts_at: startsAt,
     ends_at: endsAt,
     location,
     location_maps_url: locationMapsUrl,
+    description,
   };
 
   const { error } = await supabase
@@ -446,7 +452,7 @@ export async function updateEventSchedule(
   if (event.google_event_id) {
     const sync = await updateCalendarEvent(event.google_event_id, {
       name: event.name,
-      description: event.description,
+      description,
       location,
       startsAt,
       endsAt,

@@ -16,6 +16,7 @@ import BackLink from "@/app/components/BackLink";
 import EmptyState from "@/app/components/EmptyState";
 import IconLabel, { CheckInMethodBadge } from "@/app/components/IconLabel";
 import LocationAutocomplete from "@/app/components/LocationAutocomplete";
+import CollapsibleSettings from "@/app/components/CollapsibleSettings";
 import MemberAvatar from "@/app/components/MemberAvatar";
 import { inputClassName, labelClassName } from "@/utils/constants";
 import { formatEventSchedule } from "@/utils/datetime";
@@ -132,6 +133,7 @@ export default function EventDetailClient({
   const [locationMapsUrl, setLocationMapsUrl] = useState<string | null>(
     event.location_maps_url ?? null,
   );
+  const [description, setDescription] = useState(event.description ?? "");
   const [scheduleSaving, setScheduleSaving] = useState(false);
   const [scheduleError, setScheduleError] = useState<string | null>(null);
   const [scheduleSaved, setScheduleSaved] = useState(false);
@@ -178,7 +180,14 @@ export default function EventDetailClient({
     setEndTime(event.ends_at ? eventTimestampToFormTime(event.ends_at) : "");
     setLocation(event.location ?? "");
     setLocationMapsUrl(event.location_maps_url ?? null);
-  }, [event.starts_at, event.ends_at, event.location, event.location_maps_url]);
+    setDescription(event.description ?? "");
+  }, [
+    event.starts_at,
+    event.ends_at,
+    event.location,
+    event.location_maps_url,
+    event.description,
+  ]);
 
   const toggleMixerFamily = (id: string) => {
     setSelectedMixerFamilies((prev) =>
@@ -238,6 +247,7 @@ export default function EventDetailClient({
       endTime: endTime.trim() || null,
       location,
       locationMapsUrl,
+      description,
     });
 
     setScheduleSaving(false);
@@ -379,8 +389,19 @@ export default function EventDetailClient({
         {publishError && (
           <p className="mt-3 text-sm text-red-600">{publishError}</p>
         )}
-        <div className="mt-5 space-y-3 rounded-2xl border border-home-border bg-bg p-4">
-          <div className="text-sm font-semibold text-text">When and Where</div>
+        <CollapsibleSettings
+          title="Event details"
+          defaultOpen
+          summary={
+            [
+              formatEventSchedule(event.starts_at, event.ends_at),
+              event.location,
+              event.description ? "Has description" : null,
+            ]
+              .filter(Boolean)
+              .join(" · ") || "Date, location, and description"
+          }
+        >
           <div className="grid gap-3 sm:grid-cols-2">
             <div>
               <label className={labelClassName} htmlFor="event-edit-date">
@@ -405,9 +426,9 @@ export default function EventDetailClient({
                 id="event-edit-location"
                 value={location}
                 onChange={(value, meta) => {
-                  setLocation(value)
-                  setLocationMapsUrl(meta?.mapsUrl ?? null)
-                  setScheduleSaved(false)
+                  setLocation(value);
+                  setLocationMapsUrl(meta?.mapsUrl ?? null);
+                  setScheduleSaved(false);
                 }}
                 placeholder="e.g. MSC 2406"
               />
@@ -446,6 +467,24 @@ export default function EventDetailClient({
               />
             </div>
           </div>
+          <div>
+            <label className={labelClassName} htmlFor="event-edit-description">
+              Description{" "}
+              <span className="font-normal normal-case text-subtitle">
+                (optional)
+              </span>
+            </label>
+            <textarea
+              id="event-edit-description"
+              className={`${inputClassName} min-h-24 resize-y`}
+              placeholder="What members should know about this event…"
+              value={description}
+              onChange={(e) => {
+                setDescription(e.target.value);
+                setScheduleSaved(false);
+              }}
+            />
+          </div>
           {scheduleError && (
             <p className="text-sm text-red-600">{scheduleError}</p>
           )}
@@ -458,9 +497,9 @@ export default function EventDetailClient({
             disabled={scheduleSaving}
             className={btnPrimaryClassName}
           >
-            {scheduleSaving ? "Saving…" : "Save Date and Location"}
+            {scheduleSaving ? "Saving…" : "Save event details"}
           </button>
-        </div>
+        </CollapsibleSettings>
         {spectatorEvent && (
           <div className="mt-5 rounded-2xl border border-home-border bg-bg p-4">
             <div className="text-sm font-semibold text-text">
@@ -474,16 +513,14 @@ export default function EventDetailClient({
           </div>
         )}
         {isMixer && (
-          <div className="mt-5 space-y-3 rounded-2xl border border-home-border bg-bg p-4">
-            <div>
-              <div className="text-sm font-semibold text-text">
-                Participating Jiatings
-              </div>
-              <p className="mt-1 text-xs leading-5 text-subtitle">
-                Add families anytime. Removing a family that already has
-                check-ins is blocked until those check-ins are cleared.
-              </p>
-            </div>
+          <CollapsibleSettings
+            title="Participating Jiatings"
+            summary={`${selectedMixerFamilies.length} famil${selectedMixerFamilies.length === 1 ? "y" : "ies"} selected`}
+          >
+            <p className="text-xs leading-5 text-subtitle">
+              Add families anytime. Removing a family that already has check-ins
+              is blocked until those check-ins are cleared.
+            </p>
             <div className="grid gap-2 sm:grid-cols-2">
               {jtFamilies.map((jt) => {
                 const checked = selectedMixerFamilies.includes(jt.id);
@@ -521,11 +558,19 @@ export default function EventDetailClient({
             >
               {mixerSaving ? "Saving…" : "Save participating families"}
             </button>
-          </div>
+          </CollapsibleSettings>
         )}
         {isRsvpEvent && (
-          <div className="mt-5 space-y-3 rounded-2xl border border-home-border bg-bg p-4">
-            <div className="text-sm font-semibold text-text">RSVP Details</div>
+          <CollapsibleSettings
+            title="RSVP settings"
+            summary={
+              event.rsvp_url
+                ? event.rsvp_deadline
+                  ? `Form linked · deadline set`
+                  : "Form linked"
+                : "Add RSVP link and deadline"
+            }
+          >
             <div>
               <label className={labelClassName}>RSVP Link</label>
               <input
@@ -562,17 +607,22 @@ export default function EventDetailClient({
             >
               {rsvpSaving ? "Saving…" : "Save RSVP Details"}
             </button>
-          </div>
+          </CollapsibleSettings>
         )}
         {isRsvpEvent && (
-          <EventRsvpPanel
-            eventId={event.id}
-            rsvpDeadline={event.rsvp_deadline}
-            initialRows={rsvpRows}
-            matchMembers={rsvpMatchMembers}
-            btnPrimaryClassName={btnPrimaryClassName}
-            btnSecondaryClassName={btnSecondaryClassName}
-          />
+          <CollapsibleSettings
+            title="RSVP CSV / check-in tags"
+            summary={`${rsvpRows.length} row${rsvpRows.length === 1 ? "" : "s"} uploaded`}
+          >
+            <EventRsvpPanel
+              eventId={event.id}
+              rsvpDeadline={event.rsvp_deadline}
+              initialRows={rsvpRows}
+              matchMembers={rsvpMatchMembers}
+              btnPrimaryClassName={btnPrimaryClassName}
+              btnSecondaryClassName={btnSecondaryClassName}
+            />
+          </CollapsibleSettings>
         )}
         {isGm && published && (
           <p className="mt-3 text-xs text-subtitle">
