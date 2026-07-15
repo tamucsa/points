@@ -21,7 +21,7 @@ export default function PrivacyPage() {
             Privacy Policy
           </h1>
           <p className="mt-3 text-sm text-subtitle">
-            Last updated: July 8, 2026
+            Last updated: July 15, 2026
           </p>
           <p className="mt-4 max-w-3xl text-base leading-7 text-subtitle">
             This policy describes how TAMU CSA Points (&quot;the App&quot;), operated by the Texas A&amp;M
@@ -132,9 +132,12 @@ export default function PrivacyPage() {
             <p>
               The App uses Supabase for authentication and data storage, Google for sign-in, and Vercel
               for hosting. These providers process data on our behalf under their respective privacy
-              policies and only as needed to operate the App. Google OAuth is used solely for
-              authentication; we do not access your Gmail, Drive, Calendar, or other Google services
-              through this App.
+              policies and only as needed to operate the App. Google OAuth for member sign-in uses only
+              the basic identity scopes; we do not access your personal Gmail, Drive, Calendar, or other
+              Google services through your sign-in. Separately, eligible CSA org events created in the App
+              may be published to CSA&apos;s shared Member Calendar using an organizational service
+              account (not your personal Google account). Family-private events such as Mixers and
+              individual Jiating events are not published to that calendar.
             </p>
           </section>
 
