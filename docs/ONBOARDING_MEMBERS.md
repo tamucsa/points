@@ -6,18 +6,19 @@ This guide is for CSA members using the points system.
 
 1. Go to the site and click **Sign in with Google**.
 2. Use your **`@tamu.edu`** email.
-3. If prompted to register, complete the registration form.
-4. If you land on a “Pending Jiating” page, wait for an admin to assign you to a Jiating.
-5. Once active, you can view:
+3. If you were **already on the CSA roster** (CSV import), you skip the registration form — Google sign-in links your account and you go straight into the app (usually the leaderboard), even if your Jiating is not assigned yet.
+4. If you were **not** on the roster, complete the registration form when prompted.
+5. If you land on a “pending membership” page, wait for an admin to approve your account (self-registered members only).
+6. Once active, you can view:
    - **Leaderboard**
-   - **Events**
+   - **Events** (JT-specific events appear after you are assigned a Jiating)
    - **My Points**
 
-If you were added to the roster by an admin before signing in, you still need to **sign in with Google once** so your account links to your roster row. Until then, officers will see you as **Not signed in** on the member list.
+Roster-imported members still must **sign in with Google once** so their account links to the existing roster row. They do **not** fill out registration (name, class, and phone already came from the CSV). Until that first login, officers will see them as **Not signed in** on the member list.
 
 ## Registration form (name fields)
 
-The registration form asks for **first name** and **last name** separately (both required). They are combined and stored as your **full name** — this is what appears on the leaderboard and member lists.
+The registration form is only for members who were **not** pre-loaded via CSV import. It asks for **first name** and **last name** separately (both required). They are combined and stored as your **full name** — this is what appears on the leaderboard and member lists.
 
 Names are pre-filled from your Google account when possible; review and correct them before submitting.
 
@@ -43,12 +44,13 @@ On **Events** (`/events`):
 
 - Points are earned by attending events.
 - Your totals are computed for the **active semester**.
-- On **My Points**, the **Sports & Dance** bucket includes Sports, Sports Spectator, and Dance events (same as the leaderboard sports column).
-- Some attendance may be marked “not counted” if caps apply (Sports Spectator semester limit; Jiating Event / Mixer weekly limit of 4 counting events Mon–Sun). Officers/admins: full policy in `docs/OPERATIONS.md` → **Points rules**.
+- On **My Points** (`/profile`), see your bucket totals, a **How points work** guide (category values + the two caps), and attendance history.
+- The **Sports & Dance** bucket includes Sports, Sports Spectator, and Dance events (same as the leaderboard sports column).
+- Caps: **Sports Spectator** max 10 counting points per semester; **Jiating Event + Mixer** max 4 counting check-ins per Mon–Sun week (Central). Over-cap attendance still records with a “cap reached” tag. Officers/admins: full policy in `docs/OPERATIONS.md` → **Points rules**.
 
 ## Troubleshooting
 
 - **Can’t sign in**: You must use `@tamu.edu`.
-- **Stuck on pending**: An admin must assign your Jiating and activate your account.
+- **Stuck on pending**: An admin must approve your membership (self-registration). Roster-imported members should not see this page.
 - **Missing points**: Confirm you checked in; if still missing, contact an officer with the event name/date.
 

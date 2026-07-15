@@ -38,9 +38,14 @@ Related docs:
 
 ### Overview
 
-New members authenticate with TAMU Google (`@tamu.edu`). The auth callback links their Supabase auth account to a `members` row (by `auth_uid` or email). Until an admin assigns a Jiating and activates them, they remain `pending_jt` and can only access onboarding routes.
+New members authenticate with TAMU Google (`@tamu.edu`). The auth callback links their Supabase auth account to a `members` row (by `auth_uid` or email).
 
-**States:** `pending_jt` → `active` (after admin assigns Jiating)
+**Access vs Jiating are separate:**
+- **CSV import** → always `active` (full site access), with or without a Jiating
+- **Self-registration** → `pending_member` (gated to `/pending`) until an admin approves → `active`
+- **Pending JT** in admin is for `active` members who still need `jt_family_id` assigned (not an access gate)
+
+**States (self-reg):** `pending_member` → `active` (after admin approval; JT optional)
 
 ### Step-by-step: Member self-registers
 
@@ -52,8 +57,8 @@ New members authenticate with TAMU Google (`@tamu.edu`). The auth callback links
   - Class (required)
   - Phone (optional)
 5. Member submits the form.
-6. System creates a `members` row with `status = pending_jt` and `role = member`.
-7. Member is redirected to `/pending` until an admin activates them.
+6. System creates a `members` row with `status = pending_member` and `role = member`.
+7. Member is redirected to `/pending` until an admin approves membership.
 
 ### Step-by-step: Admin bulk-imports members (CSV)
 
@@ -67,18 +72,18 @@ Use this at the start of a semester to pre-load the roster before members sign i
   | ------------ | -------- | ----------------------------------------------- |
   | `Full Name`  | Yes      | Complete name as shown in the app               |
   | `TAMU Email` | Yes      | Must be `@tamu.edu`                             |
-  | `Jiating`    | Yes      | Must match an active Jiating name in the system |
+  | `Jiating`    | No       | Optional; must match an active Jiating when set. Blank = no JT yet (still `active`, portal access). On update, blank keeps the existing JT |
   | `Phone`      | Yes      | Contact phone number                            |
   | `Class`      | Yes      | Graduation year, e.g. `2027`                    |
 
 4. Upload the CSV file.
 5. Review the import summary:
-  - **Added** — new `members` rows created as `active` with Jiating assigned
+  - **Added** — new `members` rows created as `active` (with or without Jiating)
   - **Updated** — existing email matched; only changed fields are written
   - **Unchanged** — row matched an existing member with identical data
   - **Jiating transfers** — spring import only: existing member moved from one Jiating to another (logged to `jt_transfer_log`)
   - **Errors** — invalid email, unknown Jiating, missing required fields, or DB failures
-6. Tell members to sign in with Google; the auth callback links their account by email.
+6. Tell members to sign in with Google; the auth callback links their account by email. They skip the registration form (roster data is already on the row) and go straight into the app as active.
 
 ### Step-by-step: Admin spring roster update (partial CSV)
 
@@ -93,21 +98,28 @@ After fall semester close and Jiating re-sorting, upload only rows that changed.
 4. Review the summary (especially **Jiating transfers**). Unlisted members are not modified.
 5. Start the new spring semester from `/admin/semesters` if not already active.
 
-### Step-by-step: Admin activates a pending member
+### Step-by-step: Admin approves a self-registered member
 
-1. Admin goes to `/admin/members` → **Pending** tab.
-2. Find the member in the pending list.
-3. Select their **Jiating** from the dropdown.
-4. Click **Activate** (or equivalent action for that row).
-5. System sets `jt_family_id` and `status = active`.
-6. Member can now access leaderboard, events, and profile on next visit.
+1. Admin goes to `/admin/members` → **Pending signup** tab.
+2. Find the member in the list.
+3. Optionally select a **Jiating** (not required for access).
+4. Click **Approve**.
+5. System sets `status = active` (and `jt_family_id` if chosen).
+6. Member can access leaderboard, events, and profile on next visit. If approved without a JT, they also appear under **Pending JT**.
+
+### Step-by-step: Admin assigns a Jiating (Pending JT)
+
+1. Admin goes to `/admin/members` → **Pending JT** tab.
+2. List shows `active` members with no `jt_family_id` (e.g. imported before sorting, or approved without JT).
+3. Select a Jiating and click **Assign**.
+4. Member stays `active`; only `jt_family_id` is updated. Site access does not change.
 
 ### Troubleshooting
 
 
 | Symptom                                | Likely cause                                 | Action                                                         |
 | -------------------------------------- | -------------------------------------------- | -------------------------------------------------------------- |
-| Member stuck on `/pending`             | Not activated or no Jiating assigned         | Admin activates in `/admin/members`                            |
+| Member stuck on `/pending`             | Still `pending_member` (self-reg)            | Admin approves in `/admin/members` → **Pending signup**        |
 | Member sent to `/register` after login | No member row and not imported               | Member completes registration, or admin imports them           |
 | Imported member shows "Not signed in"  | CSV row exists but `auth_uid` not linked yet | Member signs in once with Google; auth callback links by email |
 | Non-TAMU email rejected                | Domain enforcement in auth callback          | Member must use `@tamu.edu`                                    |
@@ -123,33 +135,44 @@ Points and leaderboards are scoped to the **active semester** (`semesters.is_act
 
 Closing a semester archives totals (via `close_semester` in the database, which copies `member_semester_points` into `semester_summaries`) and deactivates the semester. The RPC is service-role only; the admin UI calls it through `createAdminSupabase` after an admin auth check.
 
+**Spring close** (semester `start_date` month January–July): after archiving, clears `members.jt_family_id` for all **active** members. Status stays `active` (they are not moved to `pending_member`). Fall close leaves Jiating assignments in place for the shared school year.
+
 ### Step-by-step: Close the active semester
 
 1. Confirm all events for the semester are complete and attendance is finalized.
 2. Admin goes to **Admin** → **Semesters** (`/admin/semesters`).
-3. Click **Close semester** on the active term and confirm.
-4. Verify the semester appears as **Closed** in history.
+3. Click **Close semester** on the active term and confirm (Spring close also confirms JT clearing).
+4. Verify the semester appears as **Closed** in history. After Spring close, members should have no Jiating until the next fall roster.
 
 ### Step-by-step: Start a new semester
 
 1. Confirm no semester is currently active (close the previous one first).
 2. Admin goes to `/admin/semesters`.
-3. Fill in semester name, start/end dates, and school year.
-4. Click **Start semester**.
-5. Verify in the app:
+3. Fill in semester name and start/end dates. School year is inferred from the start date and created if needed.
+4. If this is a **new school year**, leave Jiating setup default (**JT 1–JT 6** placeholders) or open **Customize Jiatings**. If the year already has Jiatings (e.g. starting Spring after Fall), they carry over.
+5. Click **Start semester**.
+6. Verify in the app:
   - Leaderboard shows data for the new semester (may be empty initially).
   - Officer event creation uses the new semester.
-6. Communicate the semester change to officers.
+7. Communicate the semester change to officers.
+
+### Edit semester or Jiatings
+
+1. On `/admin/semesters`, open the **active** term.
+2. **Edit semester** — change name or dates (dates that would switch school years while Jiatings remain on the old year are blocked).
+3. **Jiatings** — edit name/color, add a family, or deactivate. Soft-deactivate only; the UI does not hard-delete rows.
+4. If the UI warns that active Jiatings are not linked to this school year, use **Replace with JT 1–6 placeholders**, then rename when themes are ready.
 
 ### Typical annual flow
 
-1. **Fall:** Full roster CSV import → members sign in with Google.
-2. **End of fall:** Close fall semester on `/admin/semesters`.
-3. **Spring:** Spring partial CSV (JT transfers + new members) → start spring semester.
+1. **Late summer:** Start fall semester (placeholder Jiatings OK). Import dues roster (Jiating optional) so members can sign in. Rename/recolor Jiatings when themes are decided, then assign Jiatings via a follow-up CSV or Pending JT.
+2. **End of fall:** Close fall semester on `/admin/semesters` (Jiating assignments kept).
+3. **Spring:** Spring partial CSV (JT transfers + new members) → start spring semester (same school-year Jiatings).
+4. **End of spring:** Close spring semester — archives totals and **clears** every active member’s Jiating (status stays active). New fall creates new-year Jiatings; fall roster reassigns members.
 
 > **Note:** Do not pre-create inactive semester rows for a future term. Use **Start semester** on `/admin/semesters` when the term actually begins; pre-created rows can duplicate when you start the term from the UI.
 
-The semester admin page shows the active term, a collapsible **Past semesters** list, and per-semester details (school year, dates, Jiatings, event count, archived member count for closed terms).
+The semester admin page shows the active term (editable), a collapsible **Past semesters** list (read-only), and per-semester details (school year, dates, Jiatings, event count, archived member count for closed terms). Jiatings are scoped to `jt_families.year_id` and shared by Fall and Spring of that year.
 
 ---
 
@@ -193,7 +216,7 @@ Member **Events** (`/events`) is narrower: only the member’s JT-specific event
   - **Check-in type**:
     - *Officer* — manual check-in at the event
     - *Self (QR)* — members scan a QR code
-    - *RSVP Required* — provide RSVP URL and deadline
+    - *RSVP Required* — provide RSVP URL and deadline; after the form closes, upload a Name/Email CSV on the event page to tag members as **RSVPed** / **Not RSVPed** on check-in (optional tags; does not filter or block check-in). Re-upload replaces the list. Unmatched emails can be matched manually or marked as guests.
   - **Date**, **location**, **description** (as needed)
 4. For **Sports** events, optionally enable **Spectator check-in** (creates a child spectator event).
 5. For **Mixers**, select at least two participating Jiatings (editable later on the event detail page).
@@ -211,11 +234,18 @@ Member **Events** (`/events`) is narrower: only the member’s JT-specific event
 
 1. Officer opens the event from `/officer/events`.
 2. Click **Check In** → `/officer/events/[id]/checkin`.
-3. Search or scroll the member list.
+3. Search or scroll the member list (RSVP events with an uploaded CSV sort **RSVPed** first, then alphabetically; tags hide until a CSV is uploaded).
 4. Click a member to check them in.
 5. System inserts an `attendance` row with `check_in_method = officer`.
 6. Already-checked-in members show as checked (duplicate inserts are blocked).
 
+### Step-by-step: Upload RSVP CSV tags
+
+1. Create an **RSVP Required** event with form URL and deadline.
+2. After responses are in (typically after the deadline), open the event detail page.
+3. Under **RSVP roster CSV**, upload a CSV with **Name** and **Email** (email is the match key). Replacing an existing list requires a two-step confirm.
+4. Review **Unmatched emails** — match to a member or mark as **Guest** (not a CSA member). Guests are intentional dismissals and do not create members.
+5. On check-in, RSVPed members show a green tag; others show Not RSVPed. Check-in works the same with or without a CSV.
 ### Step-by-step: Run QR / self check-in at an event
 
 **Officer setup:**
@@ -230,7 +260,7 @@ Member **Events** (`/events`) is narrower: only the member’s JT-specific event
 2. Member signs in if not already authenticated.
 3. Member confirms check-in on the check-in page.
 4. System inserts `attendance` with `check_in_method = qr_scan`.
-5. If the member is `pending_jt`, check-in is blocked with an error message.
+5. If the member is `pending_member`, check-in is blocked with an error message.
 
 ### Step-by-step: Verify attendance after an event
 
@@ -296,7 +326,8 @@ Event start/end and weekly windows use **America/Chicago**.
 
 1. Member goes to **My Points** → `/profile`.
 2. Review total points and category breakdown (CSA, Jiating, Sports & Dance, General Meeting).
-3. Scroll attendance history for the current semester.
+3. Read **How points work** for per-category values and the Sports Spectator / weekly JT+Mixer caps (with usage bars).
+4. Scroll attendance history for the current semester.
 
 ### Step-by-step: Anyone views the leaderboard
 
@@ -359,7 +390,7 @@ Roles (`member`, `officer`, `admin`) control access to officer and admin pages. 
   - You cannot demote the **last remaining admin**.
 4. The member should refresh (or sign out/in) so nav picks up officer/admin access.
 
-Only **active** members appear on the Roles tab. Pending JT members must be activated first.
+Only **active** members appear on the Roles tab. Self-registered users must be approved (`pending_member` → `active`) first.
 
 ---
 

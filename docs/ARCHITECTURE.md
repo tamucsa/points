@@ -33,21 +33,23 @@ Core tables (names reflect actual schema):
 - `members`: one row per person (email, role, status, jt family, auth uid)
 - `events`: point-earning opportunities; has scope (CSA-wide / JT shared / JT specific)
 - `event_jt_families`: which Jiatings participate in a Mixer (and similar multi-family events)
+- `event_rsvps`: optional RSVP CSV tags per event (`member_id` nullable; `is_guest` for dismissed non-members); used only for check-in badges, not attendance gating
 - `attendance`: joins members to events; source of points
 - `member_semester_points`: cached counted point totals per member per semester; maintained by triggers on attendance / event category·point changes; backing store for `v_current_leaderboard`
 - `semesters`: identifies the active semester
-- `jt_families`: Jiating / family grouping
+- `jt_families`: Jiating / family grouping; scoped to a school year via `year_id` (Fall and Spring share the same rows); `is_active` marks the current year’s set
 - `semester_summaries`: optional historical rollups per member per semester
 - `jt_transfer_log`: audit log of Jiating changes from spring CSV imports
 - `jt_leaderboard_snapshots` / `jt_leaderboard_snapshot_rows`: frozen Jiating standings published after GM
-- `years`, `semester_families`: configuration/support tables
+- `years`: school year labels (e.g. `2026-2027`); auto-created when starting a semester
+- `semester_families`: legacy junction (unused by app; prefer `jt_families.year_id`)
 
 ### Member name field
 
 `members.full_name` is the only name column — shown on the leaderboard, member lists, and profile.
 
 - **Self-registration** (`/register`): first and last name from the form are concatenated into `full_name`.
-- **Admin CSV import**: roster columns map to `full_name`, email, phone, class (stored as `graduation_year`), and **Jiating** (resolved to `jt_family_id`). New rows are inserted as `active`; existing emails get diff-based updates only. Jiating transfers are logged to `jt_transfer_log`. Inserts use the service-role client after an admin server-action check.
+- **Admin CSV import**: roster columns map to `full_name`, email, phone, class (stored as `graduation_year`), and optional **Jiating** (resolved to `jt_family_id`). New rows are inserted as `active` even without a Jiating so dues-paid members can use the portal before sorting. Existing emails get diff-based updates only (blank Jiating does not clear an existing assignment). Jiating transfers are logged to `jt_transfer_log`. Inserts use the service-role client after an admin server-action check.
 
 Registration helpers live in `src/utils/members.ts`.
 
@@ -56,7 +58,7 @@ Derived views / RPCs (used by UI):
 - `v_jt_leaderboard`: per-jiating aggregation for the active semester (source for GM snapshot publish)
 - `attendance_counts_for_semester(semester_id)`: per-event attendance counts for Officer Events (SQL `GROUP BY`, not a full attendance row fetch)
 - `top_leaderboard_members_per_jt(limit)`: top N members per Jiating for `/leaderboard/jiatings` without loading the full leaderboard
-- `close_semester(semester_id)`: archives `member_semester_points` into `semester_summaries` and deactivates the semester (service role)
+- `close_semester(semester_id)`: archives `member_semester_points` into `semester_summaries` and deactivates the semester; for Spring (start month before August) also clears `members.jt_family_id` while leaving `status = active` (service role)
 
 ## Request flow
 
@@ -71,7 +73,7 @@ Public routes (no sign-in required): `/`, `/login` (redirects to `/` when logged
 ### 2) Layout gating
 `src/app/(dashboard)/layout.tsx` loads the current member (`getCurrentMember`) and:
 - redirects missing members to `/register`
-- redirects `pending_jt` to `/pending`
+- redirects `pending_member` (and legacy `pending_jt`) to `/pending`
 - renders the app shell (`Sidebar` + page content)
 
 `pending` page redirects active members to `/leaderboard`. Officer/admin sections have their own layouts that enforce role membership.
@@ -101,13 +103,14 @@ Performance note:
   - then by email
 - Redirects users to:
   - `/register` if no member row exists,
-  - `/pending` if member is pending JT assignment,
+  - `/pending` if member is not `active` (e.g. `pending_member`),
   - `/leaderboard` otherwise.
 
 ### Member lifecycle states
 `members.status` is an enum-like field used for gating:
-- `pending_jt`: needs admin assignment to a Jiating
-- `active`: full access
+- `pending_member`: self-registered; needs admin approval before dashboard access
+- `active`: full access (Jiating may still be null — use admin **Pending JT** to assign)
+- Legacy `pending_jt` may still redirect to `/pending` if present
 - (others may exist: alumni/inactive, depending on schema)
 
 ## Role model

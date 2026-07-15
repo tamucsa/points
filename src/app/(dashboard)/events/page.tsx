@@ -13,13 +13,23 @@ export default async function MemberEventsPage() {
   if (!member) redirect('/')
 
   // Hide Spectator (and any other) child events — members see the parent Sports row only.
-  const { data: events } = await supabase
+  let eventsQuery = supabase
     .from('events')
     .select('*')
     .eq('semester_id', semester?.id)
     .is('parent_event_id', null)
-    .or(`scope.in.(org,jt_shared),and(scope.eq.jt_specific,jt_family_id.eq.${member.jt_family_id})`)
     .order('starts_at', { ascending: true })
+
+  // Without a Jiating, only CSA-wide and JT-shared events (mixers filtered below).
+  if (member.jt_family_id) {
+    eventsQuery = eventsQuery.or(
+      `scope.in.(org,jt_shared),and(scope.eq.jt_specific,jt_family_id.eq.${member.jt_family_id})`,
+    )
+  } else {
+    eventsQuery = eventsQuery.in('scope', ['org', 'jt_shared'])
+  }
+
+  const { data: events } = await eventsQuery
 
   const mixerIds = (events ?? [])
     .filter(e => isMixerCategory(e.category))

@@ -140,6 +140,30 @@ export default async function OfficerCheckinPage({ params }: { params: Promise<{
 
   const checkedInIds = attendance.map(a => a.member_id)
 
+  let hasRsvpList = false
+  let rsvpedMemberIds: string[] = []
+
+  if (event.check_in_type === 'rsvp_required') {
+    const { data: rsvpRows, error: rsvpError } = await fetchAllPages<{
+      member_id: string | null
+    }>((from, to) =>
+      supabase
+        .from('event_rsvps')
+        .select('member_id')
+        .eq('event_id', id)
+        .range(from, to),
+    )
+
+    if (rsvpError) {
+      console.error('Officer check-in failed to load RSVPs:', rsvpError.message, { id })
+    } else {
+      hasRsvpList = rsvpRows.length > 0
+      rsvpedMemberIds = rsvpRows
+        .map(r => r.member_id)
+        .filter((mid): mid is string => Boolean(mid))
+    }
+  }
+
   const normalizedMembers = members.map(m => {
     const jtFamily = Array.isArray(m.jt_families)
       ? m.jt_families[0] ?? null
@@ -181,6 +205,8 @@ export default async function OfficerCheckinPage({ params }: { params: Promise<{
       checkedInIds={checkedInIds}
       tabFamilies={tabFamilies}
       defaultTabId={defaultTabId}
+      hasRsvpList={hasRsvpList}
+      rsvpedMemberIds={rsvpedMemberIds}
     />
   )
 }

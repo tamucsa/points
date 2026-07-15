@@ -38,7 +38,7 @@ async function requireAdmin() {
   return { supabase, adminMemberId: member.id, error: null }
 }
 
-export async function activateMember(memberId: string, jtFamilyId: string) {
+export async function assignMemberJt(memberId: string, jtFamilyId: string) {
   if (!memberId || !jtFamilyId) {
     return { success: false, error: 'JT family is required.' }
   }
@@ -46,13 +46,60 @@ export async function activateMember(memberId: string, jtFamilyId: string) {
   const { supabase, error: authError } = await requireAdmin()
   if (authError) return { success: false, error: authError }
 
+  const { data: target } = await supabase
+    .from('members')
+    .select('id, status')
+    .eq('id', memberId)
+    .maybeSingle()
+
+  if (!target || target.status !== 'active') {
+    return { success: false, error: 'Only active members can be assigned a Jiating here.' }
+  }
+
   const { error } = await supabase
     .from('members')
-    .update({ jt_family_id: jtFamilyId, status: 'active' })
+    .update({ jt_family_id: jtFamilyId })
+    .eq('id', memberId)
+    .eq('status', 'active')
+
+  if (error) return { success: false, error: 'Failed to assign Jiating.' }
+  return { success: true, error: null }
+}
+
+/** Approve a self-registered pending_member into an active member (JT optional). */
+export async function approvePendingMember(memberId: string, jtFamilyId: string | null) {
+  if (!memberId) {
+    return { success: false, error: 'Member is required.' }
+  }
+
+  const { supabase, error: authError } = await requireAdmin()
+  if (authError) return { success: false, error: authError }
+
+  const { data: target } = await supabase
+    .from('members')
+    .select('id, status')
+    .eq('id', memberId)
+    .maybeSingle()
+
+  if (!target || target.status !== 'pending_member') {
+    return { success: false, error: 'Member is not awaiting approval.' }
+  }
+
+  const patch: { status: string; jt_family_id?: string } = { status: 'active' }
+  if (jtFamilyId) patch.jt_family_id = jtFamilyId
+
+  const { error } = await supabase
+    .from('members')
+    .update(patch)
     .eq('id', memberId)
 
-  if (error) return { success: false, error: 'Failed to activate member.' }
+  if (error) return { success: false, error: 'Failed to approve member.' }
   return { success: true, error: null }
+}
+
+/** @deprecated Prefer assignMemberJt for active members without a JT. */
+export async function activateMember(memberId: string, jtFamilyId: string) {
+  return assignMemberJt(memberId, jtFamilyId)
 }
 
 export async function updateMemberRole(memberId: string, role: MemberRole) {
@@ -182,15 +229,13 @@ export async function importMembers(rows: ImportMemberRow[], mode: ImportMode = 
       continue
     }
 
-    if (!jtName) {
-      summary.errors.push(`${email} — Jiating is required`)
-      continue
-    }
-
-    const jtFamilyId = jtIdByName.get(jtName.toLowerCase())
-    if (!jtFamilyId) {
-      summary.errors.push(`${email} — unknown Jiating "${jtName}"`)
-      continue
+    let jtFamilyId: string | null = null
+    if (jtName) {
+      jtFamilyId = jtIdByName.get(jtName.toLowerCase()) ?? null
+      if (!jtFamilyId) {
+        summary.errors.push(`${email} — unknown Jiating "${jtName}"`)
+        continue
+      }
     }
 
     const phone = row.phone?.trim()
@@ -212,10 +257,11 @@ export async function importMembers(rows: ImportMemberRow[], mode: ImportMode = 
       .maybeSingle()
 
     if (existing) {
-      const patch: Record<string, string | number> = {}
-      const jtChanged = existing.jt_family_id !== jtFamilyId
+      const patch: Record<string, string | number | null> = {}
+      // Only update JT when the CSV provides one; blank keeps the existing assignment.
+      const jtChanged = jtFamilyId != null && existing.jt_family_id !== jtFamilyId
 
-      if (jtChanged) patch.jt_family_id = jtFamilyId
+      if (jtChanged && jtFamilyId) patch.jt_family_id = jtFamilyId
       if (existing.full_name !== fullName) patch.full_name = fullName
       if (existing.phone !== phone) patch.phone = phone
       if (existing.graduation_year !== classResult.year) patch.graduation_year = classResult.year
@@ -241,9 +287,10 @@ export async function importMembers(rows: ImportMemberRow[], mode: ImportMode = 
       const isJtTransfer =
         mode === 'spring' &&
         jtChanged &&
-        existing.jt_family_id != null
+        existing.jt_family_id != null &&
+        jtFamilyId != null
 
-      if (isJtTransfer) {
+      if (isJtTransfer && jtFamilyId) {
         const fromJt = resolveJtName(existing.jt_family_id, jtNameById)
         summary.jtChanged++
         summary.jtChanges.push({
@@ -306,7 +353,7 @@ export async function registerMember(input: {
     graduation_year: input.classYear,
     phone: input.phone.trim() || null,
     profile_image_url: user.user_metadata.avatar_url,
-    status: 'pending_jt',
+    status: 'pending_member',
     role: 'member',
   })
 

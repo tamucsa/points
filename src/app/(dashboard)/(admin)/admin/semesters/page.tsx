@@ -3,7 +3,7 @@ import SemesterAdminClient from '@/app/(dashboard)/(admin)/admin/semesters/compo
 import { listSemesters } from '@/app/actions/semesters'
 
 export default async function AdminSemestersPage() {
-  const { semesters, years, error } = await listSemesters()
+  const { semesters, error } = await listSemesters()
   if (error === 'Not authenticated.') redirect('/')
   if (error) {
     return (
@@ -13,5 +13,5 @@ export default async function AdminSemestersPage() {
     )
   }
 
-  return <SemesterAdminClient semesters={semesters} years={years} />
+  return <SemesterAdminClient semesters={semesters} />
 }

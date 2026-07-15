@@ -115,10 +115,10 @@ export default function CheckinClient({ event, code, userEmail, member, alreadyC
                 </div>
               )}
 
-              {userEmail && member && member.status === 'pending_jt' && (
+              {userEmail && member && member.status === 'pending_member' && (
                 <div className="rounded-2xl border border-accent/35 bg-[linear-gradient(180deg,rgba(240,176,195,0.18),rgba(255,255,255,0.9))] p-4">
                   <p className="text-sm leading-6 text-subtitle">
-                    Your account is pending JT assignment. You&apos;ll be able to check in once you&apos;re activated.
+                    Your membership is awaiting approval. You&apos;ll be able to check in once an admin activates you.
                   </p>
                   <button
                     onClick={() => router.push('/pending')}

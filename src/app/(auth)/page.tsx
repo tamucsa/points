@@ -20,7 +20,11 @@ export default async function HomePage() {
       .eq('auth_uid', user.id)
       .maybeSingle()
 
-    redirect(member?.status === 'pending_jt' ? '/pending' : '/leaderboard')
+    redirect(
+      member?.status === 'pending_member' || member?.status === 'pending_jt'
+        ? '/pending'
+        : '/leaderboard',
+    )
   }
 
   return (

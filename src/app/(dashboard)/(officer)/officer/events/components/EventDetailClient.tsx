@@ -21,6 +21,8 @@ import {
 import { officerRemoveCheckIn } from '@/app/actions/attendance'
 import { ClipboardList, Clock, MapPin, UserX } from 'lucide-react'
 import { inputClassName, labelClassName } from '@/utils/constants'
+import EventRsvpPanel from '@/app/(dashboard)/(officer)/officer/events/components/EventRsvpPanel'
+import type { EventRsvpRow } from '@/app/actions/rsvp'
 
 interface Event {
   id: string
@@ -75,6 +77,8 @@ interface Props {
     check_in_code: string | null
     point_value: number
   } | null
+  rsvpRows: EventRsvpRow[]
+  rsvpMatchMembers: { id: string; full_name: string; email: string }[]
 }
 
 const btnPrimaryClassName =
@@ -94,6 +98,8 @@ export default function EventDetailClient({
   jtFamilies,
   mixerFamilyIds,
   spectatorEvent,
+  rsvpRows,
+  rsvpMatchMembers,
 }: Props) {
   const router = useRouter()
   const [publishing, setPublishing] = useState(false)
@@ -491,6 +497,16 @@ export default function EventDetailClient({
               {rsvpSaving ? 'Saving…' : 'Save RSVP Details'}
             </button>
           </div>
+        )}
+        {isRsvpEvent && (
+          <EventRsvpPanel
+            eventId={event.id}
+            rsvpDeadline={event.rsvp_deadline}
+            initialRows={rsvpRows}
+            matchMembers={rsvpMatchMembers}
+            btnPrimaryClassName={btnPrimaryClassName}
+            btnSecondaryClassName={btnSecondaryClassName}
+          />
         )}
         {isGm && published && (
           <p className="mt-3 text-xs text-subtitle">

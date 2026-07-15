@@ -1,5 +1,59 @@
 export const EVENT_TIMEZONE = 'America/Chicago'
 
+function parseInstant(iso: string) {
+  const date = new Date(iso)
+  return Number.isNaN(date.getTime()) ? null : date
+}
+
+const chicagoDatePartsFormatter = new Intl.DateTimeFormat('en-US', {
+  timeZone: EVENT_TIMEZONE,
+  year: 'numeric',
+  month: '2-digit',
+  day: '2-digit',
+  weekday: 'short',
+})
+
+const CHICAGO_WEEKDAY_OFFSET: Record<string, number> = {
+  Mon: 0,
+  Tue: 1,
+  Wed: 2,
+  Thu: 3,
+  Fri: 4,
+  Sat: 5,
+  Sun: 6,
+}
+
+/** Monday date key `YYYY-MM-DD` for the America/Chicago week containing `instant`. */
+export function chicagoWeekMondayKey(instant: Date | string = new Date()) {
+  const date = typeof instant === 'string' ? parseInstant(instant) : instant
+  if (!date || Number.isNaN(date.getTime())) return null
+
+  const parts = Object.fromEntries(
+    chicagoDatePartsFormatter.formatToParts(date)
+      .filter(p => p.type !== 'literal')
+      .map(p => [p.type, p.value]),
+  ) as Record<string, string>
+
+  const year = Number(parts.year)
+  const month = Number(parts.month)
+  const day = Number(parts.day)
+  const offset = CHICAGO_WEEKDAY_OFFSET[parts.weekday ?? '']
+  if (!year || !month || !day || offset === undefined) return null
+
+  // Noon UTC keeps calendar-day arithmetic stable across DST when we only care about Y-M-D.
+  const monday = new Date(Date.UTC(year, month - 1, day - offset, 12, 0, 0))
+  const y = monday.getUTCFullYear()
+  const m = String(monday.getUTCMonth() + 1).padStart(2, '0')
+  const d = String(monday.getUTCDate()).padStart(2, '0')
+  return `${y}-${m}-${d}`
+}
+
+export function isInCurrentChicagoWeek(iso: string, now = new Date()) {
+  const eventWeek = chicagoWeekMondayKey(iso)
+  const currentWeek = chicagoWeekMondayKey(now)
+  return Boolean(eventWeek && currentWeek && eventWeek === currentWeek)
+}
+
 const dateFormatter = new Intl.DateTimeFormat('en-US', {
   timeZone: EVENT_TIMEZONE,
   month: 'short',
@@ -22,11 +76,6 @@ const dateTimeFormatter = new Intl.DateTimeFormat('en-US', {
   hour: 'numeric',
   minute: '2-digit',
 })
-
-function parseInstant(iso: string) {
-  const date = new Date(iso)
-  return Number.isNaN(date.getTime()) ? null : date
-}
 
 /** Date only — officer list, compact views. */
 export function formatEventDate(iso: string) {
