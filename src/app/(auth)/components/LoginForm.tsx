@@ -1,41 +1,20 @@
-'use client'
-import Link from 'next/link'
-import { Calendar, LogIn, Star, Trophy } from 'lucide-react'
-import { createBrowserSupabase } from '@/utils/supabase/client'
-import { useSearchParams } from 'next/navigation'
-import { useState } from 'react'
-import AuthFeatureCard from '@/app/(auth)/components/AuthFeatureCard'
-import PublicPageShell from '@/app/(auth)/components/PublicPageShell'
+"use client";
+import { Calendar, LogIn, Star, Trophy } from "lucide-react";
+import Link from "next/link";
+import { useSearchParams } from "next/navigation";
+import { useState } from "react";
+import AuthFeatureCard from "@/app/(auth)/components/AuthFeatureCard";
+import PublicPageShell from "@/app/(auth)/components/PublicPageShell";
 
 export default function LoginForm() {
-  const searchParams = useSearchParams()
-  const next = searchParams.get('next')
-  const authError = searchParams.get('error')
-  const [loading, setLoading] = useState(false)
-  const supabase = createBrowserSupabase()
+  const searchParams = useSearchParams();
+  const next = searchParams.get("next");
+  const authError = searchParams.get("error");
+  const [loading, setLoading] = useState(false);
 
-  const signInWithGoogle = async () => {
-    setLoading(true)
-    const callbackUrl = next
-      ? `${window.location.origin}/api/auth/callback?next=${encodeURIComponent(next)}`
-      : `${window.location.origin}/api/auth/callback`
-
-    const { data, error } = await supabase.auth.signInWithOAuth({
-      provider: 'google',
-      options: {
-        redirectTo: callbackUrl,
-        queryParams: { hd: 'tamu.edu' },
-        skipBrowserRedirect: true,
-      },
-    })
-
-    if (error || !data?.url) {
-      setLoading(false)
-      return
-    }
-
-    window.location.href = data.url
-  }
+  const googleHref = next
+    ? `/api/auth/google?next=${encodeURIComponent(next)}`
+    : "/api/auth/google";
 
   return (
     <PublicPageShell>
@@ -51,9 +30,10 @@ export default function LoginForm() {
                 TAMU CSA Points
               </h1>
               <p className="mt-4 max-w-xl text-base leading-7 text-subtitle sm:text-lg">
-                The official points and attendance system for the Texas A&amp;M Chinese Student
-                Association. Members sign in with their TAMU Google account to track event
-                participation, view leaderboards, and manage their CSA profile.
+                The official points and attendance system for the Texas A&amp;M
+                Chinese Student Association. Members sign in with their TAMU
+                Google account to track event participation, view leaderboards,
+                and manage their CSA profile.
               </p>
             </div>
 
@@ -87,14 +67,19 @@ export default function LoginForm() {
                   <div className="text-sm font-semibold uppercase tracking-[0.22em] text-primary">
                     Member access
                   </div>
-                  <div className="text-sm text-subtitle">Secure TAMU sign-in</div>
+                  <div className="text-sm text-subtitle">
+                    Secure TAMU sign-in
+                  </div>
                 </div>
               </div>
 
               <div className="mb-5 rounded-2xl border border-accent/35 bg-[linear-gradient(180deg,rgba(240,176,195,0.18),rgba(255,255,255,0.9))] p-4">
-                <div className="text-sm font-semibold text-text">TAMU email required</div>
+                <div className="text-sm font-semibold text-text">
+                  TAMU email required
+                </div>
                 <div className="mt-1 text-sm leading-6 text-subtitle">
-                  Sign in with the Google account associated with your Texas A&amp;M email address.
+                  Sign in with the Google account associated with your Texas
+                  A&amp;M email address.
                 </div>
               </div>
 
@@ -102,30 +87,37 @@ export default function LoginForm() {
                 {authError && (
                   <div className="mb-4 rounded-2xl border border-[#f5b0b0] bg-[#fff4f4] p-3.5">
                     <p className="text-sm leading-6 text-[#c94b4b]">
-                      {authError === 'invalid_domain'
-                        ? 'Please sign in with your @tamu.edu Google account.'
-                        : 'Sign-in failed. Please try again.'}
+                      {authError === "invalid_domain"
+                        ? "Please sign in with your @tamu.edu Google account."
+                        : "Sign-in failed. Please try again."}
                     </p>
                   </div>
                 )}
 
-                <button
-                  onClick={signInWithGoogle}
-                  disabled={loading}
-                  className="flex w-full items-center justify-center rounded-xl border border-transparent bg-primary px-4 py-3 text-[15px] font-semibold text-white shadow-[0_12px_28px_rgba(71,121,184,0.24)] transition duration-150 hover:bg-[#35679e] disabled:cursor-not-allowed disabled:bg-[#9cb8d8] disabled:text-white/80"
+                <a
+                  href={googleHref}
+                  onClick={() => setLoading(true)}
+                  aria-disabled={loading}
+                  className="flex w-full items-center justify-center rounded-xl border border-transparent bg-primary px-4 py-3 text-center text-[15px] font-semibold text-white shadow-[0_12px_28px_rgba(71,121,184,0.24)] transition duration-150 hover:bg-[#35679e] aria-disabled:pointer-events-none aria-disabled:cursor-not-allowed aria-disabled:bg-[#9cb8d8] aria-disabled:text-white/80"
                 >
-                  {loading ? 'Redirecting…' : 'Sign in with Google'}
-                </button>
+                  {loading ? "Redirecting…" : "Sign in with Google"}
+                </a>
 
                 <div className="mt-3 space-y-1 border-t border-home-border/70 pt-3 text-center text-xs leading-5 text-subtitle">
                   <p>Redirected to Google to complete sign-in.</p>
                   <p>
-                    By signing in, you agree to our{' '}
-                    <Link href="/terms" className="font-medium text-primary hover:text-[#35679e]">
+                    By signing in, you agree to our{" "}
+                    <Link
+                      href="/terms"
+                      className="font-medium text-primary hover:text-[#35679e]"
+                    >
                       Terms
-                    </Link>{' '}
-                    and{' '}
-                    <Link href="/privacy" className="font-medium text-primary hover:text-[#35679e]">
+                    </Link>{" "}
+                    and{" "}
+                    <Link
+                      href="/privacy"
+                      className="font-medium text-primary hover:text-[#35679e]"
+                    >
                       Privacy Policy
                     </Link>
                     .
@@ -137,5 +129,5 @@ export default function LoginForm() {
         </div>
       </div>
     </PublicPageShell>
-  )
+  );
 }
