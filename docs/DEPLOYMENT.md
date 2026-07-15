@@ -22,7 +22,7 @@ Each environment should have:
 ## Secrets & configuration
 
 - Store secrets only in your hosting provider’s secret manager.
-- Never expose `SUPABASE_SERVICE_ROLE_KEY` or `GOOGLE_SERVICE_ACCOUNT_PRIVATE_KEY` to clients.
+- Never expose `SUPABASE_SERVICE_ROLE_KEY`, `GOOGLE_SERVICE_ACCOUNT_PRIVATE_KEY`, or `GOOGLE_PLACES_API_KEY` to clients.
 - `NEXT_PUBLIC_*` variables are public by definition.
 
 ## Database migrations
@@ -77,4 +77,14 @@ Before enabling in an environment:
 3. Set `GOOGLE_CALENDAR_SYNC_ENABLED=true` only after the service account can write to the calendar.
 
 Verify after enable: create an eligible test event (e.g. General Meeting), confirm it appears on the CSA Member Calendar, then edit schedule/location and delete it — Calendar should update/remove accordingly. Mixer and Jiating Event must not appear.
+
+## Google Places autocomplete
+
+Officer location fields can suggest Places near campus via server routes `/api/places/autocomplete` and `/api/places/details`.
+
+1. Enable **Places API (New)** and create a server API key (see `docs/ENVIRONMENT.md`).
+2. Set `GOOGLE_PLACES_API_KEY` in Vercel.
+3. Verify: on New Event, type `MSC`, pick a suggestion, save; also save a free-typed room like `MSC 2406` without picking.
+
+Never expose the Places key as `NEXT_PUBLIC_*`.
 

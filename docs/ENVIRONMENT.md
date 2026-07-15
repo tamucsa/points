@@ -79,6 +79,21 @@ App → Google pushes eligible org events to the shared **CSA Member Calendar**.
 
 When credentials are missing or sync is disabled, event create/update/delete in the App still succeed; Calendar writes are skipped.
 
+## Optional — Google Places autocomplete
+
+Officer event create/edit location fields can suggest Places near Texas A&M. Free-text entry always works without selecting a suggestion. Requests go through authenticated server routes (`/api/places/*`); the API key stays server-only.
+
+### Setup (one-time in Google Cloud)
+
+1. In the same Google Cloud project (or another with billing enabled), enable **Places API (New)**.
+2. Create an **API key** restricted to Places API (New) only. Prefer application/IP restrictions suitable for server-side use (HTTP referrer restrictions do not apply to server routes).
+3. Set `GOOGLE_PLACES_API_KEY` in Vercel for the target environments, then pull locally if needed.
+
+### `GOOGLE_PLACES_API_KEY`
+- **Purpose**: Server-only key for Places Autocomplete (New) + Place Details (New).
+- **Security**: Must **never** be exposed to the browser (`NEXT_PUBLIC_` not allowed).
+- When unset, location fields behave as plain text inputs (no suggestions).
+
 ## Notes
 
 - Variables prefixed with `NEXT_PUBLIC_` are embedded in the client bundle by Next.js and are safe only for **non-secret** values.
