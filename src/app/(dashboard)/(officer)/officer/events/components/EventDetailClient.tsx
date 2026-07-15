@@ -34,6 +34,7 @@ interface Event {
   starts_at: string;
   ends_at: string | null;
   location: string | null;
+  location_maps_url?: string | null;
   description: string | null;
   check_in_code: string | null;
   rsvp_url: string | null;
@@ -128,6 +129,9 @@ export default function EventDetailClient({
     event.ends_at ? eventTimestampToFormTime(event.ends_at) : "",
   );
   const [location, setLocation] = useState(event.location ?? "");
+  const [locationMapsUrl, setLocationMapsUrl] = useState<string | null>(
+    event.location_maps_url ?? null,
+  );
   const [scheduleSaving, setScheduleSaving] = useState(false);
   const [scheduleError, setScheduleError] = useState<string | null>(null);
   const [scheduleSaved, setScheduleSaved] = useState(false);
@@ -173,7 +177,8 @@ export default function EventDetailClient({
     setStartTime(eventTimestampToFormTime(event.starts_at));
     setEndTime(event.ends_at ? eventTimestampToFormTime(event.ends_at) : "");
     setLocation(event.location ?? "");
-  }, [event.starts_at, event.ends_at, event.location]);
+    setLocationMapsUrl(event.location_maps_url ?? null);
+  }, [event.starts_at, event.ends_at, event.location, event.location_maps_url]);
 
   const toggleMixerFamily = (id: string) => {
     setSelectedMixerFamilies((prev) =>
@@ -232,6 +237,7 @@ export default function EventDetailClient({
       startTime,
       endTime: endTime.trim() || null,
       location,
+      locationMapsUrl,
     });
 
     setScheduleSaving(false);
@@ -292,7 +298,12 @@ export default function EventDetailClient({
                 size="sm"
               />
               {event.location && (
-                <IconLabel icon={MapPin} label={event.location} size="sm" />
+                <IconLabel
+                  icon={MapPin}
+                  label={event.location}
+                  size="sm"
+                  href={event.location_maps_url}
+                />
               )}
               <span className="rounded-md bg-bg px-2 py-0.5 text-xs">
                 {event.category}
@@ -393,9 +404,10 @@ export default function EventDetailClient({
               <LocationAutocomplete
                 id="event-edit-location"
                 value={location}
-                onChange={(value) => {
-                  setLocation(value);
-                  setScheduleSaved(false);
+                onChange={(value, meta) => {
+                  setLocation(value)
+                  setLocationMapsUrl(meta?.mapsUrl ?? null)
+                  setScheduleSaved(false)
                 }}
                 placeholder="e.g. MSC 2406"
               />

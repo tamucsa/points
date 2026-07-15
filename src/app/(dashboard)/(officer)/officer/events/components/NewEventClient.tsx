@@ -77,6 +77,7 @@ export default function NewEventClient({
       start_time: "",
       end_time: "",
       location: "",
+      location_maps_url: null as string | null,
       description: "",
       rsvp_url: "",
       rsvp_deadline: "",
@@ -137,6 +138,7 @@ export default function NewEventClient({
       startTime: form.start_time,
       endTime: form.end_time.trim() || null,
       location: form.location.trim(),
+      locationMapsUrl: form.location_maps_url || null,
       description: form.description.trim() || null,
       rsvpUrl: isRSVP && form.rsvp_url ? form.rsvp_url.trim() : null,
       rsvpDeadline: isRSVP && form.rsvp_deadline ? form.rsvp_deadline : null,
@@ -244,7 +246,13 @@ export default function NewEventClient({
             <label className={labelClassName}>Location *</label>
             <LocationAutocomplete
               value={form.location}
-              onChange={(value) => set("location", value)}
+              onChange={(value, meta) => {
+                setForm(f => ({
+                  ...f,
+                  location: value,
+                  location_maps_url: meta?.mapsUrl ?? null,
+                }))
+              }}
               placeholder="e.g. MSC 2406"
               required
             />

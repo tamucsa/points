@@ -70,10 +70,6 @@ export function formatPlaceLocation(
   formattedAddress: string | null | undefined,
 ): string {
   const name = displayName?.trim() ?? "";
-  const address = formattedAddress?.trim() ?? "";
-  if (name && address) {
-    if (address.toLowerCase().startsWith(name.toLowerCase())) return address;
-    return `${name}, ${address}`;
-  }
-  return name || address;
+  if (name) return name;
+  return formattedAddress?.trim() ?? "";
 }

@@ -35,6 +35,8 @@ export interface CreateEventInput {
   startTime: string;
   endTime: string | null;
   location: string;
+  /** Google Maps URI when location came from Places; null for free text. */
+  locationMapsUrl?: string | null;
   description: string | null;
   rsvpUrl: string | null;
   rsvpDeadline: string | null;
@@ -195,6 +197,7 @@ export async function createEvent(input: CreateEventInput) {
   const isJTSpecific = scope === "jt_specific";
   const hasSpectators = config.allowSpectators === true && input.hasSpectators;
   const location = input.location.trim();
+  const locationMapsUrl = input.locationMapsUrl?.trim() || null;
   const name = input.name.trim();
   const rsvpUrl = isRSVP ? input.rsvpUrl : null;
 
@@ -211,6 +214,7 @@ export async function createEvent(input: CreateEventInput) {
       starts_at: startsAt,
       ends_at: endsAt,
       location,
+      location_maps_url: locationMapsUrl,
       description: input.description,
       rsvp_url: rsvpUrl,
       rsvp_deadline: isRSVP ? input.rsvpDeadline : null,
@@ -257,6 +261,7 @@ export async function createEvent(input: CreateEventInput) {
       starts_at: startsAt,
       ends_at: endsAt,
       location,
+      location_maps_url: locationMapsUrl,
       created_by: input.createdBy,
       parent_event_id: event.id,
     });
@@ -364,6 +369,7 @@ export async function updateEventSchedule(
     startTime: string;
     endTime: string | null;
     location: string;
+    locationMapsUrl?: string | null;
   },
 ) {
   if (!eventId) return { success: false, error: "Event not found." };
@@ -410,7 +416,13 @@ export async function updateEventSchedule(
   }
 
   const location = input.location.trim();
-  const patch = { starts_at: startsAt, ends_at: endsAt, location };
+  const locationMapsUrl = input.locationMapsUrl?.trim() || null;
+  const patch = {
+    starts_at: startsAt,
+    ends_at: endsAt,
+    location,
+    location_maps_url: locationMapsUrl,
+  };
 
   const { error } = await supabase
     .from("events")

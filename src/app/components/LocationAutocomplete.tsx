@@ -9,10 +9,15 @@ type Suggestion = {
   secondaryText: string;
 };
 
+export type LocationChangeMeta = {
+  /** Google Maps URI when a Place suggestion was selected; null for free text. */
+  mapsUrl: string | null;
+};
+
 type Props = {
   id?: string;
   value: string;
-  onChange: (value: string) => void;
+  onChange: (value: string, meta?: LocationChangeMeta) => void;
   placeholder?: string;
   required?: boolean;
   disabled?: boolean;
@@ -132,9 +137,8 @@ export default function LocationAutocomplete({
     setSelecting(true);
     clearSuggestions();
 
-    const fallback = suggestion.secondaryText
-      ? `${suggestion.primaryText}, ${suggestion.secondaryText}`
-      : suggestion.primaryText;
+    // Place name only (not full address). Maps link comes from Place Details.
+    const fallbackName = suggestion.primaryText;
 
     try {
       const response = await fetch("/api/places/details", {
@@ -147,13 +151,18 @@ export default function LocationAutocomplete({
       });
 
       if (response.ok) {
-        const data = (await response.json()) as { location?: string };
-        onChange(data.location?.trim() || fallback);
+        const data = (await response.json()) as {
+          location?: string;
+          mapsUrl?: string | null;
+        };
+        onChange(data.location?.trim() || fallbackName, {
+          mapsUrl: data.mapsUrl?.trim() || null,
+        });
       } else {
-        onChange(fallback);
+        onChange(fallbackName, { mapsUrl: null });
       }
     } catch {
-      onChange(fallback);
+      onChange(fallbackName, { mapsUrl: null });
     } finally {
       sessionTokenRef.current = newSessionToken();
       setSelecting(false);
@@ -161,7 +170,8 @@ export default function LocationAutocomplete({
   }
 
   function onInputChange(next: string) {
-    onChange(next);
+    // Free-text edits clear any previous Place Maps link.
+    onChange(next, { mapsUrl: null });
     scheduleFetch(next);
   }
 

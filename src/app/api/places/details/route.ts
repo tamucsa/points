@@ -13,6 +13,7 @@ type DetailsBody = {
 type PlaceDetailsResponse = {
   displayName?: { text?: string };
   formattedAddress?: string;
+  googleMapsUri?: string;
 };
 
 export async function POST(request: Request) {
@@ -65,7 +66,7 @@ export async function POST(request: Request) {
       method: "GET",
       headers: {
         "X-Goog-Api-Key": key,
-        "X-Goog-FieldMask": "displayName,formattedAddress",
+        "X-Goog-FieldMask": "displayName,formattedAddress,googleMapsUri",
       },
     });
 
@@ -90,12 +91,16 @@ export async function POST(request: Request) {
 
     if (!location) {
       return NextResponse.json(
-        { error: "Place had no address." },
+        { error: "Place had no name." },
         { status: 502 },
       );
     }
 
-    return NextResponse.json({ location });
+    const mapsUrl =
+      data.googleMapsUri?.trim() ||
+      `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(location)}&query_place_id=${encodeURIComponent(resourceId)}`;
+
+    return NextResponse.json({ location, mapsUrl });
   } catch (err) {
     console.error("Places details error:", err);
     return NextResponse.json(

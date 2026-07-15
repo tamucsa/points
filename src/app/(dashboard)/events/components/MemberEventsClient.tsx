@@ -25,6 +25,7 @@ interface Event {
   starts_at: string
   ends_at: string | null
   location: string | null
+  location_maps_url?: string | null
   rsvp_url: string | null
   rsvp_deadline: string | null
 }
@@ -64,7 +65,12 @@ function EventCard({ event, attended }: { event: Event; attended: boolean }) {
           </EventMetaItem>
           {event.location && (
             <EventMetaItem>
-              <IconLabel icon={MapPin} label={event.location} size="sm" />
+              <IconLabel
+                icon={MapPin}
+                label={event.location}
+                size="sm"
+                href={event.location_maps_url}
+              />
             </EventMetaItem>
           )}
           <EventMetaChip>

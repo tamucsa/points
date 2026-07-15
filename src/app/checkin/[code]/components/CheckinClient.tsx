@@ -15,6 +15,7 @@ interface Event {
   starts_at: string
   ends_at: string | null
   location: string | null
+  location_maps_url?: string | null
   check_in_type: string
   semester_id: string
 }
@@ -82,7 +83,14 @@ export default function CheckinClient({ event, code, userEmail, member, alreadyC
             </h1>
             <div className="mt-3 flex flex-col gap-1.5 text-sm text-subtitle">
               <IconLabel icon={Clock} label={eventSchedule} size="sm" />
-              {event.location && <IconLabel icon={MapPin} label={event.location} size="sm" />}
+              {event.location && (
+                <IconLabel
+                  icon={MapPin}
+                  label={event.location}
+                  size="sm"
+                  href={event.location_maps_url}
+                />
+              )}
               <IconLabel icon={Star} label={pointLabel} size="sm" iconClassName="text-primary" />
             </div>
 

@@ -13,6 +13,7 @@ interface Event {
   point_value: number
   check_in_code: string
   location: string | null
+  location_maps_url?: string | null
 }
 
 export default function QRFullScreen({ event, origin }: { event: Event; origin: string }) {
@@ -23,7 +24,7 @@ export default function QRFullScreen({ event, origin }: { event: Event; origin: 
       <h1 className="max-w-lg text-center text-3xl font-extrabold text-text">{event.name}</h1>
       {event.location && (
         <p className="text-base text-subtitle">
-          <IconLabel icon={MapPin} label={event.location} />
+          <IconLabel icon={MapPin} label={event.location} href={event.location_maps_url} />
         </p>
       )}
       <div className="rounded-3xl bg-white p-7 shadow-[0_20px_60px_rgba(71,121,184,0.15)]">
