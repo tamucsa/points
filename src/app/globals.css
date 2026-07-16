@@ -39,3 +39,43 @@ body {
   /* Prevent background scroll when a modal is open. No color overlay is applied here. */
   overflow: hidden !important;
 }
+
+/* Screen: hide print-only QR sheet. Print: hide chrome + show QR full page. */
+.qr-print-sheet {
+  display: none;
+}
+
+@media print {
+  @page {
+    margin: 0;
+    size: letter;
+  }
+
+  html,
+  body {
+    background: white !important;
+    height: 100%;
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+
+  .qr-screen-only {
+    display: none !important;
+  }
+
+  .qr-print-sheet {
+    display: flex !important;
+    position: fixed;
+    inset: 0;
+    align-items: center;
+    justify-content: center;
+    box-sizing: border-box;
+    padding: 0.5in;
+    background: white;
+  }
+
+  .qr-print-sheet svg {
+    width: min(5.5in, 80vw) !important;
+    height: min(5.5in, 80vw) !important;
+  }
+}

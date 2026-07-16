@@ -198,7 +198,7 @@ export default function Sidebar({ member }: { member: Member }) {
   return (
     <>
       {/* Mobile top bar */}
-      <div className="fixed inset-x-0 top-0 z-40 flex h-14 items-center gap-3 border-b border-home-border bg-white px-4 lg:hidden">
+      <div className="fixed inset-x-0 top-0 z-40 flex h-14 items-center gap-3 border-b border-home-border bg-white px-4 print:hidden lg:hidden">
         <button
           type="button"
           onClick={() => setMobileOpen(true)}
@@ -223,7 +223,7 @@ export default function Sidebar({ member }: { member: Member }) {
       {/* Sidebar */}
       <aside
         style={{ width: collapsed ? COLLAPSED_WIDTH : EXPANDED_WIDTH }}
-        className={`fixed inset-y-0 left-0 z-50 flex shrink-0 flex-col border-r border-home-border bg-white px-3 py-5 shadow-[8px_0_40px_rgba(15,23,42,0.04)] transition-[width] duration-200 lg:sticky lg:top-0 lg:z-auto lg:h-screen ${
+        className={`fixed inset-y-0 left-0 z-50 flex shrink-0 flex-col border-r border-home-border bg-white px-3 py-5 shadow-[8px_0_40px_rgba(15,23,42,0.04)] transition-[width] duration-200 print:hidden lg:sticky lg:top-0 lg:z-auto lg:h-screen ${
           mobileOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'
         }`}
       >

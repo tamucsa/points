@@ -15,9 +15,9 @@ export default async function DashboardLayout({
   if (member.status === 'pending_member' || member.status === 'pending_jt') redirect('/pending')
 
   return (
-    <div className="flex min-h-screen bg-bg text-text lg:h-screen lg:overflow-hidden">
+    <div className="flex min-h-screen bg-bg text-text lg:h-screen lg:overflow-hidden print:block print:h-auto print:overflow-visible">
       <Sidebar member={member} />
-      <main className="min-w-0 flex-1 overflow-y-auto bg-[radial-gradient(circle_at_top_right,rgba(71,121,184,0.05),transparent_28%),radial-gradient(circle_at_bottom_left,rgba(240,176,195,0.12),transparent_28%)] pt-14 lg:pt-0">
+      <main className="min-w-0 flex-1 overflow-y-auto bg-[radial-gradient(circle_at_top_right,rgba(71,121,184,0.05),transparent_28%),radial-gradient(circle_at_bottom_left,rgba(240,176,195,0.12),transparent_28%)] pt-14 lg:pt-0 print:overflow-visible print:bg-white print:p-0 print:pt-0">
         {children}
       </main>
     </div>

@@ -304,6 +304,13 @@ export default function OfficerEventsClient({
               >
                 Full Screen
               </button>
+              <button
+                type="button"
+                onClick={() => window.open(`/officer/events/${event.id}/qr?print=1`, '_blank')}
+                className={actionSecondaryClassName}
+              >
+                Print QR
+              </button>
             </>
           )}
           {(event.check_in_type === 'officer' || event.check_in_type === 'rsvp_required') && (
@@ -330,6 +337,15 @@ export default function OfficerEventsClient({
                 className={actionSecondaryClassName}
               >
                 Spectator Full Screen
+              </button>
+              <button
+                type="button"
+                onClick={() =>
+                  window.open(`/officer/events/${spectator.id}/qr?print=1`, '_blank')
+                }
+                className={actionSecondaryClassName}
+              >
+                Print Spectator QR
               </button>
             </>
           )}
@@ -555,6 +571,15 @@ export default function OfficerEventsClient({
                 className="rounded-xl bg-primary px-4 py-2 text-sm font-semibold text-white transition hover:bg-[#35679e]"
               >
                 Full Screen
+              </button>
+              <button
+                type="button"
+                onClick={() =>
+                  window.open(`/officer/events/${qrEvent.id}/qr?print=1`, '_blank')
+                }
+                className="rounded-xl border border-home-border bg-white px-4 py-2 text-sm font-semibold text-text transition hover:border-primary/30 hover:text-primary"
+              >
+                Print QR
               </button>
               <button
                 type="button"

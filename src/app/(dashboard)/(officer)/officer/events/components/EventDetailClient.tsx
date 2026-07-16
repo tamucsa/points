@@ -339,26 +339,51 @@ export default function EventDetailClient({
             </button>
           )}
           {event.check_in_type === "self" && event.check_in_code && (
-            <button
-              type="button"
-              onClick={() =>
-                window.open(`/officer/events/${event.id}/qr`, "_blank")
-              }
-              className={btnPrimaryOutlineClassName}
-            >
-              Open QR Full Screen
-            </button>
+            <>
+              <button
+                type="button"
+                onClick={() =>
+                  window.open(`/officer/events/${event.id}/qr`, "_blank")
+                }
+                className={btnPrimaryOutlineClassName}
+              >
+                Open QR Full Screen
+              </button>
+              <button
+                type="button"
+                onClick={() =>
+                  window.open(`/officer/events/${event.id}/qr?print=1`, "_blank")
+                }
+                className={btnSecondaryClassName}
+              >
+                Print QR Code
+              </button>
+            </>
           )}
           {spectatorEvent?.check_in_code && (
-            <button
-              type="button"
-              onClick={() =>
-                window.open(`/officer/events/${spectatorEvent.id}/qr`, "_blank")
-              }
-              className={btnPrimaryOutlineClassName}
-            >
-              Spectator QR Full Screen
-            </button>
+            <>
+              <button
+                type="button"
+                onClick={() =>
+                  window.open(`/officer/events/${spectatorEvent.id}/qr`, "_blank")
+                }
+                className={btnPrimaryOutlineClassName}
+              >
+                Spectator QR Full Screen
+              </button>
+              <button
+                type="button"
+                onClick={() =>
+                  window.open(
+                    `/officer/events/${spectatorEvent.id}/qr?print=1`,
+                    "_blank",
+                  )
+                }
+                className={btnSecondaryClassName}
+              >
+                Print Spectator QR
+              </button>
+            </>
           )}
           {event.rsvp_url && (
             <a
