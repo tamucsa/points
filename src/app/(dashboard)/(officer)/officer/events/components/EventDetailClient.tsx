@@ -139,6 +139,7 @@ export default function EventDetailClient({
   const [endTime, setEndTime] = useState(() =>
     event.ends_at ? eventTimestampToFormTime(event.ends_at) : "",
   );
+  const [name, setName] = useState(event.name ?? "");
   const [location, setLocation] = useState(event.location ?? "");
   const [locationMapsUrl, setLocationMapsUrl] = useState<string | null>(
     event.location_maps_url ?? null,
@@ -185,6 +186,7 @@ export default function EventDetailClient({
   };
 
   useEffect(() => {
+    setName(event.name ?? "");
     setEventDate(eventTimestampToFormDate(event.starts_at));
     setStartTime(eventTimestampToFormTime(event.starts_at));
     setEndTime(event.ends_at ? eventTimestampToFormTime(event.ends_at) : "");
@@ -192,6 +194,7 @@ export default function EventDetailClient({
     setLocationMapsUrl(event.location_maps_url ?? null);
     setDescription(event.description ?? "");
   }, [
+    event.name,
     event.starts_at,
     event.ends_at,
     event.location,
@@ -252,6 +255,7 @@ export default function EventDetailClient({
     setScheduleSaved(false);
 
     const result = await updateEventSchedule(event.id, {
+      name,
       eventDate,
       startTime,
       endTime: endTime.trim() || null,
@@ -483,14 +487,31 @@ export default function EventDetailClient({
           defaultOpen
           summary={
             [
+              event.name,
               formatEventSchedule(event.starts_at, event.ends_at),
               event.location,
               event.description ? "Has description" : null,
             ]
               .filter(Boolean)
-              .join(" · ") || "Date, location, and description"
+              .join(" · ") || "Name, date, location, and description"
           }
         >
+          <div>
+            <label className={labelClassName} htmlFor="event-edit-name">
+              Event name
+            </label>
+            <input
+              id="event-edit-name"
+              type="text"
+              className={inputClassName}
+              placeholder="e.g. First Friday March"
+              value={name}
+              onChange={(e) => {
+                setName(e.target.value);
+                setScheduleSaved(false);
+              }}
+            />
+          </div>
           <div className="grid gap-3 sm:grid-cols-2">
             <div>
               <label className={labelClassName} htmlFor="event-edit-date">

@@ -583,6 +583,7 @@ export async function updateEventRsvp(
 export async function updateEventSchedule(
   eventId: string,
   input: {
+    name?: string;
     eventDate: string;
     startTime: string;
     endTime: string | null;
@@ -592,6 +593,8 @@ export async function updateEventSchedule(
   },
 ) {
   if (!eventId) return { success: false, error: "Event not found." };
+  if (input.name !== undefined && !input.name.trim())
+    return { success: false, error: "Event name is required." };
   if (!input.eventDate)
     return { success: false, error: "Event date is required." };
   if (!input.startTime)
@@ -640,6 +643,8 @@ export async function updateEventSchedule(
     input.description !== undefined
       ? input.description?.trim() || null
       : event.description;
+  const name =
+    input.name !== undefined ? input.name.trim() : event.name;
   const patch = {
     starts_at: startsAt,
     ends_at: endsAt,
@@ -650,13 +655,14 @@ export async function updateEventSchedule(
 
   const { error } = await supabase
     .from("events")
-    .update(patch)
+    .update({ ...patch, name })
     .eq("id", eventId);
   if (error) return { success: false, error: "Failed to save event details." };
 
+  // Spectator child keeps the schedule/location but derives its own name.
   const { error: spectatorError } = await supabase
     .from("events")
-    .update(patch)
+    .update({ ...patch, name: `${name} — Spectator` })
     .eq("parent_event_id", eventId);
 
   if (spectatorError) {
@@ -669,7 +675,7 @@ export async function updateEventSchedule(
   // Sync whenever a Google id exists (covers legacy/mis-synced rows).
   if (event.google_event_id) {
     const sync = await updateCalendarEvent(event.google_event_id, {
-      name: event.name,
+      name,
       description,
       location,
       startsAt,
