@@ -3,8 +3,15 @@ import { notFound, redirect } from 'next/navigation'
 import QRFullScreen from '@/app/(dashboard)/(officer)/officer/events/components/QRFullScreen'
 import { getAuthUser } from '@/utils/supabase/auth'
 
-export default async function QRPage({ params }: { params: Promise<{ id: string }> }) {
+export default async function QRPage({
+  params,
+  searchParams,
+}: {
+  params: Promise<{ id: string }>
+  searchParams: Promise<{ print?: string }>
+}) {
   const { id } = await params
+  const { print } = await searchParams
   const { supabase, user } = await getAuthUser()
   if (!user) redirect('/')
 
@@ -22,5 +29,11 @@ export default async function QRPage({ params }: { params: Promise<{ id: string 
   const proto = headersList.get('x-forwarded-proto') ?? 'https'
   const origin = host ? `${proto}://${host}` : (process.env.NEXT_PUBLIC_SITE_URL ?? '')
 
-  return <QRFullScreen event={event} origin={origin} />
+  return (
+    <QRFullScreen
+      event={event}
+      origin={origin}
+      autoPrint={print === '1'}
+    />
+  )
 }

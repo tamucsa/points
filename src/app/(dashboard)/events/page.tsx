@@ -17,6 +17,7 @@ export default async function MemberEventsPage() {
     .from('events')
     .select('*')
     .eq('semester_id', semester?.id)
+    .eq('publish_status', 'published')
     .is('parent_event_id', null)
     .order('starts_at', { ascending: true })
 

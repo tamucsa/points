@@ -6,6 +6,7 @@ import { useEffect, useState } from "react";
 import EventRsvpPanel from "@/app/(dashboard)/(officer)/officer/events/components/EventRsvpPanel";
 import { officerRemoveCheckIn } from "@/app/actions/attendance";
 import {
+  publishEvent,
   updateEventMixerFamilies,
   updateEventRsvp,
   updateEventSchedule,
@@ -19,7 +20,7 @@ import LocationAutocomplete from "@/app/components/LocationAutocomplete";
 import CollapsibleSettings from "@/app/components/CollapsibleSettings";
 import MemberAvatar from "@/app/components/MemberAvatar";
 import { inputClassName, labelClassName } from "@/utils/constants";
-import { formatEventSchedule } from "@/utils/datetime";
+import { EVENT_TIMEZONE, formatEventSchedule } from "@/utils/datetime";
 import {
   eventTimestampToFormDate,
   eventTimestampToFormTime,
@@ -40,6 +41,8 @@ interface Event {
   check_in_code: string | null;
   rsvp_url: string | null;
   rsvp_deadline: string | null;
+  publish_status?: "draft" | "scheduled" | "published" | null;
+  publish_at?: string | null;
 }
 
 interface AttendanceRow {
@@ -108,6 +111,13 @@ export default function EventDetailClient({
   const [publishing, setPublishing] = useState(false);
   const [publishError, setPublishError] = useState<string | null>(null);
   const [published, setPublished] = useState(publishedSnapshot);
+  const [eventPublishing, setEventPublishing] = useState(false);
+  const [eventPublishError, setEventPublishError] = useState<string | null>(
+    null,
+  );
+  const publishStatus = event.publish_status ?? "published";
+  const canPublishEvent =
+    publishStatus === "draft" || publishStatus === "scheduled";
   const [rsvpUrl, setRsvpUrl] = useState(event.rsvp_url ?? "");
   const [rsvpDeadline, setRsvpDeadline] = useState(
     event.rsvp_deadline ? event.rsvp_deadline.slice(0, 16) : "",
@@ -259,6 +269,18 @@ export default function EventDetailClient({
     router.refresh();
   };
 
+  const handlePublishEvent = async () => {
+    setEventPublishing(true);
+    setEventPublishError(null);
+    const result = await publishEvent(event.id);
+    setEventPublishing(false);
+    if (!result.success) {
+      setEventPublishError(result.error ?? "Failed to publish event.");
+      return;
+    }
+    router.refresh();
+  };
+
   const handlePublishStandings = async () => {
     if (
       !window.confirm(
@@ -301,6 +323,30 @@ export default function EventDetailClient({
           </div>
           <div className="min-w-0 flex-1">
             <h1 className="text-2xl font-bold text-text">{event.name}</h1>
+            <div className="mt-2 flex flex-wrap items-center gap-2">
+              {publishStatus === "draft" && (
+                <span className="inline-flex items-center rounded-full bg-stone-100 px-2 py-0.5 text-[11px] font-semibold leading-none text-stone-700">
+                  Draft
+                </span>
+              )}
+              {publishStatus === "scheduled" && (
+                <span className="inline-flex items-center rounded-full bg-amber-100 px-2 py-0.5 text-[11px] font-semibold leading-none text-amber-900">
+                  Scheduled
+                  {event.publish_at
+                    ? ` · ${new Date(event.publish_at).toLocaleString("en-US", {
+                        timeZone: EVENT_TIMEZONE,
+                        dateStyle: "medium",
+                        timeStyle: "short",
+                      })} CT`
+                    : ""}
+                </span>
+              )}
+              {publishStatus === "published" && (
+                <span className="inline-flex items-center rounded-full bg-primary/10 px-2 py-0.5 text-[11px] font-semibold leading-none text-primary">
+                  Published
+                </span>
+              )}
+            </div>
             <div className="mt-2 flex flex-wrap gap-2 text-sm text-subtitle">
               <IconLabel
                 icon={Clock}
@@ -328,8 +374,19 @@ export default function EventDetailClient({
         </div>
 
         <div className="mt-5 flex flex-wrap gap-2">
-          {(event.check_in_type === "officer" ||
-            event.check_in_type === "rsvp_required") && (
+          {canPublishEvent && (
+            <button
+              type="button"
+              onClick={() => void handlePublishEvent()}
+              disabled={eventPublishing}
+              className={btnPrimaryClassName}
+            >
+              {eventPublishing ? "Publishing…" : "Publish now"}
+            </button>
+          )}
+          {publishStatus === "published" &&
+            (event.check_in_type === "officer" ||
+              event.check_in_type === "rsvp_required") && (
             <button
               type="button"
               onClick={() => router.push(`/officer/events/${event.id}/checkin`)}
@@ -346,19 +403,48 @@ export default function EventDetailClient({
               }
               className={btnPrimaryOutlineClassName}
             >
-              Open QR Full Screen
+              {publishStatus === "published"
+                ? "Open QR Full Screen"
+                : "Preview QR"}
             </button>
           )}
-          {spectatorEvent?.check_in_code && (
+          {publishStatus === "published" &&
+            event.check_in_type === "self" &&
+            event.check_in_code && (
             <button
               type="button"
               onClick={() =>
-                window.open(`/officer/events/${spectatorEvent.id}/qr`, "_blank")
+                window.open(`/officer/events/${event.id}/qr?print=1`, "_blank")
               }
-              className={btnPrimaryOutlineClassName}
+              className={btnSecondaryClassName}
             >
-              Spectator QR Full Screen
+              Print QR Code
             </button>
+          )}
+          {publishStatus === "published" && spectatorEvent?.check_in_code && (
+            <>
+              <button
+                type="button"
+                onClick={() =>
+                  window.open(`/officer/events/${spectatorEvent.id}/qr`, "_blank")
+                }
+                className={btnPrimaryOutlineClassName}
+              >
+                Spectator QR Full Screen
+              </button>
+              <button
+                type="button"
+                onClick={() =>
+                  window.open(
+                    `/officer/events/${spectatorEvent.id}/qr?print=1`,
+                    "_blank",
+                  )
+                }
+                className={btnSecondaryClassName}
+              >
+                Print Spectator QR
+              </button>
+            </>
           )}
           {event.rsvp_url && (
             <a
@@ -386,6 +472,9 @@ export default function EventDetailClient({
             </span>
           )}
         </div>
+        {eventPublishError && (
+          <p className="mt-3 text-sm text-red-600">{eventPublishError}</p>
+        )}
         {publishError && (
           <p className="mt-3 text-sm text-red-600">{publishError}</p>
         )}

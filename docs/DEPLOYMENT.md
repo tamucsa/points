@@ -88,3 +88,15 @@ Officer location fields can suggest Places near campus via server routes `/api/p
 
 Never expose the Places key as `NEXT_PUBLIC_*`.
 
+## Scheduled event publishing
+
+1. Migration for `events.publish_status` / `publish_at` / `published_at` (already applied on prod DB if you ran it).
+2. Set `CRON_SECRET` in **Vercel** (see `docs/ENVIRONMENT.md`) and redeploy.
+3. Set GitHub Actions secrets on the repo:
+   - `CRON_SECRET` — same value as Vercel
+   - `APP_URL` — production origin, e.g. `https://your-app.vercel.app`
+4. Workflow: `.github/workflows/publish-scheduled-events.yml` runs ~every 5 minutes (and can be run manually via **Actions** → **Publish scheduled events** → **Run workflow**).
+5. Verify: schedule an event a few minutes ahead; after the workflow runs it should appear on member `/events` and (if eligible) on the Member Calendar.
+
+**Hobby note:** Do not put a sub-daily schedule in `vercel.json` — Hobby rejects it at deploy time. Use GitHub Actions (or upgrade to Vercel Pro) for frequent publishing.
+

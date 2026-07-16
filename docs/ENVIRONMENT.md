@@ -94,6 +94,26 @@ Officer event create/edit location fields can suggest Places near Texas A&M. Fre
 - **Security**: Must **never** be exposed to the browser (`NEXT_PUBLIC_` not allowed).
 - When unset, location fields behave as plain text inputs (no suggestions).
 
+## Optional — Scheduled event publish (GitHub Actions)
+
+Draft / scheduled events become visible to members when published. A **GitHub Actions** workflow calls `/api/cron/publish-events` about every 5 minutes to publish rows whose `publish_at` has passed (America/Chicago wall times stored as UTC).
+
+**Why not Vercel Cron on Hobby?** Hobby allows at most **one cron run per day**, with timing only accurate within that hour. Expressions like `*/5 * * * *` **fail deployment** on Hobby. Pro supports per-minute crons; we use GitHub Actions so Hobby stays accurate without upgrading.
+
+### `CRON_SECRET`
+- **Purpose**: Shared secret; requests must send `Authorization: Bearer <CRON_SECRET>`.
+- **Where to get it**: Generate yourself, e.g. `openssl rand -hex 32`. Not from a dashboard.
+- **Where to set it**:
+  1. **Vercel** → Project → Settings → Environment Variables → `CRON_SECRET` (Production; Preview optional). Redeploy after adding.
+  2. **GitHub** → repo → Settings → Secrets and variables → Actions → New repository secret → same name `CRON_SECRET` (same value).
+- **Security**: Server-only. Never expose as `NEXT_PUBLIC_*`.
+
+### `APP_URL` (GitHub Actions only)
+- **Purpose**: Production site origin the workflow curls, e.g. `https://your-app.vercel.app` (no trailing slash).
+- **Where to set it**: GitHub Actions repository secret `APP_URL`.
+
+Officers can always use **Publish now** if a schedule is delayed.
+
 ## Notes
 
 - Variables prefixed with `NEXT_PUBLIC_` are embedded in the client bundle by Next.js and are safe only for **non-secret** values.

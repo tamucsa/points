@@ -2,7 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { useState } from "react";
-import { createEvent } from "@/app/actions/events";
+import { createEvent, type EventPublishMode } from "@/app/actions/events";
 import BackLink from "@/app/components/BackLink";
 import IconLabel, {
   CheckInTypeBadge,
@@ -82,6 +82,8 @@ export default function NewEventClient({
       rsvp_url: "",
       rsvp_deadline: "",
       has_spectators: defaults.has_spectators,
+      schedule_date: "",
+      schedule_time: "",
     };
   });
 
@@ -115,7 +117,7 @@ export default function NewEventClient({
     }));
   };
 
-  const handleSubmit = async () => {
+  const handleSubmit = async (publishMode: EventPublishMode) => {
     setSubmitting(true);
     setError(null);
 
@@ -123,6 +125,14 @@ export default function NewEventClient({
       setError("Select at least two Jiatings for a Mixer.");
       setSubmitting(false);
       return;
+    }
+
+    if (publishMode === "schedule") {
+      if (!form.schedule_date || !form.schedule_time) {
+        setError("Enter a publish date and time (Central Time) to schedule.");
+        setSubmitting(false);
+        return;
+      }
     }
 
     const result = await createEvent({
@@ -144,6 +154,9 @@ export default function NewEventClient({
       rsvpDeadline: isRSVP && form.rsvp_deadline ? form.rsvp_deadline : null,
       createdBy,
       hasSpectators: isSports && form.has_spectators,
+      publishMode,
+      scheduleDate: form.schedule_date || null,
+      scheduleTime: form.schedule_time || null,
     });
 
     setSubmitting(false);
@@ -450,13 +463,71 @@ export default function NewEventClient({
           </div>
         )}
 
-        <button
-          onClick={handleSubmit}
-          disabled={submitting}
-          className="rounded-xl bg-primary px-4 py-3 text-[15px] font-semibold text-white disabled:bg-[#9cb8d8]"
-        >
-          {submitting ? "Creating…" : "Create Event"}
-        </button>
+        <div className="rounded-2xl border border-home-border bg-bg p-4">
+          <label className={labelClassName}>
+            Schedule publish{" "}
+            <span className="font-normal normal-case text-subtitle">
+              (optional — Central Time)
+            </span>
+          </label>
+          <p className="mb-3 text-xs leading-5 text-subtitle">
+            Set a date and time, then use Schedule Publish. Leave blank to draft
+            or publish immediately.
+          </p>
+          <div className="grid gap-3 sm:grid-cols-2">
+            <div>
+              <label className={labelClassName} htmlFor="schedule-date">
+                Publish date
+              </label>
+              <input
+                id="schedule-date"
+                type="date"
+                className={inputClassName}
+                value={form.schedule_date}
+                onChange={(e) => set("schedule_date", e.target.value)}
+              />
+            </div>
+            <div>
+              <label className={labelClassName} htmlFor="schedule-time">
+                Publish time
+              </label>
+              <input
+                id="schedule-time"
+                type="time"
+                className={inputClassName}
+                value={form.schedule_time}
+                onChange={(e) => set("schedule_time", e.target.value)}
+              />
+            </div>
+          </div>
+        </div>
+
+        <div className="grid gap-2 sm:grid-cols-3">
+          <button
+            type="button"
+            onClick={() => void handleSubmit("draft")}
+            disabled={submitting}
+            className="rounded-xl border border-home-border bg-white px-4 py-3 text-[15px] font-semibold text-subtitle transition hover:border-primary/30 hover:text-text disabled:opacity-60"
+          >
+            {submitting ? "Saving…" : "Draft Event"}
+          </button>
+          <button
+            type="button"
+            onClick={() => void handleSubmit("schedule")}
+            disabled={submitting}
+            className="rounded-xl border border-primary/30 bg-primary/10 px-4 py-3 text-[15px] font-semibold text-primary transition hover:bg-primary/20 disabled:opacity-60"
+          >
+            {submitting ? "Scheduling…" : "Schedule Publish"}
+          </button>
+          <button
+            type="button"
+            onClick={() => void handleSubmit("publish")}
+            disabled={submitting}
+            className="rounded-xl bg-primary px-4 py-3 text-[15px] font-semibold text-white disabled:bg-[#9cb8d8]"
+          >
+            {submitting ? "Publishing…" : "Publish Event"}
+          </button>
+        </div>
       </div>
     </div>
   );

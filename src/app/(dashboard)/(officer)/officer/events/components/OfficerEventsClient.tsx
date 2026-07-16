@@ -3,7 +3,7 @@
 import { QRCodeSVG } from 'qrcode.react'
 import { useRouter } from 'next/navigation'
 import { useEffect, useMemo, useState } from 'react'
-import { deleteEvent } from '@/app/actions/events'
+import { deleteEvent, publishEvent } from '@/app/actions/events'
 import IconLabel, { CheckInTypeBadge, ScopeBadge } from '@/app/components/IconLabel'
 import EmptyState from '@/app/components/EmptyState'
 import EventFilterTabs from '@/app/components/EventFilterTabs'
@@ -11,7 +11,7 @@ import EventListPager, { paginateItems } from '@/app/components/EventListPager'
 import JiatingFamilyFilter from '@/app/components/JiatingFamilyFilter'
 import { EventMetaChip, EventMetaItem, EventMetaRow } from '@/app/components/EventMeta'
 import PageHeader from '@/app/components/PageHeader'
-import { formatEventDate, isEventPast, sortEventsByStartsAt } from '@/utils/datetime'
+import { EVENT_TIMEZONE, formatEventDate, isEventPast, sortEventsByStartsAt } from '@/utils/datetime'
 import {
   EVENT_FILTER_TABS,
   eventMatchesFilter,
@@ -33,6 +33,8 @@ interface Event {
   check_in_code: string | null
   jt_family_id: string | null
   rsvp_deadline?: string | null
+  publish_status?: 'draft' | 'scheduled' | 'published' | null
+  publish_at?: string | null
 }
 
 interface SpectatorEvent {
@@ -87,6 +89,8 @@ export default function OfficerEventsClient({
   const [deleteTarget, setDeleteTarget] = useState<Event | null>(null)
   const [deleting, setDeleting] = useState(false)
   const [deleteError, setDeleteError] = useState<string | null>(null)
+  const [publishingId, setPublishingId] = useState<string | null>(null)
+  const [publishError, setPublishError] = useState<string | null>(null)
   const [filter, setFilter] = useState<EventFilterTabId>('all')
   const [search, setSearch] = useState('')
   const [showPast, setShowPast] = useState(false)
@@ -194,6 +198,18 @@ export default function OfficerEventsClient({
     router.refresh()
   }
 
+  const handlePublishNow = async (eventId: string) => {
+    setPublishingId(eventId)
+    setPublishError(null)
+    const result = await publishEvent(eventId)
+    setPublishingId(null)
+    if (!result.success) {
+      setPublishError(result.error ?? 'Failed to publish event.')
+      return
+    }
+    router.refresh()
+  }
+
   const checkInUrl = (code: string) =>
     typeof window !== 'undefined'
       ? `${window.location.origin}/checkin/${code}`
@@ -203,6 +219,8 @@ export default function OfficerEventsClient({
     const count = attendanceCounts[event.id] ?? 0
     const spectator = spectatorByParentId[event.id]
     const spectatorCount = spectator ? (attendanceCounts[spectator.id] ?? 0) : 0
+    const publishStatus = event.publish_status ?? 'published'
+    const canPublishNow = publishStatus === 'draft' || publishStatus === 'scheduled'
 
     return (
       <div
@@ -226,7 +244,17 @@ export default function OfficerEventsClient({
         <div className="min-w-0 flex-1">
           <div className="flex flex-wrap items-center gap-2">
             <span className="text-sm font-semibold text-text">{event.name}</span>
-            {!isPast && (
+            {publishStatus === 'draft' && (
+              <span className="inline-flex items-center rounded-full bg-stone-100 px-2 py-0.5 text-[11px] font-semibold leading-none text-stone-700">
+                Draft
+              </span>
+            )}
+            {publishStatus === 'scheduled' && (
+              <span className="inline-flex items-center rounded-full bg-amber-100 px-2 py-0.5 text-[11px] font-semibold leading-none text-amber-900">
+                Scheduled
+              </span>
+            )}
+            {publishStatus === 'published' && !isPast && (
               <span className="inline-flex items-center rounded-full bg-primary/10 px-2 py-0.5 text-[11px] font-semibold leading-none text-primary">
                 Upcoming
               </span>
@@ -237,6 +265,17 @@ export default function OfficerEventsClient({
               </span>
             )}
           </div>
+          {publishStatus === 'scheduled' && event.publish_at && (
+            <p className="mt-1.5 text-xs text-amber-900">
+              Publishes{' '}
+              {new Date(event.publish_at).toLocaleString('en-US', {
+                timeZone: EVENT_TIMEZONE,
+                dateStyle: 'medium',
+                timeStyle: 'short',
+              })}{' '}
+              CT
+            </p>
+          )}
           <EventMetaRow className="mt-2">
             <EventMetaItem>
               <IconLabel icon={Calendar} label={formatEventDate(event.starts_at)} size="sm" />
@@ -288,7 +327,27 @@ export default function OfficerEventsClient({
           onClick={e => e.stopPropagation()}
           onKeyDown={e => e.stopPropagation()}
         >
-          {event.check_in_type === 'self' && event.check_in_code && (
+          {canPublishNow && (
+            <button
+              type="button"
+              onClick={() => void handlePublishNow(event.id)}
+              disabled={publishingId === event.id}
+              className={actionPrimaryClassName}
+            >
+              {publishingId === event.id ? 'Publishing…' : 'Publish now'}
+            </button>
+          )}
+          {(event.check_in_type === 'officer' || event.check_in_type === 'rsvp_required') &&
+            publishStatus === 'published' && (
+            <button
+              type="button"
+              onClick={() => router.push(`/officer/events/${event.id}/checkin`)}
+              className={actionPrimaryClassName}
+            >
+              Check In
+            </button>
+          )}
+          {event.check_in_type === 'self' && event.check_in_code && publishStatus === 'published' && (
             <>
               <button
                 type="button"
@@ -304,18 +363,26 @@ export default function OfficerEventsClient({
               >
                 Full Screen
               </button>
+              <button
+                type="button"
+                onClick={() => window.open(`/officer/events/${event.id}/qr?print=1`, '_blank')}
+                className={actionSecondaryClassName}
+              >
+                Print QR
+              </button>
             </>
           )}
-          {(event.check_in_type === 'officer' || event.check_in_type === 'rsvp_required') && (
+          {/* Allow officers to preview QR setup on drafts/scheduled */}
+          {event.check_in_type === 'self' && event.check_in_code && publishStatus !== 'published' && (
             <button
               type="button"
-              onClick={() => router.push(`/officer/events/${event.id}/checkin`)}
-              className={actionPrimaryClassName}
+              onClick={() => window.open(`/officer/events/${event.id}/qr`, '_blank')}
+              className={actionSecondaryClassName}
             >
-              Check In
+              Preview QR
             </button>
           )}
-          {spectator?.check_in_code && (
+          {spectator?.check_in_code && publishStatus === 'published' && (
             <>
               <button
                 type="button"
@@ -330,6 +397,15 @@ export default function OfficerEventsClient({
                 className={actionSecondaryClassName}
               >
                 Spectator Full Screen
+              </button>
+              <button
+                type="button"
+                onClick={() =>
+                  window.open(`/officer/events/${spectator.id}/qr?print=1`, '_blank')
+                }
+                className={actionSecondaryClassName}
+              >
+                Print Spectator QR
               </button>
             </>
           )}
@@ -366,6 +442,12 @@ export default function OfficerEventsClient({
           New Event
         </button>
       </div>
+
+      {publishError && (
+        <div className="mb-4 rounded-2xl border border-[#f5b0b0] bg-[#fff4f4] px-4 py-3 text-sm text-[#c94b4b]">
+          {publishError}
+        </div>
+      )}
 
       {events.length > 0 && (
         <>
@@ -555,6 +637,15 @@ export default function OfficerEventsClient({
                 className="rounded-xl bg-primary px-4 py-2 text-sm font-semibold text-white transition hover:bg-[#35679e]"
               >
                 Full Screen
+              </button>
+              <button
+                type="button"
+                onClick={() =>
+                  window.open(`/officer/events/${qrEvent.id}/qr?print=1`, '_blank')
+                }
+                className="rounded-xl border border-home-border bg-white px-4 py-2 text-sm font-semibold text-text transition hover:border-primary/30 hover:text-primary"
+              >
+                Print QR
               </button>
               <button
                 type="button"
