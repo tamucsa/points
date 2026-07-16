@@ -29,6 +29,7 @@ interface Event {
   check_in_type: string
   starts_at: string
   location: string | null
+  location_maps_url?: string | null
   check_in_code: string | null
   jt_family_id: string | null
   rsvp_deadline?: string | null
@@ -242,7 +243,12 @@ export default function OfficerEventsClient({
             </EventMetaItem>
             {event.location && (
               <EventMetaItem>
-                <IconLabel icon={MapPin} label={event.location} size="sm" />
+                <IconLabel
+                  icon={MapPin}
+                  label={event.location}
+                  size="sm"
+                  href={event.location_maps_url}
+                />
               </EventMetaItem>
             )}
           </EventMetaRow>

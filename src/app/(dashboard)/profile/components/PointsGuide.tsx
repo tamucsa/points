@@ -77,20 +77,20 @@ export default function PointsGuide({ attendance }: Props) {
         <div className="border-b border-home-border bg-bg px-5 py-3 text-sm font-semibold text-text">
           Event categories
         </div>
-        <div className="divide-y divide-home-border">
+        <div className="grid gap-px bg-home-border sm:grid-cols-2">
           {BUCKET_CATEGORIES.map(group => (
-            <div key={group.bucket} className="px-5 py-4">
-              <div className="mb-2 text-xs font-semibold uppercase tracking-[0.06em] text-subtitle">
+            <div key={group.bucket} className="bg-white px-5 py-4">
+              <div className="mb-3 text-xs font-semibold uppercase tracking-[0.06em] text-subtitle">
                 Counts toward {group.bucket}
               </div>
-              <ul className="grid gap-2 sm:grid-cols-2">
+              <ul className="space-y-2.5">
                 {group.categories.map(category => (
                   <li
                     key={category}
-                    className="flex items-center justify-between gap-3 text-sm text-text"
+                    className="flex items-center justify-between gap-3 text-sm leading-5 text-text"
                   >
-                    <span>{category}</span>
-                    <span className="shrink-0 font-semibold text-primary">
+                    <span className="min-w-0">{category}</span>
+                    <span className="shrink-0 tabular-nums font-semibold text-primary">
                       {categoryPointValue(category)} pt
                       {categoryPointValue(category) === 1 ? '' : 's'}
                     </span>
@@ -112,9 +112,9 @@ export default function PointsGuide({ attendance }: Props) {
             and is not limited by this cap.
           </p>
           <div className="mt-4">
-            <div className="mb-1 flex items-baseline justify-between text-xs text-subtitle">
+            <div className="mb-1.5 flex items-baseline justify-between text-xs text-subtitle">
               <span>This semester</span>
-              <span className="font-semibold text-text">
+              <span className="font-semibold tabular-nums text-text">
                 {spectatorCounted} / {SPORTS_SPECTATOR_SEMESTER_CAP} pts
               </span>
             </div>
@@ -138,9 +138,9 @@ export default function PointsGuide({ attendance }: Props) {
             included in this weekly limit.
           </p>
           <div className="mt-4">
-            <div className="mb-1 flex items-baseline justify-between text-xs text-subtitle">
+            <div className="mb-1.5 flex items-baseline justify-between text-xs text-subtitle">
               <span>This week</span>
-              <span className="font-semibold text-text">
+              <span className="font-semibold tabular-nums text-text">
                 {weeklyJtMixerCounted} / {JT_EVENT_MIXER_WEEKLY_ATTENDANCE_CAP} events
               </span>
             </div>

@@ -73,10 +73,20 @@ export default async function MemberEventsPage() {
     }
   }
 
+  // Matched CSV rows only (member_id set) — show "RSVPed", never "Not RSVPed".
+  const { data: myRsvps } = await supabase
+    .from('event_rsvps')
+    .select('event_id')
+    .eq('member_id', member.id)
+    .not('event_id', 'is', null)
+
+  const rsvpedIds = new Set((myRsvps ?? []).map(r => r.event_id).filter(Boolean))
+
   return (
     <MemberEventsClient
       events={visibleEvents}
       attendedIds={attendedIds}
+      rsvpedIds={rsvpedIds}
       semester={semester}
     />
   )
