@@ -21,6 +21,9 @@ import {
 } from "@/utils/google-calendar";
 import { createActionSupabase } from "@/utils/supabase/action";
 
+export type EventPublishMode = "draft" | "publish" | "schedule";
+export type EventPublishStatus = "draft" | "scheduled" | "published";
+
 export interface CreateEventInput {
   semesterId: string;
   name: string;
@@ -42,6 +45,182 @@ export interface CreateEventInput {
   rsvpDeadline: string | null;
   createdBy: string;
   hasSpectators: boolean;
+  /** draft | publish now | schedule for later (America/Chicago). */
+  publishMode: EventPublishMode;
+  /** Required when publishMode is schedule (HTML date input, Chicago calendar day). */
+  scheduleDate?: string | null;
+  /** Required when publishMode is schedule (HTML time input, Chicago wall clock). */
+  scheduleTime?: string | null;
+}
+
+async function syncCalendarAfterPublish(
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  supabase: { from: (table: string) => any },
+  event: {
+    id: string;
+    category: string;
+    name: string;
+    description: string | null;
+    location: string | null;
+    starts_at: string;
+    ends_at: string | null;
+    rsvp_url: string | null;
+    google_event_id: string | null;
+    parent_event_id?: string | null;
+  },
+) {
+  if (
+    !shouldSyncEventToGoogleCalendar(event.category, event.parent_event_id)
+  ) {
+    return;
+  }
+
+  if (event.google_event_id) {
+    const sync = await updateCalendarEvent(event.google_event_id, {
+      name: event.name,
+      description: event.description,
+      location: event.location ?? "",
+      startsAt: event.starts_at,
+      endsAt: event.ends_at,
+      rsvpUrl: event.rsvp_url,
+      appEventId: event.id,
+    });
+    if (sync.ok && !sync.skipped) {
+      await supabase
+        .from("events")
+        .update(syncSuccessFields(event.google_event_id))
+        .eq("id", event.id);
+    } else if (!sync.ok) {
+      await supabase
+        .from("events")
+        .update(syncErrorFields(sync.error))
+        .eq("id", event.id);
+    }
+    return;
+  }
+
+  const sync = await createCalendarEvent({
+    name: event.name,
+    description: event.description,
+    location: event.location ?? "",
+    startsAt: event.starts_at,
+    endsAt: event.ends_at,
+    rsvpUrl: event.rsvp_url,
+    appEventId: event.id,
+  });
+
+  if (sync.ok && sync.googleEventId) {
+    await supabase
+      .from("events")
+      .update(syncSuccessFields(sync.googleEventId))
+      .eq("id", event.id);
+  } else if (!sync.ok) {
+    await supabase
+      .from("events")
+      .update(syncErrorFields(sync.error))
+      .eq("id", event.id);
+  }
+}
+
+/** Mark draft/scheduled event (and spectator child) published; sync Calendar if eligible. */
+export async function publishEvent(eventId: string) {
+  if (!eventId) return { success: false, error: "Event not found." };
+
+  const { supabase, error: authError } = await requireOfficer();
+  if (authError) return { success: false, error: authError };
+
+  const { data: event } = await supabase
+    .from("events")
+    .select(
+      "id, category, name, description, location, starts_at, ends_at, rsvp_url, google_event_id, publish_status, parent_event_id",
+    )
+    .eq("id", eventId)
+    .maybeSingle();
+
+  if (!event) return { success: false, error: "Event not found." };
+  if (event.parent_event_id) {
+    return {
+      success: false,
+      error: "Publish the parent event instead of the spectator event.",
+    };
+  }
+  if (event.publish_status === "published") {
+    return { success: true, error: null };
+  }
+
+  const publishedAt = new Date().toISOString();
+  const { error } = await supabase
+    .from("events")
+    .update({
+      publish_status: "published",
+      publish_at: null,
+      published_at: publishedAt,
+    })
+    .eq("id", eventId);
+
+  if (error) return { success: false, error: "Failed to publish event." };
+
+  await supabase
+    .from("events")
+    .update({
+      publish_status: "published",
+      publish_at: null,
+      published_at: publishedAt,
+    })
+    .eq("parent_event_id", eventId);
+
+  await syncCalendarAfterPublish(supabase, event);
+  return { success: true, error: null };
+}
+
+/** Used by cron: publish all scheduled events whose publish_at has passed. */
+export async function publishDueScheduledEvents() {
+  const { createAdminSupabase } = await import("@/utils/supabase/admin");
+  const admin = createAdminSupabase();
+  const now = new Date().toISOString();
+
+  const { data: due, error } = await admin
+    .from("events")
+    .select(
+      "id, category, name, description, location, starts_at, ends_at, rsvp_url, google_event_id, parent_event_id",
+    )
+    .eq("publish_status", "scheduled")
+    .is("parent_event_id", null)
+    .lte("publish_at", now);
+
+  if (error) {
+    return { success: false as const, error: error.message, published: 0 };
+  }
+
+  let published = 0;
+  for (const event of due ?? []) {
+    const publishedAt = new Date().toISOString();
+    const { error: updateError } = await admin
+      .from("events")
+      .update({
+        publish_status: "published",
+        publish_at: null,
+        published_at: publishedAt,
+      })
+      .eq("id", event.id)
+      .eq("publish_status", "scheduled");
+
+    if (updateError) continue;
+
+    await admin
+      .from("events")
+      .update({
+        publish_status: "published",
+        publish_at: null,
+        published_at: publishedAt,
+      })
+      .eq("parent_event_id", event.id);
+
+    await syncCalendarAfterPublish(admin, event);
+    published += 1;
+  }
+
+  return { success: true as const, error: null, published };
 }
 
 async function requireOfficer() {
@@ -201,6 +380,47 @@ export async function createEvent(input: CreateEventInput) {
   const name = input.name.trim();
   const rsvpUrl = isRSVP ? input.rsvpUrl : null;
 
+  const publishMode = input.publishMode;
+  if (!["draft", "publish", "schedule"].includes(publishMode)) {
+    return { success: false, error: "Invalid publish option." };
+  }
+
+  let publishStatus: EventPublishStatus = "draft";
+  let publishAt: string | null = null;
+  let publishedAt: string | null = null;
+
+  if (publishMode === "publish") {
+    publishStatus = "published";
+    publishedAt = new Date().toISOString();
+  } else if (publishMode === "schedule") {
+    if (!input.scheduleDate || !input.scheduleTime) {
+      return {
+        success: false,
+        error: "Schedule date and time are required (Central Time).",
+      };
+    }
+    const { value: scheduledAt, error: scheduleError } =
+      await resolveCentralEventTimestamp(
+        supabase,
+        input.scheduleDate,
+        input.scheduleTime,
+      );
+    if (!scheduledAt) {
+      return {
+        success: false,
+        error: scheduleError ?? "Invalid schedule date or time.",
+      };
+    }
+    if (new Date(scheduledAt).getTime() <= Date.now()) {
+      return {
+        success: false,
+        error: "Schedule time must be in the future (Central Time).",
+      };
+    }
+    publishStatus = "scheduled";
+    publishAt = scheduledAt;
+  }
+
   const { data: event, error: eventError } = await supabase
     .from("events")
     .insert({
@@ -219,6 +439,9 @@ export async function createEvent(input: CreateEventInput) {
       rsvp_url: rsvpUrl,
       rsvp_deadline: isRSVP ? input.rsvpDeadline : null,
       created_by: input.createdBy,
+      publish_status: publishStatus,
+      publish_at: publishAt,
+      published_at: publishedAt,
     })
     .select("id")
     .single();
@@ -264,6 +487,9 @@ export async function createEvent(input: CreateEventInput) {
       location_maps_url: locationMapsUrl,
       created_by: input.createdBy,
       parent_event_id: event.id,
+      publish_status: publishStatus,
+      publish_at: publishAt,
+      published_at: publishedAt,
     });
 
     if (spectatorError) {
@@ -274,28 +500,20 @@ export async function createEvent(input: CreateEventInput) {
     }
   }
 
-  if (shouldSyncEventToGoogleCalendar(input.category)) {
-    const sync = await createCalendarEvent({
+  // Calendar only on publish (never draft/scheduled). Mixer / JT Event still skipped by helper.
+  if (publishStatus === "published") {
+    await syncCalendarAfterPublish(supabase, {
+      id: event.id,
+      category: input.category,
       name,
       description: input.description,
       location,
-      startsAt,
-      endsAt,
-      rsvpUrl,
-      appEventId: event.id,
+      starts_at: startsAt,
+      ends_at: endsAt,
+      rsvp_url: rsvpUrl,
+      google_event_id: null,
+      parent_event_id: null,
     });
-
-    if (sync.ok && sync.googleEventId) {
-      await supabase
-        .from("events")
-        .update(syncSuccessFields(sync.googleEventId))
-        .eq("id", event.id);
-    } else if (!sync.ok) {
-      await supabase
-        .from("events")
-        .update(syncErrorFields(sync.error))
-        .eq("id", event.id);
-    }
   }
 
   return { success: true, error: null };

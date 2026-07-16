@@ -32,12 +32,19 @@ export async function selfCheckIn(eventId: string, _semesterId?: string) {
 
   const { data: event } = await supabase
     .from('events')
-    .select('id, semester_id, check_in_type')
+    .select('id, semester_id, check_in_type, publish_status')
     .eq('id', eventId)
     .maybeSingle()
 
   if (!event) {
     return { success: false, error: 'Event not found.', counted: false }
+  }
+  if (event.publish_status !== 'published') {
+    return {
+      success: false,
+      error: 'This event is not published yet.',
+      counted: false,
+    }
   }
   if (event.check_in_type !== 'self') {
     return {
@@ -86,12 +93,19 @@ export async function officerCheckIn(eventId: string, _semesterId: string, membe
 
   const { data: event } = await supabase
     .from('events')
-    .select('scope, jt_family_id, semester_id')
+    .select('scope, jt_family_id, semester_id, publish_status')
     .eq('id', eventId)
     .maybeSingle()
 
   if (!event) {
     return { success: false, error: 'Event not found.', counted: false }
+  }
+  if (event.publish_status !== 'published') {
+    return {
+      success: false,
+      error: 'Publish this event before checking members in.',
+      counted: false,
+    }
   }
 
   const { data: member } = await supabase

@@ -1,0 +1,30 @@
+name: Publish scheduled events
+
+# Hobby Vercel only allows once-daily crons (±1 hour). GitHub Actions polls every
+# 5 minutes instead and hits the existing /api/cron/publish-events route.
+on:
+  schedule:
+    # UTC; ~every 5 minutes (GitHub may delay slightly under load)
+    - cron: "*/5 * * * *"
+  workflow_dispatch:
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Publish due scheduled events
+        env:
+          CRON_SECRET: ${{ secrets.CRON_SECRET }}
+          APP_URL: ${{ secrets.APP_URL }}
+        run: |
+          set -euo pipefail
+          if [ -z "${CRON_SECRET:-}" ] || [ -z "${APP_URL:-}" ]; then
+            echo "Missing CRON_SECRET or APP_URL repository secrets."
+            exit 1
+          fi
+          # Trim trailing slash
+          BASE="${APP_URL%/}"
+          curl -fsS \
+            -H "Authorization: Bearer ${CRON_SECRET}" \
+            "${BASE}/api/cron/publish-events"

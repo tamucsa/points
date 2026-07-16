@@ -11,6 +11,7 @@ export default async function CheckinPage({ params }: { params: Promise<{ code: 
     .select('id, name, category, point_value, starts_at, ends_at, location, location_maps_url, check_in_type, semester_id')
     .eq('check_in_code', code)
     .eq('check_in_type', 'self')
+    .eq('publish_status', 'published')
     .maybeSingle()
 
   if (!event) notFound()
