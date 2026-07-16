@@ -94,7 +94,7 @@ Never expose the Places key as `NEXT_PUBLIC_*`.
 2. Set `CRON_SECRET` in **Vercel** (see `docs/ENVIRONMENT.md`) and redeploy.
 3. Set GitHub Actions secrets on the repo:
    - `CRON_SECRET` — same value as Vercel
-   - `APP_URL` — production origin, e.g. `https://your-app.vercel.app`
+   - `APP_URL` — `https://points.csatamu.org`
 4. Workflow: `.github/workflows/publish-scheduled-events.yml` runs ~every 5 minutes (and can be run manually via **Actions** → **Publish scheduled events** → **Run workflow**).
 5. Verify: schedule an event a few minutes ahead; after the workflow runs it should appear on member `/events` and (if eligible) on the Member Calendar.
 
