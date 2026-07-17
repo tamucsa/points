@@ -181,6 +181,88 @@ export async function publishEvent(eventId: string) {
   return { success: true, error: null };
 }
 
+/** Update the auto-publish date/time for an event that is still scheduled. */
+export async function updateScheduledPublish(
+  eventId: string,
+  input: { scheduleDate: string; scheduleTime: string },
+) {
+  if (!eventId) return { success: false, error: "Event not found." };
+  if (!input.scheduleDate || !input.scheduleTime) {
+    return {
+      success: false,
+      error: "Publish date and time are required.",
+    };
+  }
+
+  const { supabase, error: authError } = await requireOfficer();
+  if (authError) return { success: false, error: authError };
+
+  const { data: event } = await supabase
+    .from("events")
+    .select("id, publish_status, parent_event_id")
+    .eq("id", eventId)
+    .maybeSingle();
+
+  if (!event) return { success: false, error: "Event not found." };
+  if (event.parent_event_id) {
+    return {
+      success: false,
+      error: "Update the parent event schedule instead.",
+    };
+  }
+  if (event.publish_status !== "scheduled") {
+    return {
+      success: false,
+      error: "Only scheduled events can have a publish time.",
+    };
+  }
+
+  const { value: publishAt, error: scheduleError } =
+    await resolveCentralEventTimestamp(
+      supabase,
+      input.scheduleDate,
+      input.scheduleTime,
+    );
+
+  if (!publishAt) {
+    return {
+      success: false,
+      error: scheduleError ?? "Invalid publish date or time.",
+    };
+  }
+  if (new Date(publishAt).getTime() <= Date.now()) {
+    return {
+      success: false,
+      error: "Publish time must be in the future (Central Time).",
+    };
+  }
+
+  const { error } = await supabase
+    .from("events")
+    .update({ publish_at: publishAt })
+    .eq("id", eventId)
+    .eq("publish_status", "scheduled");
+
+  if (error) {
+    return { success: false, error: "Failed to update publish time." };
+  }
+
+  const { error: spectatorError } = await supabase
+    .from("events")
+    .update({ publish_at: publishAt })
+    .eq("parent_event_id", eventId)
+    .eq("publish_status", "scheduled");
+
+  if (spectatorError) {
+    return {
+      success: false,
+      error: "Publish time saved, but linked spectator event failed to update.",
+    };
+  }
+
+  return { success: true, error: null };
+}
+
 /** Used by cron: publish all scheduled events whose publish_at has passed. */
 export async function publishDueScheduledEvents() {
   const { createAdminSupabase } = await import("@/utils/supabase/admin");
