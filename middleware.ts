@@ -2,7 +2,16 @@ import { createServerClient } from '@supabase/ssr'
 import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
 
-const publicRoutes = ['/register', '/pending', '/api/auth', '/checkin', '/privacy', '/terms', '/login']
+const publicRoutes = [
+  '/register',
+  '/pending',
+  '/api/auth',
+  '/api/cron',
+  '/checkin',
+  '/privacy',
+  '/terms',
+  '/login',
+]
 
 function clearAuthCookies(response: NextResponse, request: NextRequest) {
   for (const cookie of request.cookies.getAll()) {
