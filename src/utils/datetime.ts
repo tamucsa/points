@@ -89,12 +89,18 @@ export function formatEventTime(iso: string) {
   return date ? timeFormatter.format(date) : iso
 }
 
-/** Date + start time for member Events page. */
-export function formatEventSchedule(startsAt: string, endsAt?: string | null) {
+/** Date + start time for member Events page. Pass `dateOnly` for day-long / virtual awards. */
+export function formatEventSchedule(
+  startsAt: string,
+  endsAt?: string | null,
+  options?: { dateOnly?: boolean },
+) {
   const start = parseInstant(startsAt)
   if (!start) return startsAt
 
   const dateLabel = dateFormatter.format(start)
+  if (options?.dateOnly) return dateLabel
+
   const startTime = timeFormatter.format(start)
 
   if (!endsAt) {
@@ -119,7 +125,10 @@ export function formatEventDateTime(iso: string) {
   return date ? dateTimeFormatter.format(date) : iso
 }
 
-export function isEventPast(startsAt: string) {
+/** Past when the event has ended. Uses `endsAt` when present so day-long events stay upcoming until EOD. */
+export function isEventPast(startsAt: string, endsAt?: string | null) {
+  const end = endsAt ? parseInstant(endsAt) : null
+  if (end) return end < new Date()
   const start = parseInstant(startsAt)
   return start ? start < new Date() : false
 }
@@ -140,13 +149,15 @@ export function sortEventsByStartsAt<T extends { starts_at: string }>(
 }
 
 /** Upcoming soonest-first, then past most-recent-first. */
-export function sortEventsForDisplay<T extends { starts_at: string }>(events: T[]): T[] {
+export function sortEventsForDisplay<
+  T extends { starts_at: string; ends_at?: string | null },
+>(events: T[]): T[] {
   const upcoming = sortEventsByStartsAt(
-    events.filter(e => !isEventPast(e.starts_at)),
+    events.filter(e => !isEventPast(e.starts_at, e.ends_at)),
     'asc',
   )
   const past = sortEventsByStartsAt(
-    events.filter(e => isEventPast(e.starts_at)),
+    events.filter(e => isEventPast(e.starts_at, e.ends_at)),
     'desc',
   )
   return [...upcoming, ...past]

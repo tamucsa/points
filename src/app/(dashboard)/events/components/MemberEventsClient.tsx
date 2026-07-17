@@ -11,6 +11,7 @@ import { formatEventSchedule, isEventPast, sortEventsByStartsAt } from '@/utils/
 import {
   EVENT_FILTER_TABS,
   eventMatchesFilter,
+  isManualPointsCheckIn,
   type EventFilterTabId,
 } from '@/utils/events'
 import { Calendar, Clock, MapPin, X } from 'lucide-react'
@@ -35,21 +36,33 @@ interface Props {
   events: Event[]
   attendedIds: Set<string>
   rsvpedIds: Set<string>
+  /** Per-member earned points when attendance.point_value_override is set. */
+  earnedPointsByEventId: Record<string, number>
   semester: { name: string } | null
+}
+
+function displayPoints(
+  event: Event,
+  earnedPointsByEventId: Record<string, number>,
+) {
+  return earnedPointsByEventId[event.id] ?? event.point_value
 }
 
 function EventCard({
   event,
   attended,
   rsvped,
+  points,
   onOpen,
 }: {
   event: Event
   attended: boolean
   rsvped: boolean
+  points: number
   onOpen: () => void
 }) {
-  const isPast = isEventPast(event.starts_at)
+  const isPast = isEventPast(event.starts_at, event.ends_at)
+  const dateOnly = isManualPointsCheckIn(event.check_in_type)
   const rsvpOpen = event.rsvp_url && event.rsvp_deadline && new Date(event.rsvp_deadline) > new Date()
   const rsvpClosed = event.rsvp_url && event.rsvp_deadline && new Date(event.rsvp_deadline) <= new Date()
 
@@ -70,7 +83,7 @@ function EventCard({
       }`}
     >
       <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-primary/10 text-lg font-extrabold text-primary">
-        {event.point_value}
+        {points}
       </div>
 
       <div className="min-w-0 flex-1">
@@ -91,11 +104,11 @@ function EventCard({
           <EventMetaItem>
             <IconLabel
               icon={Clock}
-              label={formatEventSchedule(event.starts_at, event.ends_at)}
+              label={formatEventSchedule(event.starts_at, event.ends_at, { dateOnly })}
               size="sm"
             />
           </EventMetaItem>
-          {event.location && (
+          {!dateOnly && event.location && (
             <EventMetaItem>
               <IconLabel
                 icon={MapPin}
@@ -136,15 +149,18 @@ function EventDetailModal({
   event,
   attended,
   rsvped,
+  points,
   onClose,
 }: {
   event: Event
   attended: boolean
   rsvped: boolean
+  points: number
   onClose: () => void
 }) {
   const rsvpOpen = event.rsvp_url && event.rsvp_deadline && new Date(event.rsvp_deadline) > new Date()
   const rsvpClosed = event.rsvp_url && event.rsvp_deadline && new Date(event.rsvp_deadline) <= new Date()
+  const dateOnly = isManualPointsCheckIn(event.check_in_type)
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -187,7 +203,7 @@ function EventDetailModal({
               )}
             </div>
             <p className="mt-1 text-sm text-subtitle">
-              {event.point_value} pt{event.point_value === 1 ? '' : 's'}
+              {points} pt{points === 1 ? '' : 's'}
             </p>
           </div>
           <button
@@ -207,10 +223,10 @@ function EventDetailModal({
           <div className="flex items-center">
             <IconLabel
               icon={Clock}
-              label={formatEventSchedule(event.starts_at, event.ends_at)}
+              label={formatEventSchedule(event.starts_at, event.ends_at, { dateOnly })}
             />
           </div>
-          {event.location && (
+          {!dateOnly && event.location && (
             <div className="flex items-center">
               <IconLabel
                 icon={MapPin}
@@ -280,6 +296,7 @@ export default function MemberEventsClient({
   events,
   attendedIds,
   rsvpedIds,
+  earnedPointsByEventId,
   semester,
 }: Props) {
   const [showPast, setShowPast] = useState(false)
@@ -306,19 +323,19 @@ export default function MemberEventsClient({
     const counts: Partial<Record<EventFilterTabId, number>> = {}
     for (const tab of EVENT_FILTER_TABS) {
       counts[tab.id] = searched.filter(
-        e => !isEventPast(e.starts_at) && eventMatchesFilter(e, tab.id),
+        e => !isEventPast(e.starts_at, e.ends_at) && eventMatchesFilter(e, tab.id),
       ).length
     }
     return counts
   }, [events, search])
 
   const upcoming = useMemo(
-    () => sortEventsByStartsAt(filteredEvents.filter(e => !isEventPast(e.starts_at))),
+    () => sortEventsByStartsAt(filteredEvents.filter(e => !isEventPast(e.starts_at, e.ends_at))),
     [filteredEvents],
   )
   const past = useMemo(
     () => sortEventsByStartsAt(
-      filteredEvents.filter(e => isEventPast(e.starts_at)),
+      filteredEvents.filter(e => isEventPast(e.starts_at, e.ends_at)),
       'desc',
     ),
     [filteredEvents],
@@ -388,6 +405,7 @@ export default function MemberEventsClient({
                 event={event}
                 attended={attendedIds.has(event.id)}
                 rsvped={rsvpedIds.has(event.id)}
+                points={displayPoints(event, earnedPointsByEventId)}
                 onOpen={() => setDetailEvent(event)}
               />
             ))}
@@ -430,6 +448,7 @@ export default function MemberEventsClient({
                     event={event}
                     attended={attendedIds.has(event.id)}
                     rsvped={rsvpedIds.has(event.id)}
+                    points={displayPoints(event, earnedPointsByEventId)}
                     onOpen={() => setDetailEvent(event)}
                   />
                 ))}
@@ -449,6 +468,7 @@ export default function MemberEventsClient({
           event={detailEvent}
           attended={attendedIds.has(detailEvent.id)}
           rsvped={rsvpedIds.has(detailEvent.id)}
+          points={displayPoints(detailEvent, earnedPointsByEventId)}
           onClose={() => setDetailEvent(null)}
         />
       )}

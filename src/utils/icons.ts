@@ -3,13 +3,16 @@ import {
   Building2,
   Calendar,
   ClipboardList,
+  DollarSign,
   Dumbbell,
   Eye,
+  FileSpreadsheet,
   HandHeart,
   Handshake,
   Home,
   Medal,
   Music2,
+  PartyPopper,
   Popcorn,
   QrCode,
   Shield,
@@ -36,19 +39,25 @@ export const CHECKIN_TYPE_ICONS: Record<string, LucideIcon> = {
   officer: UserCheck,
   self: QrCode,
   rsvp_required: ClipboardList,
+  csv_import: FileSpreadsheet,
+  manual_points: DollarSign,
 }
 
 export const CHECKIN_METHOD_ICONS: Record<string, LucideIcon> = {
   officer: UserCheck,
   qr_scan: QrCode,
   self: QrCode,
+  csv_import: FileSpreadsheet,
+  manual: DollarSign,
 }
 
 export const CATEGORY_ICONS: Record<string, LucideIcon> = {
   'General Meeting': Users,
   'CSA-Wide': Sparkles,
+  'CSA-Wide Mixers': PartyPopper,
   'Jiating Olympics': Trophy,
   'Jiating Event': Home,
+  'Jiating Mixer': Handshake,
   Mixer: Handshake,
   Sports: Dumbbell,
   Philanthropy: HandHeart,

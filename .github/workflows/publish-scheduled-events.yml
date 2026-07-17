@@ -25,6 +25,20 @@ jobs:
           fi
           # Trim trailing slash
           BASE="${APP_URL%/}"
-          curl -fsS \
+          # Do not follow redirects: middleware redirects look like success otherwise.
+          BODY="$(mktemp)"
+          HTTP_CODE="$(curl -sS -o "${BODY}" -w '%{http_code}' \
             -H "Authorization: Bearer ${CRON_SECRET}" \
-            "${BASE}/api/cron/publish-events"
+            -H "Accept: application/json" \
+            "${BASE}/api/cron/publish-events")"
+          echo "HTTP ${HTTP_CODE}"
+          cat "${BODY}"
+          echo
+          if [ "${HTTP_CODE}" != "200" ]; then
+            echo "Cron endpoint returned HTTP ${HTTP_CODE} (expected 200)."
+            exit 1
+          fi
+          if ! grep -q '"published"' "${BODY}"; then
+            echo "Response was not a publish JSON payload."
+            exit 1
+          fi

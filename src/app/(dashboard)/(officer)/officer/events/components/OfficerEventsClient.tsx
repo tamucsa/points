@@ -17,6 +17,8 @@ import {
   eventMatchesFilter,
   eventMatchesJiatingFamily,
   type EventFilterTabId,
+  formatEventPointsLabel,
+  isImportCheckIn,
 } from '@/utils/events'
 import { Calendar, MapPin, Plus, Star, Trash2, Users } from 'lucide-react'
 
@@ -28,6 +30,7 @@ interface Event {
   scope: string
   check_in_type: string
   starts_at: string
+  ends_at?: string | null
   location: string | null
   location_maps_url?: string | null
   check_in_code: string | null
@@ -62,6 +65,7 @@ interface Props {
   mixerFamiliesByEventId: Record<string, string[]>
   officerJtFamilyId: string | null
   eventsWithRsvpUpload?: Record<string, true>
+  eventsWithImportUpload?: Record<string, true>
 }
 
 const actionPrimaryClassName =
@@ -83,6 +87,7 @@ export default function OfficerEventsClient({
   mixerFamiliesByEventId,
   officerJtFamilyId,
   eventsWithRsvpUpload = {},
+  eventsWithImportUpload = {},
 }: Props) {
   const router = useRouter()
   const [qrEvent, setQrEvent] = useState<(Event | SpectatorEvent) | null>(null)
@@ -127,7 +132,7 @@ export default function OfficerEventsClient({
     const counts: Partial<Record<EventFilterTabId, number>> = {}
     for (const tab of EVENT_FILTER_TABS) {
       counts[tab.id] = searched.filter(
-        e => !isEventPast(e.starts_at) && eventMatchesFilter(e, tab.id),
+        e => !isEventPast(e.starts_at, e.ends_at) && eventMatchesFilter(e, tab.id),
       ).length
     }
     return counts
@@ -137,7 +142,7 @@ export default function OfficerEventsClient({
     const q = search.trim().toLowerCase()
     const jiatingUpcoming = events.filter(
       e =>
-        !isEventPast(e.starts_at) &&
+        !isEventPast(e.starts_at, e.ends_at) &&
         eventMatchesFilter(e, 'jiating') &&
         matchesSearch(e, q),
     )
@@ -154,15 +159,19 @@ export default function OfficerEventsClient({
   }, [events, search, jtFamilies, mixerFamiliesByEventId])
 
   const upcomingEvents = useMemo(
-    () => sortEventsByStartsAt(filteredByTabAndSearch.filter(e => !isEventPast(e.starts_at))),
+    () =>
+      sortEventsByStartsAt(
+        filteredByTabAndSearch.filter(e => !isEventPast(e.starts_at, e.ends_at)),
+      ),
     [filteredByTabAndSearch],
   )
 
   const pastEvents = useMemo(
-    () => sortEventsByStartsAt(
-      filteredByTabAndSearch.filter(e => isEventPast(e.starts_at)),
-      'desc',
-    ),
+    () =>
+      sortEventsByStartsAt(
+        filteredByTabAndSearch.filter(e => isEventPast(e.starts_at, e.ends_at)),
+        'desc',
+      ),
     [filteredByTabAndSearch],
   )
 
@@ -238,7 +247,7 @@ export default function OfficerEventsClient({
         className={`flex cursor-pointer flex-col gap-4 rounded-3xl border border-home-border bg-white p-5 shadow-sm transition hover:border-primary/25 hover:shadow-[0_8px_28px_rgba(71,121,184,0.1)] sm:flex-row sm:items-center ${isPast ? 'opacity-75' : ''}`}
       >
         <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-primary/10 text-lg font-extrabold text-primary">
-          {event.point_value}
+          {formatEventPointsLabel(event.point_value, event.check_in_type)}
         </div>
 
         <div className="min-w-0 flex-1">
@@ -320,6 +329,14 @@ export default function OfficerEventsClient({
                 RSVP deadline passed — open the event to upload the responses CSV for check-in tags.
               </p>
             )}
+          {event.check_in_type === 'csv_import' &&
+            publishStatus === 'published' &&
+            isPast &&
+            !eventsWithImportUpload[event.id] && (
+              <p className="mt-2 text-xs font-medium text-amber-800">
+                Event is over — open the event to upload the attendance CSV.
+              </p>
+            )}
         </div>
 
         <div
@@ -345,6 +362,24 @@ export default function OfficerEventsClient({
               className={actionPrimaryClassName}
             >
               Check In
+            </button>
+          )}
+          {isImportCheckIn(event.check_in_type) && publishStatus === 'published' && (
+            <button
+              type="button"
+              onClick={() => router.push(`/officer/events/${event.id}`)}
+              className={actionPrimaryClassName}
+            >
+              Import CSV
+            </button>
+          )}
+          {isImportCheckIn(event.check_in_type) && publishStatus !== 'published' && (
+            <button
+              type="button"
+              onClick={() => router.push(`/officer/events/${event.id}`)}
+              className={actionSecondaryClassName}
+            >
+              Open event
             </button>
           )}
           {event.check_in_type === 'self' && event.check_in_code && publishStatus === 'published' && (

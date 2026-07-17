@@ -3,6 +3,7 @@
 import { ClipboardList, Clock, MapPin, UserX } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
+import EventImportPanel from "@/app/(dashboard)/(officer)/officer/events/components/EventImportPanel";
 import EventRsvpPanel from "@/app/(dashboard)/(officer)/officer/events/components/EventRsvpPanel";
 import { officerRemoveCheckIn } from "@/app/actions/attendance";
 import {
@@ -11,6 +12,7 @@ import {
   updateEventRsvp,
   updateEventSchedule,
 } from "@/app/actions/events";
+import type { EventImportRow } from "@/app/actions/imports";
 import { publishJiatingStandings } from "@/app/actions/jt-standings";
 import type { EventRsvpRow } from "@/app/actions/rsvp";
 import BackLink from "@/app/components/BackLink";
@@ -25,7 +27,12 @@ import {
   eventTimestampToFormDate,
   eventTimestampToFormTime,
 } from "@/utils/event-times";
-import { isGeneralMeetingCategory, isMixerCategory } from "@/utils/events";
+import {
+  formatEventPointsLabel,
+  isGeneralMeetingCategory,
+  isImportCheckIn,
+  isMixerCategory,
+} from "@/utils/events";
 
 interface Event {
   id: string;
@@ -52,6 +59,7 @@ interface AttendanceRow {
   verified: boolean;
   counted: boolean;
   recorded_at: string;
+  point_value_override?: number | null;
   members: {
     id: string;
     full_name: string;
@@ -85,6 +93,8 @@ interface Props {
   } | null;
   rsvpRows: EventRsvpRow[];
   rsvpMatchMembers: { id: string; full_name: string; email: string }[];
+  importRows: EventImportRow[];
+  importMatchMembers: { id: string; full_name: string; email: string }[];
 }
 
 const btnPrimaryClassName =
@@ -106,6 +116,8 @@ export default function EventDetailClient({
   spectatorEvent,
   rsvpRows,
   rsvpMatchMembers,
+  importRows,
+  importMatchMembers,
 }: Props) {
   const router = useRouter();
   const [publishing, setPublishing] = useState(false);
@@ -139,6 +151,7 @@ export default function EventDetailClient({
   const [endTime, setEndTime] = useState(() =>
     event.ends_at ? eventTimestampToFormTime(event.ends_at) : "",
   );
+  const [name, setName] = useState(event.name ?? "");
   const [location, setLocation] = useState(event.location ?? "");
   const [locationMapsUrl, setLocationMapsUrl] = useState<string | null>(
     event.location_maps_url ?? null,
@@ -155,6 +168,9 @@ export default function EventDetailClient({
   const isGm = isGeneralMeetingCategory(event.category);
   const isMixer = isMixerCategory(event.category);
   const isRsvpEvent = event.check_in_type === "rsvp_required";
+  const isImportEvent = isImportCheckIn(event.check_in_type);
+  const isCsvImportEvent = event.check_in_type === "csv_import";
+  const isManualPointsEvent = event.check_in_type === "manual_points";
 
   const closeUncheckModal = () => {
     if (uncheckSaving) return;
@@ -185,6 +201,7 @@ export default function EventDetailClient({
   };
 
   useEffect(() => {
+    setName(event.name ?? "");
     setEventDate(eventTimestampToFormDate(event.starts_at));
     setStartTime(eventTimestampToFormTime(event.starts_at));
     setEndTime(event.ends_at ? eventTimestampToFormTime(event.ends_at) : "");
@@ -192,6 +209,7 @@ export default function EventDetailClient({
     setLocationMapsUrl(event.location_maps_url ?? null);
     setDescription(event.description ?? "");
   }, [
+    event.name,
     event.starts_at,
     event.ends_at,
     event.location,
@@ -252,6 +270,7 @@ export default function EventDetailClient({
     setScheduleSaved(false);
 
     const result = await updateEventSchedule(event.id, {
+      name,
       eventDate,
       startTime,
       endTime: endTime.trim() || null,
@@ -319,7 +338,7 @@ export default function EventDetailClient({
       <div className="mb-6 rounded-4xl border border-home-border bg-white p-6 shadow-sm">
         <div className="flex gap-4">
           <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-primary/10 text-2xl font-extrabold text-primary">
-            {event.point_value}
+            {formatEventPointsLabel(event.point_value, event.check_in_type)}
           </div>
           <div className="min-w-0 flex-1">
             <h1 className="text-2xl font-bold text-text">{event.name}</h1>
@@ -350,10 +369,12 @@ export default function EventDetailClient({
             <div className="mt-2 flex flex-wrap gap-2 text-sm text-subtitle">
               <IconLabel
                 icon={Clock}
-                label={formatEventSchedule(event.starts_at, event.ends_at)}
+                label={formatEventSchedule(event.starts_at, event.ends_at, {
+                  dateOnly: isManualPointsEvent,
+                })}
                 size="sm"
               />
-              {event.location && (
+              {!isManualPointsEvent && event.location && (
                 <IconLabel
                   icon={MapPin}
                   label={event.location}
@@ -483,16 +504,38 @@ export default function EventDetailClient({
           defaultOpen
           summary={
             [
-              formatEventSchedule(event.starts_at, event.ends_at),
-              event.location,
+              event.name,
+              formatEventSchedule(event.starts_at, event.ends_at, {
+                dateOnly: isManualPointsEvent,
+              }),
+              !isManualPointsEvent ? event.location : null,
               event.description ? "Has description" : null,
             ]
               .filter(Boolean)
-              .join(" · ") || "Date, location, and description"
+              .join(" · ") ||
+            (isManualPointsEvent
+              ? "Name, date, and description"
+              : "Name, date, location, and description")
           }
         >
+          <div>
+            <label className={labelClassName} htmlFor="event-edit-name">
+              Event name
+            </label>
+            <input
+              id="event-edit-name"
+              type="text"
+              className={inputClassName}
+              placeholder="e.g. First Friday March"
+              value={name}
+              onChange={(e) => {
+                setName(e.target.value);
+                setScheduleSaved(false);
+              }}
+            />
+          </div>
           <div className="grid gap-3 sm:grid-cols-2">
-            <div>
+            <div className={isManualPointsEvent ? "sm:col-span-2" : undefined}>
               <label className={labelClassName} htmlFor="event-edit-date">
                 Date
               </label>
@@ -507,55 +550,64 @@ export default function EventDetailClient({
                 }}
               />
             </div>
-            <div>
-              <label className={labelClassName} htmlFor="event-edit-location">
-                Location
-              </label>
-              <LocationAutocomplete
-                id="event-edit-location"
-                value={location}
-                onChange={(value, meta) => {
-                  setLocation(value);
-                  setLocationMapsUrl(meta?.mapsUrl ?? null);
-                  setScheduleSaved(false);
-                }}
-                placeholder="e.g. MSC 2406"
-              />
-            </div>
-            <div>
-              <label className={labelClassName} htmlFor="event-edit-start">
-                Start time
-              </label>
-              <input
-                id="event-edit-start"
-                type="time"
-                className={inputClassName}
-                value={startTime}
-                onChange={(e) => {
-                  setStartTime(e.target.value);
-                  setScheduleSaved(false);
-                }}
-              />
-            </div>
-            <div>
-              <label className={labelClassName} htmlFor="event-edit-end">
-                End time{" "}
-                <span className="font-normal normal-case text-subtitle">
-                  (optional)
-                </span>
-              </label>
-              <input
-                id="event-edit-end"
-                type="time"
-                className={inputClassName}
-                value={endTime}
-                onChange={(e) => {
-                  setEndTime(e.target.value);
-                  setScheduleSaved(false);
-                }}
-              />
-            </div>
+            {!isManualPointsEvent && (
+              <>
+                <div>
+                  <label className={labelClassName} htmlFor="event-edit-location">
+                    Location
+                  </label>
+                  <LocationAutocomplete
+                    id="event-edit-location"
+                    value={location}
+                    onChange={(value, meta) => {
+                      setLocation(value);
+                      setLocationMapsUrl(meta?.mapsUrl ?? null);
+                      setScheduleSaved(false);
+                    }}
+                    placeholder="e.g. MSC 2406"
+                  />
+                </div>
+                <div>
+                  <label className={labelClassName} htmlFor="event-edit-start">
+                    Start time
+                  </label>
+                  <input
+                    id="event-edit-start"
+                    type="time"
+                    className={inputClassName}
+                    value={startTime}
+                    onChange={(e) => {
+                      setStartTime(e.target.value);
+                      setScheduleSaved(false);
+                    }}
+                  />
+                </div>
+                <div>
+                  <label className={labelClassName} htmlFor="event-edit-end">
+                    End time{" "}
+                    <span className="font-normal normal-case text-subtitle">
+                      (optional)
+                    </span>
+                  </label>
+                  <input
+                    id="event-edit-end"
+                    type="time"
+                    className={inputClassName}
+                    value={endTime}
+                    onChange={(e) => {
+                      setEndTime(e.target.value);
+                      setScheduleSaved(false);
+                    }}
+                  />
+                </div>
+              </>
+            )}
           </div>
+          {isManualPointsEvent && (
+            <p className="text-xs text-subtitle">
+              Manual points use a date only — no time or location.
+            </p>
+          )}
           <div>
             <label className={labelClassName} htmlFor="event-edit-description">
               Description{" "}
@@ -713,6 +765,26 @@ export default function EventDetailClient({
             />
           </CollapsibleSettings>
         )}
+        {isImportEvent && (
+          <CollapsibleSettings
+            title={
+              isCsvImportEvent
+                ? "Attendance CSV"
+                : "Manual points CSV"
+            }
+            defaultOpen
+            summary={`${importRows.length} row${importRows.length === 1 ? "" : "s"} uploaded`}
+          >
+            <EventImportPanel
+              eventId={event.id}
+              mode={isManualPointsEvent ? "manual_points" : "mixer_attendance"}
+              initialRows={importRows}
+              matchMembers={importMatchMembers}
+              btnPrimaryClassName={btnPrimaryClassName}
+              btnSecondaryClassName={btnSecondaryClassName}
+            />
+          </CollapsibleSettings>
+        )}
         {isGm && published && (
           <p className="mt-3 text-xs text-subtitle">
             Published{" "}
@@ -780,6 +852,12 @@ export default function EventDetailClient({
                   </div>
                 </div>
                 <div className="flex shrink-0 flex-wrap items-center justify-end gap-1">
+                  {row.point_value_override != null && (
+                    <span className="rounded-md bg-primary/10 px-2 py-0.5 text-[11px] font-semibold text-primary">
+                      {row.point_value_override} pt
+                      {row.point_value_override === 1 ? "" : "s"}
+                    </span>
+                  )}
                   <span className="rounded-md bg-bg px-2 py-0.5 text-[11px] text-subtitle">
                     <CheckInMethodBadge checkInMethod={row.check_in_method} />
                   </span>
@@ -837,7 +915,11 @@ export default function EventDetailClient({
             <p className="mt-3 text-center text-sm leading-6 text-subtitle">
               This removes their attendance for {event.name}
               {uncheckTarget.counted
-                ? ` and deducts ${event.point_value} point${event.point_value === 1 ? "" : "s"} from their total.`
+                ? (() => {
+                    const pts =
+                      uncheckTarget.point_value_override ?? event.point_value;
+                    return ` and deducts ${pts} point${pts === 1 ? "" : "s"} from their total.`;
+                  })()
                 : ". This check-in was not counting toward points (cap), so totals stay the same."}
             </p>
             {uncheckError && (

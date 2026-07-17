@@ -7,6 +7,7 @@ const TIME_ZONE = "America/Chicago";
 const GOOGLE_CALENDAR_SYNC_CATEGORIES = new Set([
   "General Meeting",
   "CSA-Wide",
+  "CSA-Wide Mixers",
   "Jiating Olympics",
   "Sports",
   "Philanthropy",
@@ -27,8 +28,11 @@ export type CalendarEventPayload = {
 export function shouldSyncEventToGoogleCalendar(
   category: string,
   parentEventId?: string | null,
+  checkInType?: string | null,
 ): boolean {
   if (parentEventId) return false;
+  // Monetary / manual-points awards are not calendar events.
+  if (checkInType === "manual_points") return false;
   const trimmed = category.trim();
   if (trimmed === SPECTATOR_EVENT_CATEGORY) return false;
   return GOOGLE_CALENDAR_SYNC_CATEGORIES.has(trimmed);

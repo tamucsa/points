@@ -1,6 +1,6 @@
 import { redirect } from 'next/navigation'
 import MemberEventsClient from '@/app/(dashboard)/events/components/MemberEventsClient'
-import { isMixerCategory } from '@/utils/events'
+import { isManualPointsCheckIn, isMixerCategory } from '@/utils/events'
 import { getActiveSemester, getCurrentMember } from '@/utils/supabase/auth'
 
 export default async function MemberEventsPage() {
@@ -50,29 +50,37 @@ export default async function MemberEventsPage() {
     }
   }
 
+  const { data: attended } = await supabase
+    .from('attendance')
+    .select('event_id, point_value_override, events(parent_event_id)')
+    .eq('member_id', member.id)
+    .eq('semester_id', semester?.id)
+
+  // Spectator check-in is on the child event; still mark the parent Sports card as attended.
+  const attendedIds = new Set<string>()
+  const earnedPointsByEventId: Record<string, number> = {}
+  for (const row of attended ?? []) {
+    attendedIds.add(row.event_id)
+    if (row.point_value_override != null) {
+      earnedPointsByEventId[row.event_id] = row.point_value_override
+    }
+    const linked = Array.isArray(row.events) ? row.events[0] : row.events
+    if (linked?.parent_event_id) {
+      attendedIds.add(linked.parent_event_id)
+    }
+  }
+
   const visibleEvents = (events ?? []).filter(event => {
+    // Manual-points (monetary) events only show for members who earned them.
+    if (isManualPointsCheckIn(event.check_in_type) && !attendedIds.has(event.id)) {
+      return false
+    }
     if (!isMixerCategory(event.category)) return true
     const families = mixerFamilyByEvent.get(event.id)
     // Legacy mixers with no linked families stay visible to everyone.
     if (!families || families.size === 0) return true
     return !!member.jt_family_id && families.has(member.jt_family_id)
   })
-
-  const { data: attended } = await supabase
-    .from('attendance')
-    .select('event_id, events(parent_event_id)')
-    .eq('member_id', member.id)
-    .eq('semester_id', semester?.id)
-
-  // Spectator check-in is on the child event; still mark the parent Sports card as attended.
-  const attendedIds = new Set<string>()
-  for (const row of attended ?? []) {
-    attendedIds.add(row.event_id)
-    const linked = Array.isArray(row.events) ? row.events[0] : row.events
-    if (linked?.parent_event_id) {
-      attendedIds.add(linked.parent_event_id)
-    }
-  }
 
   // Matched CSV rows only (member_id set) — show "RSVPed", never "Not RSVPed".
   const { data: myRsvps } = await supabase
@@ -88,6 +96,7 @@ export default async function MemberEventsPage() {
       events={visibleEvents}
       attendedIds={attendedIds}
       rsvpedIds={rsvpedIds}
+      earnedPointsByEventId={earnedPointsByEventId}
       semester={semester}
     />
   )

@@ -109,7 +109,7 @@ Draft / scheduled events become visible to members when published. A **GitHub Ac
 - **Security**: Server-only. Never expose as `NEXT_PUBLIC_*`.
 
 ### `APP_URL` (GitHub Actions only)
-- **Purpose**: Production site origin the workflow curls, e.g. `https://your-app.vercel.app` (no trailing slash).
+- **Purpose**: Production site origin the workflow curls. Use `https://points.csatamu.org` (no trailing slash).
 - **Where to set it**: GitHub Actions repository secret `APP_URL`.
 
 Officers can always use **Publish now** if a schedule is delayed.

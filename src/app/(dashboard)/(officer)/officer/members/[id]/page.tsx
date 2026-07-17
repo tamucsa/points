@@ -25,12 +25,14 @@ export default async function MemberDetailPage({ params }: { params: Promise<{ i
       verified,
       counted,
       recorded_at,
+      point_value_override,
       events (
         name,
         category,
         point_value,
         starts_at,
-        ends_at
+        ends_at,
+        check_in_type
       )
     `)
     .eq('member_id', id)

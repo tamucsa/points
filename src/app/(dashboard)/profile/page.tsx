@@ -28,12 +28,14 @@ export default async function ProfilePage() {
         recorded_at,
         check_in_method,
         counted,
+        point_value_override,
         events (
           name,
           category,
           point_value,
           starts_at,
-          ends_at
+          ends_at,
+          check_in_type
         )
       `)
       .eq('member_id', member.id)
@@ -61,6 +63,7 @@ export default async function ProfilePage() {
               point_value: 0,
               starts_at: '',
               ends_at: null,
+              check_in_type: '',
             })
           : row.events,
       }))

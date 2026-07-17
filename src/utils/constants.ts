@@ -23,12 +23,16 @@ export const CHECKIN_TYPE_LABELS: Record<string, string> = {
   officer: 'Officer Check-in',
   self: 'Self Check-in',
   rsvp_required: 'RSVP',
+  csv_import: 'CSV Check-in',
+  manual_points: 'Manual Points',
 }
 
 export const CHECKIN_METHOD_LABELS: Record<string, string> = {
   officer: 'Officer',
   qr_scan: 'QR Scan',
   self: 'Self',
+  csv_import: 'CSV Import',
+  manual: 'Manual',
 }
 
 export const POINT_BUCKET_LABELS = {
@@ -44,11 +48,13 @@ export const JT_EVENT_MIXER_WEEKLY_ATTENDANCE_CAP = 4
 
 export const CATEGORY_COLORS: Record<string, string> = {
   'CSA-Wide': '#4779B8',
+  'CSA-Wide Mixers': '#5a8fd4',
   'Jiating Olympics': '#f7934f',
   'Jiating Event': '#6b7fd7',
   Sports: '#4fc787',
   'Sports Spectator': '#4fc787',
   'General Meeting': '#e8b84b',
+  'Jiating Mixer': '#9b6dd7',
   Mixer: '#9b6dd7',
   Philanthropy: '#e85d8a',
   Dance: '#5bc4d4',

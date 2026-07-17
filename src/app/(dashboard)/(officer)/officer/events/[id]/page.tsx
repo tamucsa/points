@@ -1,8 +1,9 @@
 import { notFound, redirect } from 'next/navigation'
 import EventDetailClient from '@/app/(dashboard)/(officer)/officer/events/components/EventDetailClient'
+import { listEventImportRows } from '@/app/actions/imports'
 import { getSnapshotForEvent } from '@/app/actions/jt-standings'
 import { listEventRsvps } from '@/app/actions/rsvp'
-import { isMixerCategory } from '@/utils/events'
+import { isImportCheckIn, isMixerCategory } from '@/utils/events'
 import { fetchAllPages } from '@/utils/supabase/fetchAll'
 import { getAuthUser } from '@/utils/supabase/auth'
 
@@ -13,6 +14,7 @@ type AttendanceQueryRow = {
   verified: boolean
   counted: boolean
   recorded_at: string
+  point_value_override: number | null
   members:
     | { id: string; full_name: string; profile_image_url: string | null }
     | { id: string; full_name: string; profile_image_url: string | null }[]
@@ -43,6 +45,7 @@ export default async function EventDetailPage({ params }: { params: Promise<{ id
           verified,
           counted,
           recorded_at,
+          point_value_override,
           members!attendance_member_id_fkey (
             id,
             full_name,
@@ -105,6 +108,8 @@ export default async function EventDetailPage({ params }: { params: Promise<{ id
 
   let rsvpRows: Awaited<ReturnType<typeof listEventRsvps>>['rows'] = []
   let rsvpMatchMembers: { id: string; full_name: string; email: string }[] = []
+  let importRows: Awaited<ReturnType<typeof listEventImportRows>>['rows'] = []
+  let importMatchMembers: { id: string; full_name: string; email: string }[] = []
 
   if (event.check_in_type === 'rsvp_required') {
     const [rsvpResult, members] = await Promise.all([
@@ -122,6 +127,22 @@ export default async function EventDetailPage({ params }: { params: Promise<{ id
     rsvpMatchMembers = members.data ?? []
   }
 
+  if (isImportCheckIn(event.check_in_type)) {
+    const [importResult, members] = await Promise.all([
+      listEventImportRows(id),
+      fetchAllPages<{ id: string; full_name: string; email: string }>((from, to) =>
+        supabase
+          .from('members')
+          .select('id, full_name, email')
+          .eq('status', 'active')
+          .order('full_name')
+          .range(from, to),
+      ),
+    ])
+    importRows = importResult.rows
+    importMatchMembers = members.data ?? []
+  }
+
   return (
     <EventDetailClient
       event={event}
@@ -133,6 +154,8 @@ export default async function EventDetailPage({ params }: { params: Promise<{ id
       spectatorEvent={spectatorEvent}
       rsvpRows={rsvpRows}
       rsvpMatchMembers={rsvpMatchMembers}
+      importRows={importRows}
+      importMatchMembers={importMatchMembers}
     />
   )
 }

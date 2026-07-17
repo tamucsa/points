@@ -2,9 +2,10 @@
 export const EVENT_CATEGORIES = [
   'General Meeting',
   'CSA-Wide',
+  'CSA-Wide Mixers',
   'Jiating Olympics',
   'Jiating Event',
-  'Mixer',
+  'Jiating Mixer',
   'Sports',
   'Philanthropy',
   'Dance',
@@ -14,7 +15,12 @@ export const EVENT_CATEGORIES = [
 export type EventCategory = (typeof EVENT_CATEGORIES)[number]
 
 export type EventScope = 'org' | 'jt_shared' | 'jt_specific'
-export type CheckInType = 'officer' | 'self' | 'rsvp_required'
+export type CheckInType =
+  | 'officer'
+  | 'self'
+  | 'rsvp_required'
+  | 'csv_import'
+  | 'manual_points'
 
 export interface CategoryConfig {
   pointValue: 1 | 2 | 3
@@ -32,9 +38,10 @@ export interface CategoryConfig {
 export const CATEGORY_CONFIG: Record<EventCategory, CategoryConfig> = {
   'General Meeting': { pointValue: 2, scope: 'org', checkInType: 'self' },
   'CSA-Wide': { pointValue: 3, scope: 'org' },
+  'CSA-Wide Mixers': { pointValue: 3, scope: 'org', checkInType: 'csv_import' },
   'Jiating Olympics': { pointValue: 2, scope: 'jt_shared', checkInType: 'officer' },
   'Jiating Event': { pointValue: 1, scope: 'jt_specific' },
-  Mixer: { pointValue: 2, scope: 'jt_shared' },
+  'Jiating Mixer': { pointValue: 2, scope: 'jt_shared' },
   'Sports': { pointValue: 1, scope: 'org', checkInType: 'officer', allowSpectators: true },
   'Philanthropy': { pointValue: 3, scope: 'org' },
   'Dance': { pointValue: 1, scope: 'org', checkInType: 'officer' },
@@ -48,9 +55,10 @@ export const CATEGORY_CONFIG: Record<EventCategory, CategoryConfig> = {
 export const CATEGORY_OWNER_HINTS: Record<EventCategory, string> = {
   'General Meeting': 'Typically created by Executives, mainly the Secretary',
   'CSA-Wide': 'Typically created by the Event Coordinator',
+  'CSA-Wide Mixers': 'Typically created by the Event Coordinator',
   'Jiating Olympics': 'Typically created by the Sports chair',
   'Jiating Event': 'Typically created by Jiating parents for their own family',
-  Mixer: 'Typically created by Jiating parents',
+  'Jiating Mixer': 'Typically created by Jiating parents',
   Sports: 'Typically created by the Sports chair',
   Philanthropy: 'Typically created by the Philanthropy chair',
   Dance: 'Typically created by the Dance chair',
@@ -77,6 +85,8 @@ const CHECKIN_LABELS: Record<CheckInType, string> = {
   officer: 'Officer Check-in',
   self: 'Self Check-in',
   rsvp_required: 'RSVP',
+  csv_import: 'CSV Check-in',
+  manual_points: 'Manual Points',
 }
 
 export function getCategoryConfig(category: string): CategoryConfig | null {
@@ -110,7 +120,44 @@ export function isJiatingOlympicsCategory(category: string) {
 }
 
 export function isMixerCategory(category: string) {
-  return category.trim() === 'Mixer'
+  const value = category.trim()
+  // 'Mixer' kept for any legacy rows created before the rename.
+  return value === 'Jiating Mixer' || value === 'Mixer'
+}
+
+export function isCsaWideMixersCategory(category: string) {
+  return category.trim() === 'CSA-Wide Mixers'
+}
+
+export function isCsvImportCheckIn(checkInType: string) {
+  return checkInType === 'csv_import'
+}
+
+export function isManualPointsCheckIn(checkInType: string) {
+  return checkInType === 'manual_points'
+}
+
+/** Badge label for event cards — manual points are variable per member. */
+export function formatEventPointsLabel(
+  pointValue: number,
+  checkInType: string,
+): string {
+  if (isManualPointsCheckIn(checkInType)) return 'Var'
+  return String(pointValue)
+}
+
+/** Stored as midnight–23:59 Central so sorting/caps still work without a real clock time. */
+export const MANUAL_POINTS_DEFAULT_START_TIME = '00:00'
+export const MANUAL_POINTS_DEFAULT_END_TIME = '23:59'
+
+/** Check-in types that award points via officer CSV upload (no QR / roster). */
+export function isImportCheckIn(checkInType: string) {
+  return isCsvImportCheckIn(checkInType) || isManualPointsCheckIn(checkInType)
+}
+
+/** Philanthropy may use officer / self / RSVP / manual_points. */
+export function isPhilanthropyCategory(category: string) {
+  return category.trim() === 'Philanthropy'
 }
 
 export function isSportsRelatedCategory(category: string) {
