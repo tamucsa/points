@@ -6,6 +6,7 @@ import MemberAvatar from '@/app/components/MemberAvatar'
 import EmptyState from '@/app/components/EmptyState'
 import { CATEGORY_COLORS, CHECKIN_METHOD_LABELS, POINT_BUCKET_LABELS } from '@/utils/constants'
 import { formatEventSchedule } from '@/utils/datetime'
+import { isManualPointsCheckIn } from '@/utils/events'
 import { Calendar } from 'lucide-react'
 
 interface Member {
@@ -28,12 +29,14 @@ interface AttendanceRow {
   check_in_method: string
   verified: boolean
   counted: boolean
+  point_value_override?: number | null
   events: {
     name: string
     category: string
     point_value: number
     starts_at: string
     ends_at: string | null
+    check_in_type?: string | null
   }
 }
 
@@ -118,15 +121,23 @@ export default function MemberDetailClient({ member, attendance, history }: Prop
         )}
         {attendance.map(row => {
           const catColor = CATEGORY_COLORS[row.events?.category] ?? CATEGORY_COLORS.default
+          const earnedPoints =
+            row.point_value_override ?? row.events?.point_value ?? 0
           return (
             <div key={row.id} className="flex items-center gap-4 border-b border-home-border px-5 py-3 last:border-b-0">
               <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl text-sm font-extrabold" style={{ background: `${catColor}20`, color: catColor }}>
-                {row.counted ? `+${row.events?.point_value}` : '—'}
+                {row.counted ? `+${earnedPoints}` : '—'}
               </div>
               <div className="min-w-0 flex-1">
                 <div className="truncate text-sm font-medium text-text">{row.events?.name}</div>
                 <div className="mt-1 flex flex-wrap gap-2 text-xs text-subtitle">
-                  <span>{row.events?.starts_at ? formatEventSchedule(row.events.starts_at, row.events.ends_at) : '—'}</span>
+                  <span>
+                    {row.events?.starts_at
+                      ? formatEventSchedule(row.events.starts_at, row.events.ends_at, {
+                          dateOnly: isManualPointsCheckIn(row.events.check_in_type ?? ''),
+                        })
+                      : '—'}
+                  </span>
                   <span className="rounded-md px-2 py-0.5" style={{ background: `${catColor}15`, color: catColor }}>{row.events?.category}</span>
                   {!row.counted && <span className="rounded-md bg-red-50 px-2 py-0.5 text-red-500">Cap reached</span>}
                 </div>

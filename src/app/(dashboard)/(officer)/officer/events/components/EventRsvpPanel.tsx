@@ -9,6 +9,7 @@ import {
   type EventRsvpRow,
 } from '@/app/actions/rsvp'
 import { inputClassName, labelClassName } from '@/utils/constants'
+import { splitCsvLine } from '@/utils/csv'
 
 interface MatchMember {
   id: string
@@ -33,10 +34,7 @@ function parseRsvpCsv(text: string): { fullName: string; email: string }[] {
 
   if (lines.length === 0) return []
 
-  const split = (line: string) =>
-    line.split(',').map(value => value.trim().replace(/^"|"$/g, ''))
-
-  const headers = split(lines[0]).map(h => h.toLowerCase())
+  const headers = splitCsvLine(lines[0]).map(h => h.toLowerCase())
   const emailIdx = headers.findIndex(h => h.includes('email'))
   const nameIdx = headers.findIndex(h => h.includes('name'))
 
@@ -45,7 +43,7 @@ function parseRsvpCsv(text: string): { fullName: string; email: string }[] {
   const start = hasHeader ? 1 : 0
 
   return lines.slice(start).map(line => {
-    const values = split(line)
+    const values = splitCsvLine(line)
     if (hasHeader) {
       return {
         fullName: nameIdx >= 0 ? (values[nameIdx] ?? '') : (values[0] ?? ''),

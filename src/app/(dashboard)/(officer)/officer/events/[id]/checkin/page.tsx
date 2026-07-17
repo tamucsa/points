@@ -1,6 +1,6 @@
 import { notFound, redirect } from 'next/navigation'
 import OfficerCheckinClient from '@/app/(dashboard)/(officer)/officer/events/components/OfficerCheckinClient'
-import { isMixerCategory } from '@/utils/events'
+import { isImportCheckIn, isMixerCategory } from '@/utils/events'
 import { fetchAllPages } from '@/utils/supabase/fetchAll'
 import { getCurrentMember } from '@/utils/supabase/auth'
 
@@ -40,6 +40,10 @@ export default async function OfficerCheckinPage({ params }: { params: Promise<{
   }
 
   if (!event) notFound()
+
+  if (isImportCheckIn(event.check_in_type)) {
+    redirect(`/officer/events/${id}`)
+  }
 
   let jtFamilyName: string | null = null
   if (event.jt_family_id) {

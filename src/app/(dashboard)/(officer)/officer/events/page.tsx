@@ -81,6 +81,22 @@ export default async function OfficerEventsPage() {
     }
   }
 
+  const importEventIds = (events ?? [])
+    .filter(e => e.check_in_type === 'csv_import' || e.check_in_type === 'manual_points')
+    .map(e => e.id)
+
+  const eventsWithImportUpload: Record<string, true> = {}
+  if (importEventIds.length > 0) {
+    const { data: importRows } = await supabase
+      .from('event_import_rows')
+      .select('event_id')
+      .in('event_id', importEventIds)
+
+    for (const row of importRows ?? []) {
+      eventsWithImportUpload[row.event_id] = true
+    }
+  }
+
   return (
     <OfficerEventsClient
       events={events ?? []}
@@ -92,6 +108,7 @@ export default async function OfficerEventsPage() {
       mixerFamiliesByEventId={mixerFamiliesByEventId}
       officerJtFamilyId={member?.jt_family_id ?? null}
       eventsWithRsvpUpload={eventsWithRsvpUpload}
+      eventsWithImportUpload={eventsWithImportUpload}
     />
   )
 }

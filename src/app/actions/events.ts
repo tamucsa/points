@@ -7,8 +7,11 @@ import {
 import {
   type CheckInType,
   getCategoryConfig,
+  isManualPointsCheckIn,
   isMixerCategory,
   isSportsCategory,
+  MANUAL_POINTS_DEFAULT_END_TIME,
+  MANUAL_POINTS_DEFAULT_START_TIME,
   SPECTATOR_EVENT_CATEGORY,
 } from "@/utils/events";
 import {
@@ -67,10 +70,15 @@ async function syncCalendarAfterPublish(
     rsvp_url: string | null;
     google_event_id: string | null;
     parent_event_id?: string | null;
+    check_in_type?: string | null;
   },
 ) {
   if (
-    !shouldSyncEventToGoogleCalendar(event.category, event.parent_event_id)
+    !shouldSyncEventToGoogleCalendar(
+      event.category,
+      event.parent_event_id,
+      event.check_in_type,
+    )
   ) {
     return;
   }
@@ -132,7 +140,7 @@ export async function publishEvent(eventId: string) {
   const { data: event } = await supabase
     .from("events")
     .select(
-      "id, category, name, description, location, starts_at, ends_at, rsvp_url, google_event_id, publish_status, parent_event_id",
+      "id, category, name, description, location, starts_at, ends_at, rsvp_url, google_event_id, publish_status, parent_event_id, check_in_type",
     )
     .eq("id", eventId)
     .maybeSingle();
@@ -182,7 +190,7 @@ export async function publishDueScheduledEvents() {
   const { data: due, error } = await admin
     .from("events")
     .select(
-      "id, category, name, description, location, starts_at, ends_at, rsvp_url, google_event_id, parent_event_id",
+      "id, category, name, description, location, starts_at, ends_at, rsvp_url, google_event_id, parent_event_id, check_in_type",
     )
     .eq("publish_status", "scheduled")
     .is("parent_event_id", null)
@@ -314,21 +322,38 @@ export async function createEvent(input: CreateEventInput) {
     return { success: false, error: "Event name is required." };
   if (!input.eventDate)
     return { success: false, error: "Event date is required." };
-  if (!input.startTime)
-    return { success: false, error: "Start time is required." };
-  if (!input.location.trim())
-    return { success: false, error: "Location is required." };
 
   const config = getCategoryConfig(input.category);
   if (!config) return { success: false, error: "Invalid event category." };
 
-  const pointValue = config.pointValue;
   const scope = config.scope;
+  const allowedFlexible: CheckInType[] = ["officer", "self", "rsvp_required"];
+  if (input.category === "Philanthropy") {
+    allowedFlexible.push("manual_points");
+  }
   const checkInType: CheckInType =
     config.checkInType ??
-    (["officer", "self", "rsvp_required"].includes(input.checkInType)
+    (allowedFlexible.includes(input.checkInType as CheckInType)
       ? (input.checkInType as CheckInType)
       : "officer");
+
+  const dateOnly = isManualPointsCheckIn(checkInType);
+  const pointValue = dateOnly ? 0 : config.pointValue;
+  const startTime = dateOnly
+    ? MANUAL_POINTS_DEFAULT_START_TIME
+    : input.startTime;
+  const endTime = dateOnly
+    ? MANUAL_POINTS_DEFAULT_END_TIME
+    : input.endTime;
+  const location = dateOnly ? "" : input.location.trim();
+  const locationMapsUrl = dateOnly
+    ? null
+    : input.locationMapsUrl?.trim() || null;
+
+  if (!dateOnly && !startTime)
+    return { success: false, error: "Start time is required." };
+  if (!dateOnly && !location)
+    return { success: false, error: "Location is required." };
 
   if (scope === "jt_specific" && !input.jtFamilyId) {
     return {
@@ -352,17 +377,17 @@ export async function createEvent(input: CreateEventInput) {
     await resolveCentralEventTimestamp(
       supabase,
       input.eventDate,
-      input.startTime,
+      startTime,
     );
   if (!startsAt)
     return { success: false, error: startError ?? "Invalid start time." };
 
   let endsAt: string | null = null;
-  if (input.endTime) {
+  if (endTime) {
     const { value, error: endError } = await resolveCentralEventTimestamp(
       supabase,
       input.eventDate,
-      input.endTime,
+      endTime,
     );
     if (!value)
       return { success: false, error: endError ?? "Invalid end time." };
@@ -375,8 +400,6 @@ export async function createEvent(input: CreateEventInput) {
   const isRSVP = checkInType === "rsvp_required";
   const isJTSpecific = scope === "jt_specific";
   const hasSpectators = config.allowSpectators === true && input.hasSpectators;
-  const location = input.location.trim();
-  const locationMapsUrl = input.locationMapsUrl?.trim() || null;
   const name = input.name.trim();
   const rsvpUrl = isRSVP ? input.rsvpUrl : null;
 
@@ -513,6 +536,7 @@ export async function createEvent(input: CreateEventInput) {
       rsvp_url: rsvpUrl,
       google_event_id: null,
       parent_event_id: null,
+      check_in_type: checkInType,
     });
   }
 
@@ -597,37 +621,50 @@ export async function updateEventSchedule(
     return { success: false, error: "Event name is required." };
   if (!input.eventDate)
     return { success: false, error: "Event date is required." };
-  if (!input.startTime)
-    return { success: false, error: "Start time is required." };
-  if (!input.location.trim())
-    return { success: false, error: "Location is required." };
 
   const { supabase, error: authError } = await requireOfficer();
   if (authError) return { success: false, error: authError };
 
   const { data: event } = await supabase
     .from("events")
-    .select("id, name, description, rsvp_url, google_event_id")
+    .select("id, name, description, rsvp_url, google_event_id, check_in_type")
     .eq("id", eventId)
     .maybeSingle();
 
   if (!event) return { success: false, error: "Event not found." };
 
+  const dateOnly = isManualPointsCheckIn(event.check_in_type);
+  const startTime = dateOnly
+    ? MANUAL_POINTS_DEFAULT_START_TIME
+    : input.startTime;
+  const endTime = dateOnly
+    ? MANUAL_POINTS_DEFAULT_END_TIME
+    : input.endTime;
+  const location = dateOnly ? "" : input.location.trim();
+  const locationMapsUrl = dateOnly
+    ? null
+    : input.locationMapsUrl?.trim() || null;
+
+  if (!dateOnly && !startTime)
+    return { success: false, error: "Start time is required." };
+  if (!dateOnly && !location)
+    return { success: false, error: "Location is required." };
+
   const { value: startsAt, error: startError } =
     await resolveCentralEventTimestamp(
       supabase,
       input.eventDate,
-      input.startTime,
+      startTime,
     );
   if (!startsAt)
     return { success: false, error: startError ?? "Invalid start time." };
 
   let endsAt: string | null = null;
-  if (input.endTime) {
+  if (endTime) {
     const { value, error: endError } = await resolveCentralEventTimestamp(
       supabase,
       input.eventDate,
-      input.endTime,
+      endTime,
     );
     if (!value)
       return { success: false, error: endError ?? "Invalid end time." };
@@ -637,8 +674,6 @@ export async function updateEventSchedule(
     endsAt = value;
   }
 
-  const location = input.location.trim();
-  const locationMapsUrl = input.locationMapsUrl?.trim() || null;
   const description =
     input.description !== undefined
       ? input.description?.trim() || null

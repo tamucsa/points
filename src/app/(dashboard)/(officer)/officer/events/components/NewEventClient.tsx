@@ -22,6 +22,7 @@ import {
   getCategoryConfig,
   getCategoryOwnerHint,
   isMixerCategory,
+  isPhilanthropyCategory,
 } from "@/utils/events";
 import { CHECKIN_TYPE_ICONS } from "@/utils/icons";
 
@@ -39,6 +40,30 @@ interface Props {
 }
 
 const DEFAULT_CATEGORY: EventCategory = "General Meeting";
+
+const BASE_CHECK_IN_OPTIONS = [
+  {
+    value: "officer" as const,
+    label: CHECKIN_TYPE_LABELS.officer,
+    icon: CHECKIN_TYPE_ICONS.officer,
+  },
+  {
+    value: "self" as const,
+    label: CHECKIN_TYPE_LABELS.self,
+    icon: CHECKIN_TYPE_ICONS.self,
+  },
+  {
+    value: "rsvp_required" as const,
+    label: CHECKIN_TYPE_LABELS.rsvp_required,
+    icon: CHECKIN_TYPE_ICONS.rsvp_required,
+  },
+];
+
+const MANUAL_POINTS_OPTION = {
+  value: "manual_points" as const,
+  label: CHECKIN_TYPE_LABELS.manual_points,
+  icon: CHECKIN_TYPE_ICONS.manual_points,
+};
 
 const checkInTypeBtn = (active: boolean) =>
   `inline-flex min-h-11 w-full items-center justify-center rounded-xl border px-3 py-2.5 text-sm font-medium leading-none transition ${
@@ -97,8 +122,14 @@ export default function NewEventClient({
   const isSports = categoryConfig?.allowSpectators === true;
   const isJTSpecific = form.scope === "jt_specific";
   const isMixer = isMixerCategory(form.category);
+  const isPhilanthropy = isPhilanthropyCategory(form.category);
   const isRSVP = effectiveCheckIn === "rsvp_required";
   const isSelf = effectiveCheckIn === "self";
+  const isCsvImport = effectiveCheckIn === "csv_import";
+  const isManualPoints = effectiveCheckIn === "manual_points";
+  const checkInOptions = isPhilanthropy
+    ? [...BASE_CHECK_IN_OPTIONS, MANUAL_POINTS_OPTION]
+    : BASE_CHECK_IN_OPTIONS;
 
   const toggleMixerFamily = (id: string) => {
     setMixerFamilyIds((prev) =>
@@ -107,14 +138,24 @@ export default function NewEventClient({
   };
 
   const handleCategoryChange = (category: string) => {
-    setForm((f) => ({
-      ...f,
-      ...applyCategoryDefaults(category as EventCategory, {
+    setForm((f) => {
+      const next = applyCategoryDefaults(category as EventCategory, {
         scope: f.scope,
         check_in_type: f.check_in_type,
         has_spectators: f.has_spectators,
-      }),
-    }));
+      });
+      // manual_points is Philanthropy-only; drop it when leaving that category
+      // unless the new category fixes check-in type.
+      const config = getCategoryConfig(category);
+      if (
+        !config?.checkInType &&
+        next.check_in_type === "manual_points" &&
+        category !== "Philanthropy"
+      ) {
+        next.check_in_type = "officer";
+      }
+      return { ...f, ...next };
+    });
   };
 
   const handleSubmit = async (publishMode: EventPublishMode) => {
@@ -145,10 +186,10 @@ export default function NewEventClient({
       jtFamilyIds: isMixer ? mixerFamilyIds : [],
       checkInType: effectiveCheckIn,
       eventDate: form.event_date,
-      startTime: form.start_time,
-      endTime: form.end_time.trim() || null,
-      location: form.location.trim(),
-      locationMapsUrl: form.location_maps_url || null,
+      startTime: isManualPoints ? "" : form.start_time,
+      endTime: isManualPoints ? null : form.end_time.trim() || null,
+      location: isManualPoints ? "" : form.location.trim(),
+      locationMapsUrl: isManualPoints ? null : form.location_maps_url || null,
       description: form.description.trim() || null,
       rsvpUrl: isRSVP && form.rsvp_url ? form.rsvp_url.trim() : null,
       rsvpDeadline: isRSVP && form.rsvp_deadline ? form.rsvp_deadline : null,
@@ -199,8 +240,11 @@ export default function NewEventClient({
           {categoryConfig && (
             <div className="mt-2 flex flex-wrap gap-2 text-xs text-subtitle">
               <span className="rounded-md bg-bg px-2 py-1">
-                {categoryConfig.pointValue} pt
-                {categoryConfig.pointValue === 1 ? "" : "s"}
+                {isManualPoints
+                  ? "Variable pts"
+                  : `${categoryConfig.pointValue} pt${
+                      categoryConfig.pointValue === 1 ? "" : "s"
+                    }`}
               </span>
               <span className="rounded-md bg-bg px-2 py-1">
                 <ScopeBadge scope={categoryConfig.scope} />
@@ -220,7 +264,7 @@ export default function NewEventClient({
         </div>
 
         <div className="grid gap-4 sm:grid-cols-2">
-          <div>
+          <div className={isManualPoints ? "sm:col-span-2" : undefined}>
             <label className={labelClassName}>Date *</label>
             <input
               type="date"
@@ -229,48 +273,59 @@ export default function NewEventClient({
               onChange={(e) => set("event_date", e.target.value)}
             />
           </div>
-          <div>
-            <label className={labelClassName}>Start Time *</label>
-            <input
-              type="time"
-              className={inputClassName}
-              value={form.start_time}
-              onChange={(e) => set("start_time", e.target.value)}
-            />
-          </div>
+          {!isManualPoints && (
+            <div>
+              <label className={labelClassName}>Start Time *</label>
+              <input
+                type="time"
+                className={inputClassName}
+                value={form.start_time}
+                onChange={(e) => set("start_time", e.target.value)}
+              />
+            </div>
+          )}
         </div>
 
-        <div className="grid gap-4 sm:grid-cols-2">
-          <div>
-            <label className={labelClassName}>
-              End Time{" "}
-              <span className="font-normal normal-case text-subtitle">
-                (optional)
-              </span>
-            </label>
-            <input
-              type="time"
-              className={inputClassName}
-              value={form.end_time}
-              onChange={(e) => set("end_time", e.target.value)}
-            />
+        {!isManualPoints && (
+          <div className="grid gap-4 sm:grid-cols-2">
+            <div>
+              <label className={labelClassName}>
+                End Time{" "}
+                <span className="font-normal normal-case text-subtitle">
+                  (optional)
+                </span>
+              </label>
+              <input
+                type="time"
+                className={inputClassName}
+                value={form.end_time}
+                onChange={(e) => set("end_time", e.target.value)}
+              />
+            </div>
+            <div>
+              <label className={labelClassName}>Location *</label>
+              <LocationAutocomplete
+                value={form.location}
+                onChange={(value, meta) => {
+                  setForm(f => ({
+                    ...f,
+                    location: value,
+                    location_maps_url: meta?.mapsUrl ?? null,
+                  }))
+                }}
+                placeholder="e.g. MSC 2406"
+                required
+              />
+            </div>
           </div>
-          <div>
-            <label className={labelClassName}>Location *</label>
-            <LocationAutocomplete
-              value={form.location}
-              onChange={(value, meta) => {
-                setForm(f => ({
-                  ...f,
-                  location: value,
-                  location_maps_url: meta?.mapsUrl ?? null,
-                }))
-              }}
-              placeholder="e.g. MSC 2406"
-              required
-            />
-          </div>
-        </div>
+        )}
+
+        {isManualPoints && (
+          <p className="-mt-2 text-xs text-subtitle">
+            Manual points are date-only (no time or location) — for virtual
+            opportunities like Dare Week donations.
+          </p>
+        )}
 
         {isJTSpecific && (
           <div>
@@ -326,26 +381,14 @@ export default function NewEventClient({
         {!fixedCheckIn && (
           <div>
             <label className={labelClassName}>Check-in Type *</label>
-            <div className="grid gap-2 sm:grid-cols-3">
-              {(
-                [
-                  {
-                    value: "officer",
-                    label: CHECKIN_TYPE_LABELS.officer,
-                    icon: CHECKIN_TYPE_ICONS.officer,
-                  },
-                  {
-                    value: "self",
-                    label: CHECKIN_TYPE_LABELS.self,
-                    icon: CHECKIN_TYPE_ICONS.self,
-                  },
-                  {
-                    value: "rsvp_required",
-                    label: CHECKIN_TYPE_LABELS.rsvp_required,
-                    icon: CHECKIN_TYPE_ICONS.rsvp_required,
-                  },
-                ] as const
-              ).map((opt) => (
+            <div
+              className={`grid gap-2 ${
+                checkInOptions.length >= 4
+                  ? "grid-cols-2"
+                  : "sm:grid-cols-3"
+              }`}
+            >
+              {checkInOptions.map((opt) => (
                 <button
                   key={opt.value}
                   type="button"
@@ -363,7 +406,9 @@ export default function NewEventClient({
                         : "text-subtitle"
                     }
                     labelClassName={
-                      form.check_in_type === opt.value ? "text-primary" : ""
+                      form.check_in_type === opt.value
+                        ? "whitespace-nowrap text-primary"
+                        : "whitespace-nowrap"
                     }
                   />
                 </button>
@@ -374,12 +419,25 @@ export default function NewEventClient({
                 A QR code is generated automatically when the event is created.
               </p>
             )}
+            {isManualPoints && (
+              <p className="mt-2 text-xs text-subtitle">
+                After publishing, upload a CSV with name, email, and points per
+                member. Variable amounts count toward Philanthropy (CSA).
+              </p>
+            )}
           </div>
         )}
 
         {fixedCheckIn === "self" && (
           <p className="text-xs text-subtitle">
             Members scan a QR code to check themselves in.
+          </p>
+        )}
+
+        {isCsvImport && (
+          <p className="text-xs text-subtitle">
+            After publishing, upload the shared Google Form CSV. Only rows whose
+            Organization contains &ldquo;CSA&rdquo; are checked in (3 pts each).
           </p>
         )}
 

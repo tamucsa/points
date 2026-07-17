@@ -18,11 +18,11 @@ const BUCKET_CATEGORIES: {
 }[] = [
   {
     bucket: POINT_BUCKET_LABELS.csa,
-    categories: ['CSA-Wide', 'Philanthropy', 'Concessions'],
+    categories: ['CSA-Wide', 'CSA-Wide Mixers', 'Philanthropy', 'Concessions'],
   },
   {
     bucket: POINT_BUCKET_LABELS.jt,
-    categories: ['Jiating Olympics', 'Jiating Event', 'Mixer'],
+    categories: ['Jiating Olympics', 'Jiating Event', 'Jiating Mixer'],
   },
   {
     bucket: POINT_BUCKET_LABELS.sports,
@@ -60,7 +60,9 @@ export default function PointsGuide({ attendance }: Props) {
   const weeklyJtMixerCounted = attendance.filter(
     row =>
       row.counted &&
-      (row.events.category === 'Jiating Event' || row.events.category === 'Mixer') &&
+      (row.events.category === 'Jiating Event' ||
+        row.events.category === 'Jiating Mixer' ||
+        row.events.category === 'Mixer') &&
       isInCurrentChicagoWeek(row.events.starts_at),
   ).length
 
@@ -69,7 +71,8 @@ export default function PointsGuide({ attendance }: Props) {
       <h2 className="mb-1 text-lg font-bold text-text">How points work</h2>
       <p className="mb-4 max-w-3xl text-sm leading-6 text-subtitle">
         Points come from attending events this semester. Totals above follow four leaderboard buckets;
-        each event category has a fixed point value. Two caps can stop extra check-ins from counting
+        each event category has a fixed point value (Philanthropy can also include monetary opportunities
+        with custom point amounts). Two caps can stop extra check-ins from counting
         toward your total — you&apos;ll still show as attended with a &ldquo;cap reached&rdquo; tag.
       </p>
 
@@ -130,11 +133,11 @@ export default function PointsGuide({ attendance }: Props) {
         </div>
 
         <div className="rounded-4xl border border-home-border bg-white p-5 shadow-sm">
-          <div className="text-sm font-semibold text-text">Jiating Event + Mixer cap</div>
+          <div className="text-sm font-semibold text-text">Jiating Event + Jiating Mixer cap</div>
           <p className="mt-2 text-sm leading-6 text-subtitle">
             Each week (Monday–Sunday, Central time), at most{' '}
             <span className="font-semibold text-text">{JT_EVENT_MIXER_WEEKLY_ATTENDANCE_CAP}</span>{' '}
-            counting Jiating Event or Mixer check-ins. Jiating Olympics and other categories are not
+            counting Jiating Event or Jiating Mixer check-ins. Jiating Olympics and other categories are not
             included in this weekly limit.
           </p>
           <div className="mt-4">

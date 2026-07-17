@@ -2,6 +2,10 @@
 
 import { createActionSupabase } from '@/utils/supabase/action'
 import { fetchAllPages } from '@/utils/supabase/fetchAll'
+import {
+  lookupMembersByEmail,
+  normalizeEmail,
+} from '@/utils/member-lookup'
 
 async function requireOfficer() {
   const supabase = await createActionSupabase()
@@ -33,10 +37,6 @@ export interface EventRsvpRow {
   member_id: string | null
   is_guest: boolean
   member_name: string | null
-}
-
-function normalizeEmail(raw: string): string {
-  return raw.trim().toLowerCase()
 }
 
 async function assertRsvpEvent(
@@ -172,26 +172,16 @@ export async function replaceEventRsvpCsv(eventId: string, rows: RsvpCsvRow[]) {
   }
 
   const emails = [...byEmail.keys()]
-  const memberByEmail = new Map<string, string>()
-
-  for (let i = 0; i < emails.length; i += 200) {
-    const chunk = emails.slice(i, i + 200)
-    const { data: members, error: membersError } = await supabase
-      .from('members')
-      .select('id, email')
-      .in('email', chunk)
-
-    if (membersError) {
-      return {
-        success: false as const,
-        matched: 0,
-        unmatched: 0,
-        errors: ['Failed to look up members by email.'],
-      }
-    }
-
-    for (const m of members ?? []) {
-      memberByEmail.set(normalizeEmail(m.email), m.id)
+  const { memberByEmail, error: lookupError } = await lookupMembersByEmail(
+    supabase,
+    emails,
+  )
+  if (lookupError) {
+    return {
+      success: false as const,
+      matched: 0,
+      unmatched: 0,
+      errors: [lookupError],
     }
   }
 
