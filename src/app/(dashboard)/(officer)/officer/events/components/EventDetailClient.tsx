@@ -8,6 +8,7 @@ import EventRsvpPanel from "@/app/(dashboard)/(officer)/officer/events/component
 import { officerRemoveCheckIn } from "@/app/actions/attendance";
 import {
   publishEvent,
+  updateScheduledPublish,
   updateEventMixerFamilies,
   updateEventRsvp,
   updateEventSchedule,
@@ -160,6 +161,15 @@ export default function EventDetailClient({
   const [scheduleSaving, setScheduleSaving] = useState(false);
   const [scheduleError, setScheduleError] = useState<string | null>(null);
   const [scheduleSaved, setScheduleSaved] = useState(false);
+  const [publishDate, setPublishDate] = useState(() =>
+    event.publish_at ? eventTimestampToFormDate(event.publish_at) : "",
+  );
+  const [publishTime, setPublishTime] = useState(() =>
+    event.publish_at ? eventTimestampToFormTime(event.publish_at) : "",
+  );
+  const [publishTimeSaving, setPublishTimeSaving] = useState(false);
+  const [publishTimeError, setPublishTimeError] = useState<string | null>(null);
+  const [publishTimeSaved, setPublishTimeSaved] = useState(false);
   const [uncheckTarget, setUncheckTarget] = useState<AttendanceRow | null>(
     null,
   );
@@ -208,6 +218,8 @@ export default function EventDetailClient({
     setLocation(event.location ?? "");
     setLocationMapsUrl(event.location_maps_url ?? null);
     setDescription(event.description ?? "");
+    setPublishDate(event.publish_at ? eventTimestampToFormDate(event.publish_at) : "");
+    setPublishTime(event.publish_at ? eventTimestampToFormTime(event.publish_at) : "");
   }, [
     event.name,
     event.starts_at,
@@ -215,6 +227,7 @@ export default function EventDetailClient({
     event.location,
     event.location_maps_url,
     event.description,
+    event.publish_at,
   ]);
 
   const toggleMixerFamily = (id: string) => {
@@ -297,6 +310,25 @@ export default function EventDetailClient({
       setEventPublishError(result.error ?? "Failed to publish event.");
       return;
     }
+    router.refresh();
+  };
+
+  const handleSavePublishTime = async () => {
+    setPublishTimeSaving(true);
+    setPublishTimeError(null);
+    setPublishTimeSaved(false);
+
+    const result = await updateScheduledPublish(event.id, {
+      scheduleDate: publishDate,
+      scheduleTime: publishTime,
+    });
+
+    setPublishTimeSaving(false);
+    if (!result.success) {
+      setPublishTimeError(result.error ?? "Failed to update publish time.");
+      return;
+    }
+    setPublishTimeSaved(true);
     router.refresh();
   };
 
@@ -498,6 +530,74 @@ export default function EventDetailClient({
         )}
         {publishError && (
           <p className="mt-3 text-sm text-red-600">{publishError}</p>
+        )}
+        {publishStatus === "scheduled" && (
+          <CollapsibleSettings
+            title="Schedule publish"
+            defaultOpen
+            summary={
+              event.publish_at
+                ? new Date(event.publish_at).toLocaleString("en-US", {
+                    timeZone: EVENT_TIMEZONE,
+                    dateStyle: "medium",
+                    timeStyle: "short",
+                  }) + " CT"
+                : "No publish time set"
+            }
+          >
+            <p className="text-xs leading-5 text-subtitle">
+              Update when this event should become visible to members. Times are
+              Central Time.
+            </p>
+            <div className="grid gap-3 sm:grid-cols-2">
+              <div>
+                <label className={labelClassName} htmlFor="event-publish-date">
+                  Publish date
+                </label>
+                <input
+                  id="event-publish-date"
+                  type="date"
+                  className={inputClassName}
+                  value={publishDate}
+                  onChange={(e) => {
+                    setPublishDate(e.target.value);
+                    setPublishTimeSaved(false);
+                    setPublishTimeError(null);
+                  }}
+                />
+              </div>
+              <div>
+                <label className={labelClassName} htmlFor="event-publish-time">
+                  Publish time
+                </label>
+                <input
+                  id="event-publish-time"
+                  type="time"
+                  className={inputClassName}
+                  value={publishTime}
+                  onChange={(e) => {
+                    setPublishTime(e.target.value);
+                    setPublishTimeSaved(false);
+                    setPublishTimeError(null);
+                  }}
+                />
+              </div>
+            </div>
+            {publishTimeError && (
+              <p className="text-sm text-red-600">{publishTimeError}</p>
+            )}
+            {publishTimeSaved && (
+              <p className="text-sm text-green-700">Publish time saved.</p>
+            )}
+            <button
+              type="button"
+              onClick={() => void handleSavePublishTime()}
+              disabled={publishTimeSaving}
+              className={btnPrimaryClassName}
+            >
+              {publishTimeSaving ? "Saving…" : "Save publish time"}
+            </button>
+          </CollapsibleSettings>
         )}
         <CollapsibleSettings
           title="Event details"
