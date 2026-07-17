@@ -62,8 +62,9 @@ type AttendanceInsert = {
 }
 
 /**
- * Upsert attendance first, then prune members no longer in the CSV,
- * then replace staging. Avoids wiping points if a later insert fails.
+ * Atomically replace an event's import: upsert attendance, prune members no
+ * longer in the CSV, and swap staging rows in one DB transaction (RPC), so a
+ * mid-step failure never leaves the import half-applied.
  */
 async function syncImportData(
   supabase: ActionSupabase,
@@ -72,55 +73,30 @@ async function syncImportData(
   attendanceInserts: AttendanceInsert[],
   stagingInserts: StagingInsert[],
 ): Promise<string | null> {
-  const chunkSize = 200
-  const keepIds = attendanceInserts.map(row => row.member_id)
+  const { error } = await supabase.rpc('replace_event_import', {
+    p_event_id: eventId,
+    p_check_in_method: checkInMethod,
+    p_attendance: attendanceInserts.map(row => ({
+      member_id: row.member_id,
+      semester_id: row.semester_id,
+      recorded_by: row.recorded_by,
+      point_value_override: row.point_value_override ?? null,
+    })),
+    p_staging: stagingInserts.map(row => ({
+      kind: row.kind,
+      email: row.email,
+      full_name: row.full_name,
+      organization: row.organization,
+      points: row.points,
+      member_id: row.member_id,
+      is_guest: row.is_guest,
+      applied: row.applied,
+    })),
+  })
 
-  for (let i = 0; i < attendanceInserts.length; i += chunkSize) {
-    const chunk = attendanceInserts.slice(i, i + chunkSize)
-    const { error } = await supabase.from('attendance').upsert(chunk, {
-      onConflict: 'member_id,event_id',
-    })
-    if (error) {
-      return 'Failed to save attendance. Existing check-ins were left unchanged.'
-    }
+  if (error) {
+    return 'Failed to apply the import. No changes were saved — please try again.'
   }
-
-  let pruneQuery = supabase
-    .from('attendance')
-    .delete()
-    .eq('event_id', eventId)
-    .eq('check_in_method', checkInMethod)
-
-  if (keepIds.length > 0) {
-    pruneQuery = pruneQuery.not(
-      'member_id',
-      'in',
-      `(${keepIds.join(',')})`,
-    )
-  }
-
-  const { error: pruneError } = await pruneQuery
-  if (pruneError) {
-    return 'Attendance was updated, but failed to remove people no longer on the CSV. Re-upload to retry.'
-  }
-
-  const { error: deleteStagingError } = await supabase
-    .from('event_import_rows')
-    .delete()
-    .eq('event_id', eventId)
-
-  if (deleteStagingError) {
-    return 'Attendance was updated, but failed to refresh the import list. Re-upload to retry.'
-  }
-
-  for (let i = 0; i < stagingInserts.length; i += chunkSize) {
-    const chunk = stagingInserts.slice(i, i + chunkSize)
-    const { error } = await supabase.from('event_import_rows').insert(chunk)
-    if (error) {
-      return 'Attendance was updated, but failed to save the import list. Re-upload to retry.'
-    }
-  }
-
   return null
 }
 
