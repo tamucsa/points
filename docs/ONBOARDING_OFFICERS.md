@@ -33,6 +33,7 @@ Officers must have `members.role` set to `officer`. If you can't see officer pag
     - **Self/QR** (generates a check-in QR/link)
     - **Officer** (manual check-in)
     - **RSVP** (manual check-in; optional CSV tags RSVPed / Not RSVPed after the form closes — upload on the event page)
+    - **CSV** (fixed for some categories: CSA-Wide Mixers and Howdy Week)
 
 The app currently allows any officer to create any category. Prefer following the ownership guidance below so the right chair/parents own each event type. The New Event form shows a soft hint for who typically creates each category.
 
@@ -42,9 +43,11 @@ The app currently allows any officer to create any category. Prefer following th
 |---|---|---|
 | **General Meeting** | Executive (mainly Secretary) | Includes publishing Jiating standings after GM |
 | **CSA-Wide** | Event Coordinator | |
+| **CSA-Wide Mixers** | Event Coordinator | Shared Google Form → CSV upload on event detail (org must contain CSA) |
+| **Howdy Week** | Exec / Event Coordinator | Recruiting / informational; CSV guest list (0 pts); see Guests tab |
 | **Jiating Olympics** | Sports chair | Created by Sports chair but edited by jiating parents |
 | **Jiating Event** | Jiating parents | JT-specific — create only for **your** Jiating |
-| **Mixer** | Jiating parents | Select participating families at create time (editable later on event detail); check-in tabs only for those families |
+| **Jiating Mixer** | Jiating parents | Select participating families at create time (editable later on event detail); check-in tabs only for those families |
 | **Sports** | Sports chair | Optional spectator check-in child event |
 | **Philanthropy** | Philanthropy chair | |
 | **Dance** | Dance chair | |
@@ -75,6 +78,12 @@ If you need an event outside your usual categories, create it only when the resp
 - If someone was checked in by mistake, **Remove** them from event detail (or uncheck on the check-in page). That means they were not at the event.
 - “Cap reached” means they attended but points did not apply under a system cap — leave them on the list. Cap details: `docs/OPERATIONS.md` → **Points rules**.
 
+### Howdy Week (recruiting)
+
+- Create a **Howdy Week** event (0 points, CSV check-in). Publish it, then upload the Google Form CSV (**Name**, **Email**, **Year**) on the event detail page.
+- Linked members show under **Attendance** at 0 points; unmatched emails stay in the guest panel until they register or you rematch them.
+- For outreach before people join: **Officer Members → Guests** (`/officer/members?tab=guests`) lists unmatched Howdy Week prospects for the active semester (filter/sort/export; rematch links them and records attendance).
+
 ### 4) Publish Jiating standings (General Meeting only)
 - On a **General Meeting** event detail page, click **Publish Jiating standings** after check-in wraps up.
 - This freezes Jiating-vs-Jiating totals for the **Standings** leaderboard tab until the next General Meeting.
@@ -82,11 +91,14 @@ If you need an event outside your usual categories, create it only when the resp
 
 ## Member lookup
 
-Officer Members is paginated (25 per page). Use search, JT filter, and **sign-in status filter** for fast lookup.
+Officer Members has two tabs:
+- **Members** — active roster (paginated, 25 per page). Use search, JT filter, and **sign-in status filter**.
+- **Guests** — unmatched Howdy Week prospects this semester (outreach / rematch). See **Howdy Week** above.
 
-Each row shows whether the member has **signed in with Google**:
+Each Members row shows whether the member has **signed in with Google**:
 - **Signed in** — `auth_uid` is linked (normal for self-registered or post-import login)
 - **Not signed in** — on the roster via CSV import but has not completed first Google login yet
+- Members who attended Howdy Week may also show **Attended N Howdy Week event(s)**
 
 Roster-imported members can still be officer-checked-in before they sign in, but they should sign in once so their account links and profile photo syncs.
 
