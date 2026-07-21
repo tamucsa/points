@@ -12,9 +12,8 @@ interface ThemeSyncProps {
 }
 
 /**
- * One-shot sync between DB preference and next-themes / localStorage.
- * Does not overwrite an in-progress client toggle (that caused the theme to
- * appear stuck when revalidate remounted this component).
+ * Seed theme from DB only when this browser has no saved choice.
+ * Never overwrite localStorage — that was fighting the toggle.
  */
 export default function ThemeSync({ preference }: ThemeSyncProps) {
   const { setTheme } = useTheme()
@@ -24,16 +23,16 @@ export default function ThemeSync({ preference }: ThemeSyncProps) {
     if (synced.current || !preference) return
     synced.current = true
 
-    const stored = localStorage.getItem(THEME_STORAGE_KEY) as ThemePreference | null
-
-    if (preference !== 'system') {
-      if (stored !== preference) setTheme(preference)
+    const stored = localStorage.getItem(THEME_STORAGE_KEY)
+    if (stored) {
+      if (preference === 'system' && stored !== 'system') {
+        void updateThemePreference(stored as ThemePreference)
+      }
       return
     }
 
-    // DB still defaulting to system — keep any local choice and persist it once.
-    if (stored && stored !== 'system') {
-      void updateThemePreference(stored)
+    if (preference !== 'system') {
+      setTheme(preference)
     }
   }, [preference, setTheme])
 

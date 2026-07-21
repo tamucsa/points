@@ -334,7 +334,8 @@ export default function OfficerEventsClient({
             isPast &&
             !eventsWithImportUpload[event.id] && (
               <p className="mt-2 text-xs font-medium text-amber-800">
-                Event is over — open the event to upload the attendance CSV.
+                Event is over — open the event to upload the{' '}
+                {event.category === 'Howdy Week' ? 'guest' : 'attendance'} CSV.
               </p>
             )}
         </div>

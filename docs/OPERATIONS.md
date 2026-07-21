@@ -13,6 +13,8 @@ Runbook for day-to-day CSA Points operations. Each section includes an **overvie
 | Close / start semester                 | Admin            | `/admin/semesters`                                                |
 | Activate pending member                | Admin            | `/admin/members` → Pending                                        |
 | Create event                           | Officer/Admin    | `/officer/events/new`                                             |
+| Howdy Week guest CSV                   | Officer/Admin    | `/officer/events/[id]` (Howdy Week category)                      |
+| Howdy Week Guests (outreach)           | Officer/Admin    | `/officer/members?tab=guests`                                     |
 | Officer check-in                       | Officer/Admin    | `/officer/events/[id]/checkin`                                    |
 | QR / self check-in                     | Officer + Member | `/officer/events/[id]/qr` + `/checkin/[code]`                     |
 | View leaderboard                       | Member           | `/leaderboard`, `/leaderboard/jiatings`, `/leaderboard/standings` |
@@ -220,8 +222,26 @@ Member **Events** (`/events`) is narrower: only the member’s JT-specific event
   - **Date**, **location**, **description** (as needed)
 4. For **Sports** events, optionally enable **Spectator check-in** (creates a child spectator event).
 5. For **Mixers**, select at least two participating Jiatings (editable later on the event detail page).
-6. Submit the form.
-7. Confirm the event appears on `/officer/events`.
+6. For **Howdy Week**, check-in is fixed to CSV import (0 points). Publish the event, then upload the guest CSV on the event detail page.
+7. Submit the form.
+8. Confirm the event appears on `/officer/events`.
+
+### Step-by-step: Upload Howdy Week guest CSV
+
+1. Create a **Howdy Week** event and **publish** it (members can see it on the calendar at 0 points).
+2. Collect responses with a Google Form (**Name**, **Email** `@tamu.edu` required, **Year** as graduation year number only). Suggested disclaimer: CSA may store name, email, and year to record attendance, contact about joining, and link attendance if they register.
+3. Open the event detail page → **Howdy Week guest CSV**.
+4. Upload the CSV. Re-upload **replaces** the guest list for that event. Non-`@tamu.edu` rows are skipped.
+5. Rows matching an existing member email are linked automatically and get an **attendance** row at **0 points**; others stay unmatched until registration or officer rematch.
+6. Linked guests do **not** receive leaderboard points yet (event stays 0 pts until a future deferred award). Officers see an **Attended N Howdy Week events** badge on member lists / pending signups; pending members see it on `/pending`.
+
+### Step-by-step: Outreach unmatched Howdy Week guests
+
+1. Officer/admin opens **Members** → **Guests** (`/officer/members?tab=guests`).
+2. Review unmatched prospects for the active semester (grouped by email). Filter by search, min event count, or a specific Howdy Week event; sort by event count, name, or last attended.
+3. Expand a row to see which events they attended.
+4. **Export CSV** downloads the current filtered set and writes an audit row (`guest_export_log`: who, when, row count, filters).
+5. When you identify the member account (or after they register with a typo email), use **Rematch** to link all of that email’s Howdy Week guest rows this semester and create 0-pt attendance.
 
 ### Step-by-step: Edit event date, time, or location
 
@@ -288,10 +308,12 @@ Canonical scoring policy for CSA Points. Change here when club policy changes; k
 | ---------------- | ------ | ---------------------- | --------------------------------------- |
 | General Meeting  | 2      | CSA-wide               | Self (QR)                               |
 | CSA-Wide         | 3      | CSA-wide               | Officer chooses / often self or officer |
+| CSA-Wide Mixers  | 3      | CSA-wide               | CSV import (shared form; org contains CSA) |
+| Howdy Week       | 0      | CSA-wide               | CSV import (prospective guests; no points yet) |
 | Philanthropy     | 3      | CSA-wide               | Officer chooses                         |
 | Concessions      | 3      | CSA-wide               | Officer                                 |
 | Jiating Olympics | 2      | JT shared              | Officer                                 |
-| Mixer            | 2      | JT shared              | Officer                                 |
+| Jiating Mixer    | 2      | JT shared              | Officer                                 |
 | Jiating Event    | 1      | JT specific            | Officer                                 |
 | Sports           | 1      | CSA-wide               | Officer (+ optional Spectator child)    |
 | Dance            | 1      | CSA-wide               | Officer                                 |

@@ -1,9 +1,14 @@
 import { notFound, redirect } from 'next/navigation'
 import EventDetailClient from '@/app/(dashboard)/(officer)/officer/events/components/EventDetailClient'
+import { listEventGuests } from '@/app/actions/guests'
 import { listEventImportRows } from '@/app/actions/imports'
 import { getSnapshotForEvent } from '@/app/actions/jt-standings'
 import { listEventRsvps } from '@/app/actions/rsvp'
-import { isImportCheckIn, isMixerCategory } from '@/utils/events'
+import {
+  isHowdyWeekCategory,
+  isImportCheckIn,
+  isMixerCategory,
+} from '@/utils/events'
 import { fetchAllPages } from '@/utils/supabase/fetchAll'
 import { getAuthUser } from '@/utils/supabase/auth'
 
@@ -110,6 +115,8 @@ export default async function EventDetailPage({ params }: { params: Promise<{ id
   let rsvpMatchMembers: { id: string; full_name: string; email: string }[] = []
   let importRows: Awaited<ReturnType<typeof listEventImportRows>>['rows'] = []
   let importMatchMembers: { id: string; full_name: string; email: string }[] = []
+  let guestRows: Awaited<ReturnType<typeof listEventGuests>>['rows'] = []
+  let guestMatchMembers: { id: string; full_name: string; email: string }[] = []
 
   if (event.check_in_type === 'rsvp_required') {
     const [rsvpResult, members] = await Promise.all([
@@ -127,7 +134,21 @@ export default async function EventDetailPage({ params }: { params: Promise<{ id
     rsvpMatchMembers = members.data ?? []
   }
 
-  if (isImportCheckIn(event.check_in_type)) {
+  if (isHowdyWeekCategory(event.category) && event.check_in_type === 'csv_import') {
+    const [guestResult, members] = await Promise.all([
+      listEventGuests(id),
+      fetchAllPages<{ id: string; full_name: string; email: string }>((from, to) =>
+        supabase
+          .from('members')
+          .select('id, full_name, email')
+          .in('status', ['active', 'pending_member'])
+          .order('full_name')
+          .range(from, to),
+      ),
+    ])
+    guestRows = guestResult.rows
+    guestMatchMembers = members.data ?? []
+  } else if (isImportCheckIn(event.check_in_type)) {
     const [importResult, members] = await Promise.all([
       listEventImportRows(id),
       fetchAllPages<{ id: string; full_name: string; email: string }>((from, to) =>
@@ -156,6 +177,8 @@ export default async function EventDetailPage({ params }: { params: Promise<{ id
       rsvpMatchMembers={rsvpMatchMembers}
       importRows={importRows}
       importMatchMembers={importMatchMembers}
+      guestRows={guestRows}
+      guestMatchMembers={guestMatchMembers}
     />
   )
 }

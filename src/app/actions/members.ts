@@ -6,6 +6,7 @@ import {
   validateRegistrationNames,
   type MemberRole,
 } from '@/utils/members'
+import { linkEventGuestsByEmail } from '@/app/actions/guests'
 import { createActionSupabase } from '@/utils/supabase/action'
 import { createAdminSupabase } from '@/utils/supabase/admin'
 
@@ -269,6 +270,7 @@ export async function importMembers(rows: ImportMemberRow[], mode: ImportMode = 
 
       if (Object.keys(patch).length === 0) {
         summary.unchanged++
+        await linkEventGuestsByEmail(admin, existing.id, email)
         continue
       }
 
@@ -283,6 +285,7 @@ export async function importMembers(rows: ImportMemberRow[], mode: ImportMode = 
       }
 
       summary.updated++
+      await linkEventGuestsByEmail(admin, existing.id, email)
 
       const isJtTransfer =
         mode === 'spring' &&
@@ -313,20 +316,27 @@ export async function importMembers(rows: ImportMemberRow[], mode: ImportMode = 
       continue
     }
 
-    const { error } = await admin.from('members').insert({
-      email,
-      full_name: fullName,
-      phone,
-      graduation_year: classResult.year,
-      jt_family_id: jtFamilyId,
-      status: 'active',
-      role: 'member',
-    })
+    const { data: created, error } = await admin
+      .from('members')
+      .insert({
+        email,
+        full_name: fullName,
+        phone,
+        graduation_year: classResult.year,
+        jt_family_id: jtFamilyId,
+        status: 'active',
+        role: 'member',
+      })
+      .select('id')
+      .single()
 
     if (error) {
       summary.errors.push(`${email} — ${error.message}`)
     } else {
       summary.added++
+      if (created?.id) {
+        await linkEventGuestsByEmail(admin, created.id, email)
+      }
     }
   }
 
@@ -346,17 +356,26 @@ export async function registerMember(input: {
   const names = validateRegistrationNames(input.firstName, input.lastName)
   if (!names.ok) return { success: false, error: names.error }
 
-  const { error } = await supabase.from('members').insert({
-    auth_uid: user.id,
-    email: user.email,
-    full_name: names.fullName,
-    graduation_year: input.classYear,
-    phone: input.phone.trim() || null,
-    profile_image_url: user.user_metadata.avatar_url,
-    status: 'pending_member',
-    role: 'member',
-  })
+  const { data: created, error } = await supabase
+    .from('members')
+    .insert({
+      auth_uid: user.id,
+      email: user.email,
+      full_name: names.fullName,
+      graduation_year: input.classYear,
+      phone: input.phone.trim() || null,
+      profile_image_url: user.user_metadata.avatar_url,
+      status: 'pending_member',
+      role: 'member',
+    })
+    .select('id')
+    .single()
 
   if (error) return { success: false, error: 'Something went wrong. Please try again.' }
+
+  if (created?.id) {
+    await linkEventGuestsByEmail(supabase, created.id, user.email)
+  }
+
   return { success: true, error: null }
 }
