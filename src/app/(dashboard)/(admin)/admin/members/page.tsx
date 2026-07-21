@@ -1,8 +1,9 @@
 import { redirect } from 'next/navigation'
 import AdminMembersClient from '@/app/(dashboard)/(admin)/admin/members/components/AdminMembersClient'
+import { countHowdyWeekAttendanceByMemberIds } from '@/app/actions/guests'
 import { OFFICER_MEMBERS_PAGE_SIZE } from '@/utils/constants'
 import { isMemberRole, type MemberRole } from '@/utils/members'
-import { getCurrentMember } from '@/utils/supabase/auth'
+import { getActiveSemester, getCurrentMember } from '@/utils/supabase/auth'
 
 interface SearchParams {
   tab?: string
@@ -39,6 +40,7 @@ export default async function AdminMembersPage({
     { data: pendingJt },
     { data: pendingSignups },
     { data: jtFamilies },
+    semester,
   ] = await Promise.all([
     supabase
       .from('members')
@@ -56,7 +58,22 @@ export default async function AdminMembersPage({
       .select('id, name')
       .eq('is_active', true)
       .order('name'),
+    getActiveSemester(),
   ])
+
+  const signupRows = pendingSignups ?? []
+  const howdyWeekCounts = semester
+    ? await countHowdyWeekAttendanceByMemberIds(
+        supabase,
+        signupRows.map(m => m.id),
+        semester.id,
+      )
+    : new Map<string, number>()
+
+  const pendingSignupsWithHowdy = signupRows.map(m => ({
+    ...m,
+    howdy_week_count: howdyWeekCounts.get(m.id) ?? 0,
+  }))
 
   const from = (page - 1) * OFFICER_MEMBERS_PAGE_SIZE
   const to = from + OFFICER_MEMBERS_PAGE_SIZE - 1
@@ -101,7 +118,7 @@ export default async function AdminMembersPage({
   return (
     <AdminMembersClient
       pendingJt={pendingJt ?? []}
-      pendingSignups={pendingSignups ?? []}
+      pendingSignups={pendingSignupsWithHowdy}
       jtFamilies={jtFamilies ?? []}
       initialTab={tab}
       currentAdminId={adminMember.id}

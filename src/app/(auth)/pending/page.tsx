@@ -1,6 +1,8 @@
 import { Hourglass } from 'lucide-react'
 import { redirect } from 'next/navigation'
 import PublicPageShell from '@/app/(auth)/components/PublicPageShell'
+import { countHowdyWeekAttendanceByMemberIds } from '@/app/actions/guests'
+import { getActiveSemester } from '@/utils/supabase/auth'
 import { createServerSupabase } from '@/utils/supabase/server'
 
 export default async function PendingPage() {
@@ -14,7 +16,7 @@ export default async function PendingPage() {
 
   const { data: member } = await supabase
     .from('members')
-    .select('status')
+    .select('id, status')
     .eq('auth_uid', user.id)
     .maybeSingle()
 
@@ -24,6 +26,17 @@ export default async function PendingPage() {
 
   if (member?.status !== 'pending_member' && member?.status !== 'pending_jt') {
     redirect('/')
+  }
+
+  const semester = await getActiveSemester()
+  let howdyWeekCount = 0
+  if (member?.id && semester) {
+    const counts = await countHowdyWeekAttendanceByMemberIds(
+      supabase,
+      [member.id],
+      semester.id,
+    )
+    howdyWeekCount = counts.get(member.id) ?? 0
   }
 
   return (
@@ -51,6 +64,12 @@ export default async function PendingPage() {
                 Note that this is not the same as the registration form. If you haven&apos;t filled
                 out the membership registration form and paid dues, please make sure to complete that!
               </p>
+              {howdyWeekCount > 0 && (
+                <p className="mx-auto mt-4 inline-flex rounded-full border border-primary/20 bg-primary/10 px-4 py-2 text-sm font-semibold text-primary">
+                  Attended {howdyWeekCount} Howdy Week event
+                  {howdyWeekCount === 1 ? '' : 's'}
+                </p>
+              )}
             </div>
 
             <div className="mt-8 grid gap-4 sm:grid-cols-2">

@@ -4,6 +4,7 @@ import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { useState } from 'react'
 import AccountLinkBadge from '@/app/(dashboard)/(officer)/officer/members/components/AccountLinkBadge'
+import { MembersTabs } from '@/app/(dashboard)/(officer)/officer/members/components/MembersTabs'
 import MemberAvatar from '@/app/components/MemberAvatar'
 import PageHeader from '@/app/components/PageHeader'
 import { inputClassName, OFFICER_MEMBERS_PAGE_SIZE, POINT_BUCKET_LABELS } from '@/utils/constants'
@@ -21,6 +22,7 @@ interface Member {
   jt_points: number
   sports_points: number
   gm_points: number
+  howdy_week_count?: number
 }
 
 interface Props {
@@ -93,6 +95,8 @@ export default function MembersClient({
           </>
         }
       />
+
+      <MembersTabs active="members" />
 
       <form
         className="mb-4 flex flex-col gap-3 lg:flex-row"
@@ -167,6 +171,12 @@ export default function MembersClient({
               <div className="min-w-0">
                 <div className="truncate text-sm font-medium text-text">{displayName}</div>
                 <div className="truncate text-xs text-subtitle">{m.email}</div>
+                {(m.howdy_week_count ?? 0) > 0 && (
+                  <div className="mt-0.5 text-[11px] font-medium text-primary">
+                    Attended {m.howdy_week_count} Howdy Week event
+                    {m.howdy_week_count === 1 ? '' : 's'}
+                  </div>
+                )}
               </div>
             </div>
             <div>

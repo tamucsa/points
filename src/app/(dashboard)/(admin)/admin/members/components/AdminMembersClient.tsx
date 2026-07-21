@@ -21,6 +21,7 @@ interface PendingMember {
   email: string
   graduation_year: number | null
   created_at: string
+  howdy_week_count?: number
 }
 
 interface JTFamily {
@@ -346,6 +347,12 @@ export default function AdminMembersClient({
                 <div className="text-xs text-subtitle">{m.email}</div>
                 {m.graduation_year && (
                   <div className="text-xs text-subtitle/80">Class of {m.graduation_year}</div>
+                )}
+                {(m.howdy_week_count ?? 0) > 0 && (
+                  <div className="mt-0.5 text-[11px] font-medium text-primary">
+                    Attended {m.howdy_week_count} Howdy Week event
+                    {m.howdy_week_count === 1 ? '' : 's'}
+                  </div>
                 )}
               </div>
               <div className="relative">

@@ -72,7 +72,8 @@ export default function PointsGuide({ attendance }: Props) {
       <p className="mb-4 max-w-3xl text-sm leading-6 text-subtitle">
         Points come from attending events this semester. Totals above follow four leaderboard buckets;
         each event category has a fixed point value (Philanthropy can also include monetary opportunities
-        with custom point amounts). Two caps can stop extra check-ins from counting
+        with custom point amounts). Howdy Week events are tracked for recruiting (0 points) and do not
+        count toward leaderboard buckets. Two caps can stop extra check-ins from counting
         toward your total — you&apos;ll still show as attended with a &ldquo;cap reached&rdquo; tag.
       </p>
 

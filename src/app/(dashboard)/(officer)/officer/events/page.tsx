@@ -87,12 +87,21 @@ export default async function OfficerEventsPage() {
 
   const eventsWithImportUpload: Record<string, true> = {}
   if (importEventIds.length > 0) {
-    const { data: importRows } = await supabase
-      .from('event_import_rows')
-      .select('event_id')
-      .in('event_id', importEventIds)
+    const [{ data: importRows }, { data: guestRows }] = await Promise.all([
+      supabase
+        .from('event_import_rows')
+        .select('event_id')
+        .in('event_id', importEventIds),
+      supabase
+        .from('event_guests')
+        .select('event_id')
+        .in('event_id', importEventIds),
+    ])
 
     for (const row of importRows ?? []) {
+      eventsWithImportUpload[row.event_id] = true
+    }
+    for (const row of guestRows ?? []) {
       eventsWithImportUpload[row.event_id] = true
     }
   }

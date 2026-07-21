@@ -34,6 +34,9 @@ Core tables (names reflect actual schema):
 - `events`: point-earning opportunities; has scope (CSA-wide / JT shared / JT specific)
 - `event_jt_families`: which Jiatings participate in a Mixer (and similar multi-family events)
 - `event_rsvps`: optional RSVP CSV tags per event (`member_id` nullable; `is_guest` for dismissed non-members); used only for check-in badges, not attendance gating
+- `event_import_rows`: staging for CSA-Wide Mixers / manual philanthropy CSV imports (matched → attendance; unmatched / guests stay as staging)
+- `event_guests`: Howdy Week prospective attendance by email (`semester_id`, `graduation_year`, optional `member_id`); officer CSV replace; auto-linked on register / roster import. Linked guests also get an `attendance` row (`check_in_method = csv_import`) at the event’s 0 point value so they show on the Attendance list; deferred points award is a separate later step.
+- `guest_export_log`: audit log when officers export unmatched Howdy Week prospects from `/officer/members?tab=guests`
 - `attendance`: joins members to events; source of points
 - `member_semester_points`: cached counted point totals per member per semester; maintained by triggers on attendance / event category·point changes; backing store for `v_current_leaderboard`
 - `semesters`: identifies the active semester
@@ -48,8 +51,8 @@ Core tables (names reflect actual schema):
 
 `members.full_name` is the only name column — shown on the leaderboard, member lists, and profile.
 
-- **Self-registration** (`/register`): first and last name from the form are concatenated into `full_name`.
-- **Admin CSV import**: roster columns map to `full_name`, email, phone, class (stored as `graduation_year`), and optional **Jiating** (resolved to `jt_family_id`). New rows are inserted as `active` even without a Jiating so dues-paid members can use the portal before sorting. Existing emails get diff-based updates only (blank Jiating does not clear an existing assignment). Jiating transfers are logged to `jt_transfer_log`. Inserts use the service-role client after an admin server-action check.
+- **Self-registration** (`/register`): first and last name from the form are concatenated into `full_name`. On success, unmatched `event_guests` rows with the same email are linked to the new member (Howdy Week badge).
+- **Admin CSV import**: roster columns map to `full_name`, email, phone, class (stored as `graduation_year`), and optional **Jiating** (resolved to `jt_family_id`). New rows are inserted as `active` even without a Jiating so dues-paid members can use the portal before sorting. Existing emails get diff-based updates only (blank Jiating does not clear an existing assignment). Jiating transfers are logged to `jt_transfer_log`. Inserts use the service-role client after an admin server-action check. Import also links matching `event_guests` rows by email.
 
 Registration helpers live in `src/utils/members.ts`.
 

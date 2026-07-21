@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import EventImportPanel from "@/app/(dashboard)/(officer)/officer/events/components/EventImportPanel";
 import EventRsvpPanel from "@/app/(dashboard)/(officer)/officer/events/components/EventRsvpPanel";
+import HowdyWeekGuestPanel from "@/app/(dashboard)/(officer)/officer/events/components/HowdyWeekGuestPanel";
 import { officerRemoveCheckIn } from "@/app/actions/attendance";
 import {
   publishEvent,
@@ -13,6 +14,7 @@ import {
   updateEventRsvp,
   updateEventSchedule,
 } from "@/app/actions/events";
+import type { EventGuestRow } from "@/app/actions/guests";
 import type { EventImportRow } from "@/app/actions/imports";
 import { publishJiatingStandings } from "@/app/actions/jt-standings";
 import type { EventRsvpRow } from "@/app/actions/rsvp";
@@ -31,6 +33,7 @@ import {
 import {
   formatEventPointsLabel,
   isGeneralMeetingCategory,
+  isHowdyWeekCategory,
   isImportCheckIn,
   isMixerCategory,
 } from "@/utils/events";
@@ -96,6 +99,8 @@ interface Props {
   rsvpMatchMembers: { id: string; full_name: string; email: string }[];
   importRows: EventImportRow[];
   importMatchMembers: { id: string; full_name: string; email: string }[];
+  guestRows: EventGuestRow[];
+  guestMatchMembers: { id: string; full_name: string; email: string }[];
 }
 
 const btnPrimaryClassName =
@@ -119,6 +124,8 @@ export default function EventDetailClient({
   rsvpMatchMembers,
   importRows,
   importMatchMembers,
+  guestRows,
+  guestMatchMembers,
 }: Props) {
   const router = useRouter();
   const [publishing, setPublishing] = useState(false);
@@ -177,8 +184,9 @@ export default function EventDetailClient({
   const [uncheckSaving, setUncheckSaving] = useState(false);
   const isGm = isGeneralMeetingCategory(event.category);
   const isMixer = isMixerCategory(event.category);
+  const isHowdyWeek = isHowdyWeekCategory(event.category);
   const isRsvpEvent = event.check_in_type === "rsvp_required";
-  const isImportEvent = isImportCheckIn(event.check_in_type);
+  const isImportEvent = isImportCheckIn(event.check_in_type) && !isHowdyWeek;
   const isCsvImportEvent = event.check_in_type === "csv_import";
   const isManualPointsEvent = event.check_in_type === "manual_points";
 
@@ -865,6 +873,21 @@ export default function EventDetailClient({
             />
           </CollapsibleSettings>
         )}
+        {isHowdyWeek && (
+          <CollapsibleSettings
+            title="Howdy Week guest CSV"
+            defaultOpen
+            summary={`${guestRows.length} guest${guestRows.length === 1 ? "" : "s"} uploaded`}
+          >
+            <HowdyWeekGuestPanel
+              eventId={event.id}
+              initialRows={guestRows}
+              matchMembers={guestMatchMembers}
+              btnPrimaryClassName={btnPrimaryClassName}
+              btnSecondaryClassName={btnSecondaryClassName}
+            />
+          </CollapsibleSettings>
+        )}
         {isImportEvent && (
           <CollapsibleSettings
             title={
@@ -923,8 +946,12 @@ export default function EventDetailClient({
         {!attendanceLoadError && attendance.length === 0 && (
           <EmptyState
             icon={ClipboardList}
-            title="No check-ins yet"
-            description="Members will appear here once they check in to this event."
+            title={isHowdyWeek ? "No linked attendees yet" : "No check-ins yet"}
+            description={
+              isHowdyWeek
+                ? "Linked guests from the CSV appear here at 0 points. Unmatched emails stay in the guest panel until they register or you rematch them."
+                : "Members will appear here once they check in to this event."
+            }
             compact
           />
         )}

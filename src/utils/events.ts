@@ -3,6 +3,7 @@ export const EVENT_CATEGORIES = [
   'General Meeting',
   'CSA-Wide',
   'CSA-Wide Mixers',
+  'Howdy Week',
   'Jiating Olympics',
   'Jiating Event',
   'Jiating Mixer',
@@ -23,7 +24,7 @@ export type CheckInType =
   | 'manual_points'
 
 export interface CategoryConfig {
-  pointValue: 1 | 2 | 3
+  pointValue: 0 | 1 | 2 | 3
   scope: EventScope
   /** When set, check-in type is fixed for this category. */
   checkInType?: CheckInType
@@ -39,6 +40,7 @@ export const CATEGORY_CONFIG: Record<EventCategory, CategoryConfig> = {
   'General Meeting': { pointValue: 2, scope: 'org', checkInType: 'self' },
   'CSA-Wide': { pointValue: 3, scope: 'org' },
   'CSA-Wide Mixers': { pointValue: 3, scope: 'org', checkInType: 'csv_import' },
+  'Howdy Week': { pointValue: 0, scope: 'org', checkInType: 'csv_import' },
   'Jiating Olympics': { pointValue: 2, scope: 'jt_shared', checkInType: 'officer' },
   'Jiating Event': { pointValue: 1, scope: 'jt_specific' },
   'Jiating Mixer': { pointValue: 2, scope: 'jt_shared' },
@@ -56,6 +58,7 @@ export const CATEGORY_OWNER_HINTS: Record<EventCategory, string> = {
   'General Meeting': 'Typically created by Executives, mainly the Secretary',
   'CSA-Wide': 'Typically created by the Event Coordinator',
   'CSA-Wide Mixers': 'Typically created by the Event Coordinator',
+  'Howdy Week': 'Typically created by Executives / Event Coordinator during recruiting',
   'Jiating Olympics': 'Typically created by the Sports chair',
   'Jiating Event': 'Typically created by Jiating parents for their own family',
   'Jiating Mixer': 'Typically created by Jiating parents',
@@ -127,6 +130,10 @@ export function isMixerCategory(category: string) {
 
 export function isCsaWideMixersCategory(category: string) {
   return category.trim() === 'CSA-Wide Mixers'
+}
+
+export function isHowdyWeekCategory(category: string) {
+  return category.trim() === 'Howdy Week'
 }
 
 export function isCsvImportCheckIn(checkInType: string) {
