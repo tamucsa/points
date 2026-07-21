@@ -1,10 +1,11 @@
 "use client";
-import { Calendar, LogIn, Star, Trophy } from "lucide-react";
+import { Calendar, Star, Trophy } from "lucide-react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { useState } from "react";
 import AuthFeatureCard from "@/app/(auth)/components/AuthFeatureCard";
 import PublicPageShell from "@/app/(auth)/components/PublicPageShell";
+import BrandMark from "@/app/components/BrandMark";
 
 export default function LoginForm() {
   const searchParams = useSearchParams();
@@ -19,13 +20,19 @@ export default function LoginForm() {
   return (
     <PublicPageShell>
       <div className="flex min-h-[calc(100vh-5rem)] items-center justify-center">
-        <div className="grid w-full max-w-5xl overflow-hidden rounded-4xl border border-home-border bg-white shadow-[0_24px_80px_rgba(15,23,42,0.08)] lg:grid-cols-[1.15fr_0.85fr]">
-          <div className="relative overflow-hidden bg-[linear-gradient(135deg,rgba(71,121,184,0.08),rgba(255,255,255,0.9)_52%,rgba(240,176,195,0.16))] p-8 sm:p-10 lg:p-12">
-            <div className="mb-8 inline-flex items-center gap-2 rounded-full border border-primary/15 bg-white/80 px-4 py-2 text-xs font-semibold uppercase tracking-[0.24em] text-primary backdrop-blur">
+        <div className="grid w-full max-w-5xl overflow-hidden rounded-4xl border border-home-border bg-surface shadow-theme-lg lg:grid-cols-[1.15fr_0.85fr]">
+          <div className="relative overflow-hidden bg-hero-gradient p-8 sm:p-10 lg:p-12">
+            <div className="mb-8 inline-flex items-center gap-2 rounded-full border border-primary/15 bg-surface/80 px-4 py-2 text-xs font-semibold uppercase tracking-[0.24em] text-primary backdrop-blur">
               Texas A&amp;M Chinese Student Association
             </div>
 
             <div className="max-w-lg">
+              <div className="mb-5 flex items-center gap-3">
+                <BrandMark size="lg" priority />
+                <div className="text-sm font-semibold uppercase tracking-[0.18em] text-subtitle">
+                  Official member portal
+                </div>
+              </div>
               <h1 className="text-3xl font-bold tracking-tight text-text sm:text-4xl lg:text-5xl">
                 TAMU CSA Points
               </h1>
@@ -57,12 +64,10 @@ export default function LoginForm() {
             </div>
           </div>
 
-          <div className="flex items-center justify-center bg-white p-8 sm:p-10 lg:p-12">
-            <div className="mx-auto flex w-full max-w-md flex-col rounded-[1.75rem] border border-home-border bg-bg p-7 shadow-[0_16px_48px_rgba(71,121,184,0.08)] sm:p-8">
+          <div className="flex items-center justify-center bg-surface p-8 sm:p-10 lg:p-12">
+            <div className="mx-auto flex w-full max-w-md flex-col rounded-[1.75rem] border border-home-border bg-bg p-7 shadow-theme-sm sm:p-8">
               <div className="mb-6 flex items-center gap-3">
-                <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-primary text-white shadow-[0_12px_24px_rgba(71,121,184,0.24)]">
-                  <LogIn className="size-5" aria-hidden />
-                </div>
+                <BrandMark size="lg" />
                 <div>
                   <div className="text-sm font-semibold uppercase tracking-[0.22em] text-primary">
                     Member access
@@ -73,7 +78,7 @@ export default function LoginForm() {
                 </div>
               </div>
 
-              <div className="mb-5 rounded-2xl border border-accent/35 bg-[linear-gradient(180deg,rgba(240,176,195,0.18),rgba(255,255,255,0.9))] p-4">
+              <div className="mb-5 rounded-2xl border border-accent/35 bg-accent-card p-4">
                 <div className="text-sm font-semibold text-text">
                   TAMU email required
                 </div>
@@ -85,8 +90,8 @@ export default function LoginForm() {
 
               <div className="mt-6 flex flex-col">
                 {authError && (
-                  <div className="mb-4 rounded-2xl border border-[#f5b0b0] bg-[#fff4f4] p-3.5">
-                    <p className="text-sm leading-6 text-[#c94b4b]">
+                  <div className="mb-4 rounded-2xl border border-error-border bg-error-bg p-3.5">
+                    <p className="text-sm leading-6 text-error">
                       {authError === "invalid_domain"
                         ? "Please sign in with your @tamu.edu Google account."
                         : "Sign-in failed. Please try again."}
@@ -98,7 +103,7 @@ export default function LoginForm() {
                   href={googleHref}
                   onClick={() => setLoading(true)}
                   aria-disabled={loading}
-                  className="flex w-full items-center justify-center rounded-xl border border-transparent bg-primary px-4 py-3 text-center text-[15px] font-semibold text-white shadow-[0_12px_28px_rgba(71,121,184,0.24)] transition duration-150 hover:bg-[#35679e] aria-disabled:pointer-events-none aria-disabled:cursor-not-allowed aria-disabled:bg-[#9cb8d8] aria-disabled:text-white/80"
+                  className="flex w-full items-center justify-center rounded-xl border border-transparent bg-primary px-4 py-3 text-center text-[15px] font-semibold text-on-primary shadow-theme-primary transition duration-150 hover:bg-primary-hover aria-disabled:pointer-events-none aria-disabled:cursor-not-allowed aria-disabled:bg-disabled aria-disabled:text-on-primary/80"
                 >
                   {loading ? "Redirecting…" : "Sign in with Google"}
                 </a>
@@ -109,14 +114,14 @@ export default function LoginForm() {
                     By signing in, you agree to our{" "}
                     <Link
                       href="/terms"
-                      className="font-medium text-primary hover:text-[#35679e]"
+                      className="font-medium text-primary hover:text-primary-hover"
                     >
                       Terms
                     </Link>{" "}
                     and{" "}
                     <Link
                       href="/privacy"
-                      className="font-medium text-primary hover:text-[#35679e]"
+                      className="font-medium text-primary hover:text-primary-hover"
                     >
                       Privacy Policy
                     </Link>

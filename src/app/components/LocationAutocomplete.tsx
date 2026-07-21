@@ -226,7 +226,7 @@ export default function LocationAutocomplete({
       {open && suggestions.length > 0 && (
         <div
           id={listboxId}
-          className="absolute z-20 mt-1 max-h-60 w-full overflow-auto rounded-xl border border-home-border bg-white py-1 shadow-[0_12px_32px_rgba(15,23,42,0.12)]"
+          className="absolute z-20 mt-1 max-h-60 w-full overflow-auto rounded-xl border border-home-border bg-surface py-1 shadow-theme-md"
         >
           {suggestions.map((suggestion, index) => {
             const active = index === highlight;

@@ -104,7 +104,7 @@ export default function ProfileClient({
       />
 
       {/* Profile card */}
-      <div className="mb-8 flex flex-col gap-5 rounded-4xl border border-home-border bg-white p-6 shadow-sm sm:flex-row sm:items-center">
+      <div className="mb-8 flex flex-col gap-5 rounded-4xl border border-home-border bg-surface p-6 shadow-sm sm:flex-row sm:items-center">
         <MemberAvatar
           name={displayName}
           profileImageUrl={member.profile_image_url}
@@ -134,7 +134,7 @@ export default function ProfileClient({
       </div>
 
       {pointsLoadError && (
-        <div className="mb-8 overflow-hidden rounded-4xl border border-home-border bg-white shadow-sm">
+        <div className="mb-8 overflow-hidden rounded-4xl border border-home-border bg-surface shadow-sm">
           <EmptyState
             icon={AlertCircle}
             title="Couldn’t load points"
@@ -155,7 +155,7 @@ export default function ProfileClient({
           </p>
           <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
             {breakdown.map(cat => (
-              <div key={cat.label} className="rounded-3xl border border-home-border bg-white p-4 text-center shadow-sm">
+              <div key={cat.label} className="rounded-3xl border border-home-border bg-surface p-4 text-center shadow-sm">
                 <div className="text-3xl font-extrabold text-primary">
                   {cat.value}
                 </div>
@@ -177,7 +177,7 @@ export default function ProfileClient({
         <h2 className="mb-3 text-lg font-bold text-text">
           This Semester
         </h2>
-        <div className="overflow-hidden rounded-4xl border border-home-border bg-white shadow-sm">
+        <div className="overflow-hidden rounded-4xl border border-home-border bg-surface shadow-sm">
           {attendanceLoadError && (
             <EmptyState
               icon={AlertCircle}
@@ -242,7 +242,7 @@ export default function ProfileClient({
 
       {/* Semester History */}
       {historyLoadError && (
-        <div className="mb-8 overflow-hidden rounded-4xl border border-home-border bg-white shadow-sm">
+        <div className="mb-8 overflow-hidden rounded-4xl border border-home-border bg-surface shadow-sm">
           <EmptyState
             icon={AlertCircle}
             title="Couldn’t load past semesters"
@@ -256,7 +256,7 @@ export default function ProfileClient({
           <h2 className="mb-3 text-lg font-bold text-text">
             Past Semesters
           </h2>
-          <div className="overflow-hidden rounded-4xl border border-home-border bg-white shadow-sm">
+          <div className="overflow-hidden rounded-4xl border border-home-border bg-surface shadow-sm">
             {history.map((sem) => (
               <div key={sem.id} className="flex items-center justify-between border-b border-home-border px-5 py-4 last:border-b-0">
                 <div>

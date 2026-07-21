@@ -99,13 +99,13 @@ interface Props {
 }
 
 const btnPrimaryClassName =
-  "rounded-xl bg-primary px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-[#35679e] disabled:cursor-not-allowed disabled:opacity-60 sm:py-2";
+  "rounded-xl bg-primary px-4 py-2.5 text-sm font-semibold text-on-primary shadow-sm transition hover:bg-primary-hover disabled:cursor-not-allowed disabled:opacity-60 sm:py-2";
 
 const btnPrimaryOutlineClassName =
   "rounded-xl border border-primary/30 bg-primary/10 px-4 py-2.5 text-sm font-semibold text-primary transition hover:border-primary/50 hover:bg-primary/20 disabled:cursor-not-allowed disabled:opacity-60 sm:py-2";
 
 const btnSecondaryClassName =
-  "rounded-xl border border-home-border bg-white px-4 py-2.5 text-sm font-semibold text-subtitle transition hover:border-primary/30 hover:bg-bg hover:text-text sm:py-2";
+  "rounded-xl border border-home-border bg-surface px-4 py-2.5 text-sm font-semibold text-subtitle transition hover:border-primary/30 hover:bg-bg hover:text-text sm:py-2";
 
 export default function EventDetailClient({
   event,
@@ -367,7 +367,7 @@ export default function EventDetailClient({
         className="mb-5"
       />
 
-      <div className="mb-6 rounded-4xl border border-home-border bg-white p-6 shadow-sm">
+      <div className="mb-6 rounded-4xl border border-home-border bg-surface p-6 shadow-sm">
         <div className="flex gap-4">
           <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-primary/10 text-2xl font-extrabold text-primary">
             {formatEventPointsLabel(event.point_value, event.check_in_type)}
@@ -771,7 +771,7 @@ export default function EventDetailClient({
                     className={`flex cursor-pointer items-center gap-3 rounded-xl border px-3 py-2.5 text-sm transition ${
                       checked
                         ? "border-primary/40 bg-primary/10 text-primary"
-                        : "border-home-border bg-white text-text hover:border-primary/30"
+                        : "border-home-border bg-surface text-text hover:border-primary/30"
                     }`}
                   >
                     <input
@@ -914,7 +914,7 @@ export default function EventDetailClient({
         </span>
       </div>
 
-      <div className="overflow-hidden rounded-4xl border border-home-border bg-white shadow-sm">
+      <div className="overflow-hidden rounded-4xl border border-home-border bg-surface shadow-sm">
         {attendanceLoadError && (
           <div className="px-5 py-6 text-sm text-red-600">
             Could not load attendance. Refresh the page to try again.
@@ -978,7 +978,7 @@ export default function EventDetailClient({
                       setUncheckTarget(row);
                     }}
                     disabled={uncheckSaving}
-                    className="rounded-xl border border-[#f5b0b0] bg-[#fff4f4] px-3 py-1.5 text-xs font-semibold text-[#c94b4b] transition hover:border-[#e88a8a] hover:bg-[#ffe8e8] disabled:opacity-60"
+                    className="rounded-xl border border-error-border bg-error-bg px-3 py-1.5 text-xs font-semibold text-error transition hover:border-error hover:bg-error-bg disabled:opacity-60"
                   >
                     Remove
                   </button>
@@ -994,14 +994,14 @@ export default function EventDetailClient({
           onClick={closeUncheckModal}
         >
           <div
-            className="w-full max-w-md rounded-4xl border border-home-border bg-white p-6 shadow-xl sm:p-8"
+            className="w-full max-w-md rounded-4xl border border-home-border bg-surface p-6 shadow-xl sm:p-8"
             onClick={(e) => e.stopPropagation()}
             role="dialog"
             aria-modal="true"
             aria-labelledby="remove-checkin-title"
           >
-            <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-2xl bg-[#fff4f4]">
-              <UserX className="size-5 text-[#c94b4b]" aria-hidden />
+            <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-2xl bg-error-bg">
+              <UserX className="size-5 text-error" aria-hidden />
             </div>
             <h2
               id="remove-checkin-title"
@@ -1023,7 +1023,7 @@ export default function EventDetailClient({
                 : ". This check-in was not counting toward points (cap), so totals stay the same."}
             </p>
             {uncheckError && (
-              <p className="mt-4 rounded-2xl border border-[#f5b0b0] bg-[#fff4f4] px-4 py-3 text-center text-sm text-[#c94b4b]">
+              <p className="mt-4 rounded-2xl border border-error-border bg-error-bg px-4 py-3 text-center text-sm text-error">
                 {uncheckError}
               </p>
             )}
@@ -1032,7 +1032,7 @@ export default function EventDetailClient({
                 type="button"
                 disabled={uncheckSaving}
                 onClick={closeUncheckModal}
-                className="rounded-xl border border-home-border bg-white px-4 py-2.5 text-sm font-semibold text-subtitle transition hover:border-primary/30 hover:bg-bg hover:text-text disabled:opacity-60"
+                className="rounded-xl border border-home-border bg-surface px-4 py-2.5 text-sm font-semibold text-subtitle transition hover:border-primary/30 hover:bg-bg hover:text-text disabled:opacity-60"
               >
                 Cancel
               </button>
@@ -1040,7 +1040,7 @@ export default function EventDetailClient({
                 type="button"
                 disabled={uncheckSaving}
                 onClick={() => void confirmRemoveCheckIn()}
-                className="rounded-xl border border-[#f5b0b0] bg-[#fff4f4] px-4 py-2.5 text-sm font-semibold text-[#c94b4b] transition hover:border-[#e88a8a] hover:bg-[#ffe8e8] disabled:opacity-60"
+                className="rounded-xl border border-error-border bg-error-bg px-4 py-2.5 text-sm font-semibold text-error transition hover:border-error hover:bg-error-bg disabled:opacity-60"
               >
                 {uncheckSaving ? "Removing…" : "Remove Check-In"}
               </button>

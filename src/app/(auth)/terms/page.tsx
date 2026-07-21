@@ -12,9 +12,9 @@ export default function TermsPage() {
   return (
     <PublicPageShell>
       <BackLink href="/" label="Back to sign in" className="mb-6" />
-      <div className="overflow-hidden rounded-4xl border border-home-border bg-white shadow-[0_24px_80px_rgba(15,23,42,0.08)]">
-        <div className="border-b border-home-border bg-[linear-gradient(135deg,rgba(71,121,184,0.08),rgba(255,255,255,0.9)_52%,rgba(240,176,195,0.16))] px-8 py-10 sm:px-12">
-          <div className="mb-6 inline-flex items-center gap-2 rounded-full border border-primary/15 bg-white/80 px-4 py-2 text-xs font-semibold uppercase tracking-[0.24em] text-primary backdrop-blur">
+      <div className="overflow-hidden rounded-4xl border border-home-border bg-surface shadow-theme-lg">
+        <div className="border-b border-home-border bg-hero-gradient px-8 py-10 sm:px-12">
+          <div className="mb-6 inline-flex items-center gap-2 rounded-full border border-primary/15 bg-surface/80 px-4 py-2 text-xs font-semibold uppercase tracking-[0.24em] text-primary backdrop-blur">
             Texas A&amp;M Chinese Student Association
           </div>
           <h1 className="text-3xl font-bold tracking-tight text-text sm:text-4xl">
@@ -27,9 +27,9 @@ export default function TermsPage() {
             These Terms of Service (&quot;Terms&quot;) govern your use of TAMU CSA Points (&quot;the App&quot;),
             operated by the Texas A&amp;M Chinese Student Association (&quot;CSA&quot;). By signing in or
             using the App at{' '}
-            <Link href="/" className="font-medium text-primary hover:text-[#35679e]">points.csatamu.org</Link>,
+            <Link href="/" className="font-medium text-primary hover:text-primary-hover">points.csatamu.org</Link>,
             you agree to these Terms and our{' '}
-            <Link href="/privacy" className="font-medium text-primary hover:text-[#35679e]">Privacy Policy</Link>.
+            <Link href="/privacy" className="font-medium text-primary hover:text-primary-hover">Privacy Policy</Link>.
           </p>
         </div>
 
@@ -127,7 +127,7 @@ export default function TermsPage() {
             <h2 className="mb-3 text-lg font-semibold text-text">10. Contact</h2>
             <p>
               For questions about these Terms, contact CSA through{' '}
-              <Link href="https://csatamu.org" className="font-medium text-primary hover:text-[#35679e]">
+              <Link href="https://csatamu.org" className="font-medium text-primary hover:text-primary-hover">
                 csatamu.org
               </Link>{' '}
               or reach out to a CSA Officer, your parent, or the Secretary directly.
@@ -137,7 +137,7 @@ export default function TermsPage() {
           <div className="border-t border-home-border pt-6">
             <Link
               href="/"
-              className="inline-flex items-center justify-center rounded-xl bg-primary px-5 py-2.5 text-sm font-semibold text-white shadow-[0_12px_28px_rgba(71,121,184,0.24)] transition hover:bg-[#35679e]"
+              className="inline-flex items-center justify-center rounded-xl bg-primary px-5 py-2.5 text-sm font-semibold text-on-primary shadow-theme-primary transition hover:bg-primary-hover"
             >
               Back to Sign In
             </Link>

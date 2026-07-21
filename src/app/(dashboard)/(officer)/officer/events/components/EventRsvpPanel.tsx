@@ -259,10 +259,10 @@ export default function EventRsvpPanel({
         onDragLeave={handleDragLeave}
         className={`flex cursor-pointer flex-col items-center justify-center rounded-3xl border-2 border-dashed px-6 py-10 text-center transition ${
           uploading
-            ? 'cursor-not-allowed border-home-border bg-white opacity-70'
+            ? 'cursor-not-allowed border-home-border bg-surface opacity-70'
             : dragActive
               ? 'border-primary bg-primary/5'
-              : 'border-home-border bg-white hover:border-primary/40'
+              : 'border-home-border bg-surface hover:border-primary/40'
         }`}
       >
         <div className="mb-3 flex h-12 w-12 items-center justify-center rounded-2xl bg-primary/10">
@@ -311,7 +311,7 @@ export default function EventRsvpPanel({
             {unmatched.map(row => (
               <li
                 key={row.id}
-                className="rounded-xl border border-home-border bg-white px-3 py-2.5"
+                className="rounded-xl border border-home-border bg-surface px-3 py-2.5"
               >
                 <div className="text-sm font-medium text-text">
                   {row.full_name || '—'}

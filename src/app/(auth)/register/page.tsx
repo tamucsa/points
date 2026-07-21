@@ -109,9 +109,9 @@ export default function RegisterPage() {
   return (
     <PublicPageShell showFooter={false}>
       <div className="flex min-h-[calc(100vh-5rem)] items-center justify-center lg:max-h-[calc(100vh-5rem)]">
-        <div className="grid w-full max-w-5xl overflow-hidden rounded-4xl border border-home-border bg-white shadow-[0_24px_80px_rgba(15,23,42,0.08)] lg:grid-cols-[1.05fr_0.95fr]">
-          <div className="relative overflow-hidden bg-[linear-gradient(135deg,rgba(71,121,184,0.08),rgba(255,255,255,0.9)_52%,rgba(240,176,195,0.16))] p-8 sm:p-10 lg:p-12">
-            <div className="mb-8 inline-flex items-center gap-2 rounded-full border border-primary/15 bg-white/80 px-4 py-2 text-xs font-semibold uppercase tracking-[0.24em] text-primary backdrop-blur">
+        <div className="grid w-full max-w-5xl overflow-hidden rounded-4xl border border-home-border bg-surface shadow-theme-lg lg:grid-cols-[1.05fr_0.95fr]">
+          <div className="relative overflow-hidden bg-hero-gradient p-8 sm:p-10 lg:p-12">
+            <div className="mb-8 inline-flex items-center gap-2 rounded-full border border-primary/15 bg-surface/80 px-4 py-2 text-xs font-semibold uppercase tracking-[0.24em] text-primary backdrop-blur">
               Texas A&amp;M Chinese Student Association
             </div>
 
@@ -142,9 +142,9 @@ export default function RegisterPage() {
             </div>
           </div>
 
-          <div className="flex items-center justify-center bg-white p-8 sm:p-10 lg:p-12">
-            <div className="w-full max-w-md rounded-[1.75rem] border border-home-border bg-bg p-6 shadow-[0_16px_48px_rgba(71,121,184,0.08)] sm:p-8">
-              <div className="mb-4 flex items-center gap-3 rounded-2xl border border-home-border bg-white p-3.5 shadow-sm sm:mb-6 sm:p-4">
+          <div className="flex items-center justify-center bg-surface p-8 sm:p-10 lg:p-12">
+            <div className="w-full max-w-md rounded-[1.75rem] border border-home-border bg-bg p-6 shadow-theme-sm sm:p-8">
+              <div className="mb-4 flex items-center gap-3 rounded-2xl border border-home-border bg-surface p-3.5 shadow-sm sm:mb-6 sm:p-4">
                 <MemberAvatar
                   name={previewName}
                   profileImageUrl={user?.user_metadata.avatar_url}
@@ -157,7 +157,7 @@ export default function RegisterPage() {
                 </div>
               </div>
 
-              <div className="mb-4 rounded-2xl border border-accent/35 bg-[linear-gradient(180deg,rgba(240,176,195,0.18),rgba(255,255,255,0.9))] p-3.5 sm:mb-5 sm:p-4">
+              <div className="mb-4 rounded-2xl border border-accent/35 bg-accent-card p-3.5 sm:mb-5 sm:p-4">
                 <p className="text-sm leading-6 text-subtitle">
                   Your JT family will be assigned by an officer after the sorting process. You&apos;ll appear on the leaderboard once assigned.
                 </p>
@@ -223,15 +223,15 @@ export default function RegisterPage() {
               </div>
 
               {error && (
-                <div className="mt-4 rounded-2xl border border-[#f5b0b0] bg-[#fff4f4] p-3.5 sm:mt-5 sm:p-4">
-                  <p className="text-sm leading-6 text-[#c94b4b]">{error}</p>
+                <div className="mt-4 rounded-2xl border border-error-border bg-error-bg p-3.5 sm:mt-5 sm:p-4">
+                  <p className="text-sm leading-6 text-error">{error}</p>
                 </div>
               )}
 
               <button
                 onClick={handleSubmit}
                 disabled={submitting}
-                className="mt-5 flex w-full items-center justify-center rounded-xl border border-transparent bg-primary px-4 py-3 text-[15px] font-semibold text-white shadow-[0_12px_28px_rgba(71,121,184,0.24)] transition duration-150 hover:bg-[#35679e] disabled:cursor-not-allowed disabled:bg-[#9cb8d8] disabled:text-white/80 sm:mt-6"
+                className="mt-5 flex w-full items-center justify-center rounded-xl border border-transparent bg-primary px-4 py-3 text-[15px] font-semibold text-on-primary shadow-theme-primary transition duration-150 hover:bg-primary-hover disabled:cursor-not-allowed disabled:bg-disabled disabled:text-on-primary/80 sm:mt-6"
               >
                 {submitting ? 'Registering…' : 'Complete Registration'}
               </button>
@@ -243,4 +243,4 @@ export default function RegisterPage() {
   )
 }
 
-const inputClassName = 'w-full rounded-xl border border-home-border bg-white px-4 py-3 text-sm text-text outline-none transition placeholder:text-[#8b96aa] focus:border-primary focus:ring-2 focus:ring-primary/15'
+const inputClassName = 'w-full rounded-xl border border-home-border bg-surface px-4 py-3 text-sm text-text outline-none transition placeholder:text-subtitle focus:border-primary focus:ring-2 focus:ring-primary/15'

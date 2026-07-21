@@ -33,7 +33,7 @@ export default function LeaderboardClient({ members, semester, loadError = null 
 
       <LeaderboardTabs />
 
-      <div className="overflow-hidden rounded-4xl border border-home-border bg-white shadow-[0_20px_60px_rgba(15,23,42,0.06)]">
+      <div className="overflow-hidden rounded-4xl border border-home-border bg-surface shadow-theme-md">
         <div className="grid grid-cols-[3rem_1fr_4rem] border-b border-home-border bg-bg px-5 py-3 text-[11px] font-semibold uppercase tracking-[0.05em] text-subtitle">
           <div>#</div>
           <div>Member</div>

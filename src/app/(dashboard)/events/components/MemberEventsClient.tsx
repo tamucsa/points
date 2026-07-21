@@ -78,7 +78,7 @@ function EventCard({
           onOpen()
         }
       }}
-      className={`flex w-full cursor-pointer items-center gap-4 rounded-3xl border border-home-border bg-white px-5 py-4 text-left shadow-sm transition hover:border-primary/25 hover:shadow-[0_8px_28px_rgba(71,121,184,0.1)] ${
+      className={`flex w-full cursor-pointer items-center gap-4 rounded-3xl border border-home-border bg-surface px-5 py-4 text-left shadow-sm transition hover:border-primary/25 hover:shadow-theme-sm ${
         isPast && !attended ? 'opacity-[0.65]' : ''
       }`}
     >
@@ -131,7 +131,7 @@ function EventCard({
           target="_blank"
           rel="noopener noreferrer"
           onClick={e => e.stopPropagation()}
-          className="shrink-0 rounded-xl bg-primary px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-[#35679e]"
+          className="shrink-0 rounded-xl bg-primary px-4 py-2 text-sm font-semibold text-on-primary shadow-sm transition hover:bg-primary-hover"
         >
           Sign Up
         </a>
@@ -176,7 +176,7 @@ function EventDetailModal({
       onClick={onClose}
     >
       <div
-        className="max-h-[90vh] w-full max-w-lg overflow-y-auto rounded-4xl border border-home-border bg-white p-6 shadow-xl sm:p-8"
+        className="max-h-[90vh] w-full max-w-lg overflow-y-auto rounded-4xl border border-home-border bg-surface p-6 shadow-xl sm:p-8"
         onClick={e => e.stopPropagation()}
         role="dialog"
         aria-modal="true"
@@ -267,7 +267,7 @@ function EventDetailModal({
                 href={event.rsvp_url}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="mt-3 inline-flex rounded-xl bg-primary px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-[#35679e]"
+                className="mt-3 inline-flex rounded-xl bg-primary px-4 py-2.5 text-sm font-semibold text-on-primary shadow-sm transition hover:bg-primary-hover"
               >
                 Open RSVP form
               </a>
@@ -280,7 +280,7 @@ function EventDetailModal({
                 href={event.rsvp_url}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="mt-3 inline-flex rounded-xl bg-primary px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-[#35679e]"
+                className="mt-3 inline-flex rounded-xl bg-primary px-4 py-2.5 text-sm font-semibold text-on-primary shadow-sm transition hover:bg-primary-hover"
               >
                 Open RSVP form
               </a>
@@ -364,7 +364,7 @@ export default function MemberEventsClient({
             placeholder="Search events by name…"
             value={search}
             onChange={e => setSearch(e.target.value)}
-            className="mb-3 w-full rounded-xl border border-home-border bg-white px-4 py-3 text-sm text-text outline-none focus:border-primary focus:ring-2 focus:ring-primary/15"
+            className="mb-3 w-full rounded-xl border border-home-border bg-surface px-4 py-3 text-sm text-text outline-none focus:border-primary focus:ring-2 focus:ring-primary/15"
           />
           <EventFilterTabs value={filter} onChange={setFilter} counts={filterCounts} />
         </>
@@ -428,7 +428,7 @@ export default function MemberEventsClient({
                 return !p
               })
             }}
-            className="mb-4 rounded-xl border border-home-border bg-white px-4 py-2 text-sm text-subtitle shadow-sm transition hover:border-primary/30 hover:text-primary"
+            className="mb-4 rounded-xl border border-home-border bg-surface px-4 py-2 text-sm text-subtitle shadow-sm transition hover:border-primary/30 hover:text-primary"
           >
             {showPast ? '▲ Hide' : '▼ Show'} Past Events ({past.length})
           </button>

@@ -22,8 +22,8 @@ export default function LeaderboardTabs() {
             href={tab.path}
             className={`rounded-2xl px-4 py-2 text-sm font-semibold transition ${
               active
-                ? 'bg-primary text-white shadow-sm'
-                : 'border border-home-border bg-white text-subtitle hover:border-primary/30 hover:text-primary'
+                ? 'bg-primary text-on-primary shadow-sm'
+                : 'border border-home-border bg-surface text-subtitle hover:border-primary/30 hover:text-primary'
             }`}
           >
             {tab.label}

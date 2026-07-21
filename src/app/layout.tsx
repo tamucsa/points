@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Bayon, Akshar } from "next/font/google";
 import "@/app/globals.css";
 import { Analytics } from "@vercel/analytics/next"
+import ThemeProvider from "@/app/components/ThemeProvider";
 
 const bayon = Bayon({
   variable: "--font-bayon",
@@ -56,9 +57,11 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
+    <html lang="en" suppressHydrationWarning>
       <body className={`${bayon.variable} ${akshar.variable} font-sans antialiased bg-bg text-text`}>
-        {children}
+        <ThemeProvider>
+          {children}
+        </ThemeProvider>
         <Analytics />
       </body>
     </html>

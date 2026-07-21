@@ -72,10 +72,10 @@ const actionPrimaryClassName =
   'min-h-11 flex-1 rounded-xl border border-primary/30 bg-primary/10 px-4 py-2.5 text-sm font-semibold text-primary transition hover:border-primary/50 hover:bg-primary/20 sm:min-h-0 sm:flex-none sm:px-3 sm:py-2 sm:text-xs'
 
 const actionSecondaryClassName =
-  'min-h-11 flex-1 rounded-xl border border-home-border bg-white px-4 py-2.5 text-sm text-subtitle transition hover:border-primary/30 hover:bg-bg hover:text-text sm:min-h-0 sm:flex-none sm:px-3 sm:py-2 sm:text-xs'
+  'min-h-11 flex-1 rounded-xl border border-home-border bg-surface px-4 py-2.5 text-sm text-subtitle transition hover:border-primary/30 hover:bg-bg hover:text-text sm:min-h-0 sm:flex-none sm:px-3 sm:py-2 sm:text-xs'
 
 const actionDangerClassName =
-  'inline-flex min-h-11 items-center justify-center gap-1.5 rounded-xl border border-[#f5b0b0] bg-[#fff4f4] px-4 py-2.5 text-sm font-semibold leading-none text-[#c94b4b] transition hover:border-[#e88a8a] hover:bg-[#ffe8e8] sm:min-h-0 sm:px-3 sm:py-2 sm:text-xs'
+  'inline-flex min-h-11 items-center justify-center gap-1.5 rounded-xl border border-error-border bg-error-bg px-4 py-2.5 text-sm font-semibold leading-none text-error transition hover:border-error hover:bg-error-bg sm:min-h-0 sm:px-3 sm:py-2 sm:text-xs'
 
 export default function OfficerEventsClient({
   events,
@@ -244,7 +244,7 @@ export default function OfficerEventsClient({
             router.push(`/officer/events/${event.id}`)
           }
         }}
-        className={`flex cursor-pointer flex-col gap-4 rounded-3xl border border-home-border bg-white p-5 shadow-sm transition hover:border-primary/25 hover:shadow-[0_8px_28px_rgba(71,121,184,0.1)] sm:flex-row sm:items-center ${isPast ? 'opacity-75' : ''}`}
+        className={`flex cursor-pointer flex-col gap-4 rounded-3xl border border-home-border bg-surface p-5 shadow-sm transition hover:border-primary/25 hover:shadow-theme-sm sm:flex-row sm:items-center ${isPast ? 'opacity-75' : ''}`}
       >
         <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-primary/10 text-lg font-extrabold text-primary">
           {formatEventPointsLabel(event.point_value, event.check_in_type)}
@@ -471,7 +471,7 @@ export default function OfficerEventsClient({
         />
         <button
           onClick={() => router.push('/officer/events/new')}
-          className="flex items-center justify-center gap-2 rounded-xl bg-primary px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-[#35679e]"
+          className="flex items-center justify-center gap-2 rounded-xl bg-primary px-4 py-2.5 text-sm font-semibold text-on-primary shadow-sm transition hover:bg-primary-hover"
         >
           <Plus className="size-4" aria-hidden />
           New Event
@@ -479,7 +479,7 @@ export default function OfficerEventsClient({
       </div>
 
       {publishError && (
-        <div className="mb-4 rounded-2xl border border-[#f5b0b0] bg-[#fff4f4] px-4 py-3 text-sm text-[#c94b4b]">
+        <div className="mb-4 rounded-2xl border border-error-border bg-error-bg px-4 py-3 text-sm text-error">
           {publishError}
         </div>
       )}
@@ -491,7 +491,7 @@ export default function OfficerEventsClient({
             placeholder="Search events by name…"
             value={search}
             onChange={e => setSearch(e.target.value)}
-            className="mb-3 w-full rounded-xl border border-home-border bg-white px-4 py-3 text-sm text-text outline-none focus:border-primary focus:ring-2 focus:ring-primary/15"
+            className="mb-3 w-full rounded-xl border border-home-border bg-surface px-4 py-3 text-sm text-text outline-none focus:border-primary focus:ring-2 focus:ring-primary/15"
           />
           <EventFilterTabs
             value={filter}
@@ -560,7 +560,7 @@ export default function OfficerEventsClient({
                 return !p
               })
             }}
-            className="mb-4 rounded-xl border border-home-border bg-white px-4 py-2 text-sm text-subtitle shadow-sm transition hover:border-primary/30 hover:text-primary"
+            className="mb-4 rounded-xl border border-home-border bg-surface px-4 py-2 text-sm text-subtitle shadow-sm transition hover:border-primary/30 hover:text-primary"
           >
             {showPast ? '▲ Hide' : '▼ Show'} Past Events ({pastEvents.length})
           </button>
@@ -592,14 +592,14 @@ export default function OfficerEventsClient({
           onClick={closeDeleteModal}
         >
           <div
-            className="w-full max-w-md rounded-4xl border border-home-border bg-white p-6 shadow-xl sm:p-8"
+            className="w-full max-w-md rounded-4xl border border-home-border bg-surface p-6 shadow-xl sm:p-8"
             onClick={e => e.stopPropagation()}
             role="dialog"
             aria-modal="true"
             aria-labelledby="delete-event-title"
           >
-            <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-2xl bg-[#fff4f4]">
-              <Trash2 className="size-5 text-[#c94b4b]" aria-hidden />
+            <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-2xl bg-error-bg">
+              <Trash2 className="size-5 text-error" aria-hidden />
             </div>
             <h2 id="delete-event-title" className="text-center text-lg font-bold text-text">
               Delete this event?
@@ -613,7 +613,7 @@ export default function OfficerEventsClient({
               . This cannot be undone.
             </p>
             {deleteError && (
-              <p className="mt-4 rounded-2xl border border-[#f5b0b0] bg-[#fff4f4] px-4 py-3 text-center text-sm text-[#c94b4b]">
+              <p className="mt-4 rounded-2xl border border-error-border bg-error-bg px-4 py-3 text-center text-sm text-error">
                 {deleteError}
               </p>
             )}
@@ -622,7 +622,7 @@ export default function OfficerEventsClient({
                 type="button"
                 disabled={deleting}
                 onClick={closeDeleteModal}
-                className="rounded-xl border border-home-border bg-white px-4 py-2.5 text-sm font-semibold text-subtitle transition hover:border-primary/30 hover:bg-bg hover:text-text disabled:opacity-60"
+                className="rounded-xl border border-home-border bg-surface px-4 py-2.5 text-sm font-semibold text-subtitle transition hover:border-primary/30 hover:bg-bg hover:text-text disabled:opacity-60"
               >
                 Cancel
               </button>
@@ -630,7 +630,7 @@ export default function OfficerEventsClient({
                 type="button"
                 disabled={deleting}
                 onClick={() => void handleConfirmDelete()}
-                className="rounded-xl border border-[#f5b0b0] bg-[#fff4f4] px-4 py-2.5 text-sm font-semibold text-[#c94b4b] transition hover:border-[#e88a8a] hover:bg-[#ffe8e8] disabled:opacity-60"
+                className="rounded-xl border border-error-border bg-error-bg px-4 py-2.5 text-sm font-semibold text-error transition hover:border-error hover:bg-error-bg disabled:opacity-60"
               >
                 {deleting ? 'Deleting…' : 'Delete Event'}
               </button>
@@ -645,11 +645,11 @@ export default function OfficerEventsClient({
           onClick={() => setQrEvent(null)}
         >
           <div
-            className="w-full max-w-sm rounded-4xl border border-home-border bg-white p-8 text-center shadow-xl"
+            className="w-full max-w-sm rounded-4xl border border-home-border bg-surface p-8 text-center shadow-xl"
             onClick={e => e.stopPropagation()}
           >
             <h2 className="text-lg font-bold text-text">{qrEvent.name}</h2>
-            <div className="mx-auto mt-5 inline-block rounded-2xl bg-white p-5 shadow-sm">
+            <div className="mx-auto mt-5 inline-block rounded-2xl bg-surface p-5 shadow-sm">
               <QRCodeSVG
                 value={checkInUrl(qrEvent.check_in_code!)}
                 size={220}
@@ -669,7 +669,7 @@ export default function OfficerEventsClient({
               <button
                 type="button"
                 onClick={() => window.open(`/officer/events/${qrEvent.id}/qr`, '_blank')}
-                className="rounded-xl bg-primary px-4 py-2 text-sm font-semibold text-white transition hover:bg-[#35679e]"
+                className="rounded-xl bg-primary px-4 py-2 text-sm font-semibold text-on-primary transition hover:bg-primary-hover"
               >
                 Full Screen
               </button>
@@ -678,14 +678,14 @@ export default function OfficerEventsClient({
                 onClick={() =>
                   window.open(`/officer/events/${qrEvent.id}/qr?print=1`, '_blank')
                 }
-                className="rounded-xl border border-home-border bg-white px-4 py-2 text-sm font-semibold text-text transition hover:border-primary/30 hover:text-primary"
+                className="rounded-xl border border-home-border bg-surface px-4 py-2 text-sm font-semibold text-text transition hover:border-primary/30 hover:text-primary"
               >
                 Print QR
               </button>
               <button
                 type="button"
                 onClick={() => setQrEvent(null)}
-                className="rounded-xl border border-home-border bg-white px-4 py-2 text-sm text-subtitle transition hover:border-primary/30 hover:text-text"
+                className="rounded-xl border border-home-border bg-surface px-4 py-2 text-sm text-subtitle transition hover:border-primary/30 hover:text-text"
               >
                 Close
               </button>

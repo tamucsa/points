@@ -69,7 +69,7 @@ export default function StandingsLeaderboardClient({
               const id = e.target.value
               router.push(id ? `/leaderboard/standings?snapshot=${id}` : '/leaderboard/standings')
             }}
-            className="w-full rounded-xl border border-home-border bg-white px-3 py-2.5 text-sm text-text shadow-sm"
+            className="w-full rounded-xl border border-home-border bg-surface px-3 py-2.5 text-sm text-text shadow-sm"
           >
             {snapshots.map(snapshot => (
               <option key={snapshot.id} value={snapshot.id}>
@@ -93,7 +93,7 @@ export default function StandingsLeaderboardClient({
         </p>
       )}
 
-      <div className="overflow-hidden rounded-4xl border border-home-border bg-white shadow-[0_20px_60px_rgba(15,23,42,0.06)]">
+      <div className="overflow-hidden rounded-4xl border border-home-border bg-surface shadow-theme-md">
         <div className="grid grid-cols-[2.5rem_1fr_4rem] border-b border-home-border bg-bg px-5 py-3 text-[11px] font-semibold uppercase tracking-[0.05em] text-subtitle">
           <div>#</div>
           <div>Jiating</div>

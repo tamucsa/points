@@ -11,7 +11,9 @@ import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { useEffect, useState } from 'react'
 import MemberAvatar from '@/app/components/MemberAvatar'
+import BrandMark from '@/app/components/BrandMark'
 import IconLabel from '@/app/components/IconLabel'
+import ThemeToggle from '@/app/components/ThemeToggle'
 import { NAV_ICONS } from '@/utils/icons'
 import { createBrowserSupabase } from '@/utils/supabase/client'
 
@@ -118,14 +120,25 @@ export default function Sidebar({ member }: { member: Member }) {
 
   const sidebarContent = (
     <>
-      <div className={`flex items-center border-b border-home-border pb-5 ${collapsed ? 'justify-center px-2' : 'justify-between px-2'}`}>
-        {!collapsed && (
-          <div className="min-w-0">
-            <div className="truncate text-[1.15rem] font-bold tracking-[-0.04em] text-text">
-              CSA Points
-            </div>
-            <div className="mt-1 text-xs text-subtitle">
-              {isOfficer ? member.role.charAt(0).toUpperCase() + member.role.slice(1) : 'Member'}
+      <div
+        className={`flex border-b border-home-border pb-5 ${
+          collapsed
+            ? 'flex-col items-center gap-2 px-2'
+            : 'items-center justify-between gap-2 px-2'
+        }`}
+      >
+        {collapsed ? (
+          <BrandMark size="sm" />
+        ) : (
+          <div className="flex min-w-0 items-center gap-2.5">
+            <BrandMark size="md" />
+            <div className="min-w-0">
+              <div className="truncate text-[1.15rem] font-bold tracking-[-0.04em] text-text">
+                CSA Points
+              </div>
+              <div className="mt-0.5 text-xs text-subtitle">
+                {isOfficer ? member.role.charAt(0).toUpperCase() + member.role.slice(1) : 'Member'}
+              </div>
             </div>
           </div>
         )}
@@ -133,7 +146,7 @@ export default function Sidebar({ member }: { member: Member }) {
           type="button"
           onClick={toggleCollapsed}
           aria-label={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
-          className="hidden shrink-0 rounded-xl border border-home-border bg-white p-2 text-subtitle transition hover:border-primary/30 hover:text-primary lg:flex"
+          className="hidden shrink-0 rounded-xl border border-home-border bg-surface p-2 text-subtitle transition hover:border-primary/30 hover:text-primary lg:flex"
         >
           {collapsed ? <ChevronRight className="size-4" aria-hidden /> : <ChevronLeft className="size-4" aria-hidden />}
         </button>
@@ -181,15 +194,18 @@ export default function Sidebar({ member }: { member: Member }) {
               </div>
             )}
           </div>
-          <button
-            type="button"
-            onClick={() => { window.location.href = '/api/auth/signout' }}
-            className={`mt-3 flex w-full items-center justify-center rounded-xl border border-home-border bg-white text-sm text-subtitle transition hover:border-primary/30 hover:text-primary ${collapsed ? 'px-2 py-2' : 'gap-2 px-3 py-2'}`}
-            title={collapsed ? 'Sign out' : undefined}
-          >
-            <LogOut className="size-4 shrink-0" aria-hidden />
-            {!collapsed && <span>Sign out</span>}
-          </button>
+          <div className={`mt-3 flex flex-col ${collapsed ? 'items-center gap-1' : 'gap-1.5'}`}>
+            <ThemeToggle collapsed={collapsed} persist className={collapsed ? '' : 'w-full justify-start'} />
+            <button
+              type="button"
+              onClick={() => { window.location.href = '/api/auth/signout' }}
+              className={`flex w-full items-center justify-center rounded-xl border border-home-border bg-surface text-sm text-subtitle transition hover:border-primary/30 hover:text-primary ${collapsed ? 'px-2 py-2' : 'gap-2 px-3 py-2'}`}
+              title={collapsed ? 'Sign out' : undefined}
+            >
+              <LogOut className="size-4 shrink-0" aria-hidden />
+              {!collapsed && <span>Sign out</span>}
+            </button>
+          </div>
         </div>
       </div>
     </>
@@ -198,16 +214,20 @@ export default function Sidebar({ member }: { member: Member }) {
   return (
     <>
       {/* Mobile top bar */}
-      <div className="fixed inset-x-0 top-0 z-40 flex h-14 items-center gap-3 border-b border-home-border bg-white px-4 print:hidden lg:hidden">
-        <button
-          type="button"
-          onClick={() => setMobileOpen(true)}
-          aria-label="Open menu"
-          className="rounded-xl border border-home-border px-3 py-2 text-subtitle"
-        >
-          <Menu className="size-4" aria-hidden />
-        </button>
-        <span className="font-bold text-text">CSA Points</span>
+      <div className="fixed inset-x-0 top-0 z-40 flex h-14 items-center justify-between border-b border-home-border bg-surface px-4 print:hidden lg:hidden">
+        <div className="flex items-center gap-3">
+          <button
+            type="button"
+            onClick={() => setMobileOpen(true)}
+            aria-label="Open menu"
+            className="rounded-xl border border-home-border px-3 py-2 text-subtitle"
+          >
+            <Menu className="size-4" aria-hidden />
+          </button>
+          <BrandMark size="sm" />
+          <span className="font-bold text-text">CSA Points</span>
+        </div>
+        <ThemeToggle className="!w-auto" />
       </div>
 
       {/* Mobile overlay */}
@@ -223,7 +243,7 @@ export default function Sidebar({ member }: { member: Member }) {
       {/* Sidebar */}
       <aside
         style={{ width: collapsed ? COLLAPSED_WIDTH : EXPANDED_WIDTH }}
-        className={`fixed inset-y-0 left-0 z-50 flex shrink-0 flex-col border-r border-home-border bg-white px-3 py-5 shadow-[8px_0_40px_rgba(15,23,42,0.04)] transition-[width] duration-200 print:hidden lg:sticky lg:top-0 lg:z-auto lg:h-screen ${
+        className={`fixed inset-y-0 left-0 z-50 flex shrink-0 flex-col border-r border-home-border bg-surface px-3 py-5 shadow-theme-sidebar transition-[width] duration-200 print:hidden lg:sticky lg:top-0 lg:z-auto lg:h-screen ${
           mobileOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'
         }`}
       >

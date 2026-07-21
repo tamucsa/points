@@ -34,7 +34,7 @@ const ROLE_LABELS: Record<MemberRole, string> = {
 }
 
 const selectClassName =
-  'w-full cursor-pointer appearance-none rounded-xl border border-home-border bg-white py-2.5 pl-3 pr-10 text-sm text-text shadow-sm outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/15 disabled:opacity-60'
+  'w-full cursor-pointer appearance-none rounded-xl border border-home-border bg-surface py-2.5 pl-3 pr-10 text-sm text-text shadow-sm outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/15 disabled:opacity-60'
 
 function SelectChevron() {
   return (
@@ -164,7 +164,7 @@ export default function AdminRolesPanel({
         </div>
         <button
           type="submit"
-          className="rounded-xl bg-primary px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-[#35679e]"
+          className="rounded-xl bg-primary px-4 py-2.5 text-sm font-semibold text-on-primary transition hover:bg-primary-hover"
         >
           Search
         </button>
@@ -181,7 +181,7 @@ export default function AdminRolesPanel({
         </div>
       )}
 
-      <div className="overflow-hidden rounded-4xl border border-home-border bg-white shadow-sm">
+      <div className="overflow-hidden rounded-4xl border border-home-border bg-surface shadow-sm">
         {members.length === 0 ? (
           <div className="px-8 py-10 text-center text-sm text-subtitle">
             No active members match these filters.
@@ -242,7 +242,7 @@ export default function AdminRolesPanel({
                     type="button"
                     onClick={() => void saveRole(m)}
                     disabled={!dirty || savingId === m.id}
-                    className="rounded-xl bg-primary px-4 py-2 text-sm font-semibold text-white transition disabled:cursor-not-allowed disabled:bg-[#9cb8d8]"
+                    className="rounded-xl bg-primary px-4 py-2 text-sm font-semibold text-on-primary transition disabled:cursor-not-allowed disabled:bg-disabled"
                   >
                     {savingId === m.id ? 'Saving…' : 'Save'}
                   </button>
@@ -263,7 +263,7 @@ export default function AdminRolesPanel({
               type="button"
               disabled={page <= 1}
               onClick={() => applyFilters({ page: page - 1 })}
-              className="rounded-xl border border-home-border bg-white px-3 py-2 text-sm font-medium text-subtitle transition hover:border-primary/30 hover:text-text disabled:opacity-40"
+              className="rounded-xl border border-home-border bg-surface px-3 py-2 text-sm font-medium text-subtitle transition hover:border-primary/30 hover:text-text disabled:opacity-40"
             >
               Previous
             </button>
@@ -271,7 +271,7 @@ export default function AdminRolesPanel({
               type="button"
               disabled={page >= totalPages}
               onClick={() => applyFilters({ page: page + 1 })}
-              className="rounded-xl border border-home-border bg-white px-3 py-2 text-sm font-medium text-subtitle transition hover:border-primary/30 hover:text-text disabled:opacity-40"
+              className="rounded-xl border border-home-border bg-surface px-3 py-2 text-sm font-medium text-subtitle transition hover:border-primary/30 hover:text-text disabled:opacity-40"
             >
               Next
             </button>

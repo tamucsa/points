@@ -9,7 +9,7 @@ export default function DashboardLoading() {
         {Array.from({ length: 5 }, (_, i) => (
           <div
             key={i}
-            className="h-[4.5rem] rounded-3xl border border-home-border bg-white shadow-sm"
+            className="h-[4.5rem] rounded-3xl border border-home-border bg-surface shadow-sm"
           />
         ))}
       </div>

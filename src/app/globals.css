@@ -1,23 +1,173 @@
 @import "tailwindcss";
 
+@custom-variant dark (&:where(.dark, .dark *));
+
 @theme inline {
   --font-display: var(--font-bayon), ui-sans-serif, system-ui, sans-serif;
   --font-sans: var(--font-akshar), ui-sans-serif, system-ui, sans-serif;
-}
-@theme {
-  --color-primary: #4779B8;
-  --color-secondary: #d0cccc;
-  --color-accent: #F0B0C3;
-  --color-text: #000000;
-  --color-subtitle: #666666;
-  --color-bg: #ffffff;
-  --color-home-border: #e0e0e0;
 
-  --animation-fade-in: fadeIn 0.5s ease-in-out;
-  --animation-slide-up: slideUp 0.5s ease-in-out;
+  /* inline keeps utilities pointing at CSS vars so .dark overrides apply at runtime */
+  --color-primary: var(--theme-primary);
+  --color-primary-hover: var(--theme-primary-hover);
+  --color-secondary: var(--theme-secondary);
+  --color-accent: var(--theme-accent);
+  --color-text: var(--theme-text);
+  --color-subtitle: var(--theme-subtitle);
+  --color-bg: var(--theme-bg);
+  --color-surface: var(--theme-surface);
+  --color-surface-muted: var(--theme-surface-muted);
+  --color-home-border: var(--theme-border);
+  --color-error: var(--theme-error);
+  --color-error-bg: var(--theme-error-bg);
+  --color-error-border: var(--theme-error-border);
+  --color-disabled: var(--theme-disabled);
+  --color-on-primary: var(--theme-on-primary);
+
+  --animate-fade-in: fadeIn 0.5s ease-in-out;
+  --animate-slide-up: slideUp 0.5s ease-in-out;
+}
+
+:root {
+  color-scheme: light;
+
+  --theme-primary: #4779B8;
+  --theme-primary-hover: #35679e;
+  --theme-secondary: #d0cccc;
+  --theme-accent: #F0B0C3;
+  --theme-text: #000000;
+  --theme-subtitle: #666666;
+  --theme-bg: #ffffff;
+  --theme-surface: #ffffff;
+  --theme-surface-muted: #fafafa;
+  --theme-border: #e0e0e0;
+  --theme-error: #c94b4b;
+  --theme-error-bg: #fff4f4;
+  --theme-error-border: #f5b0b0;
+  --theme-disabled: #9cb8d8;
+  --theme-on-primary: #ffffff;
+
+  --theme-shadow-sm: 0 8px 28px rgba(71, 121, 184, 0.1);
+  --theme-shadow-md: 0 20px 60px rgba(15, 23, 42, 0.06);
+  --theme-shadow-lg: 0 24px 80px rgba(15, 23, 42, 0.08);
+  --theme-shadow-primary: 0 12px 28px rgba(71, 121, 184, 0.24);
+  --theme-shadow-sidebar: 8px 0 40px rgba(15, 23, 42, 0.04);
+  --theme-gradient-hero: linear-gradient(
+    135deg,
+    rgba(71, 121, 184, 0.08),
+    rgba(255, 255, 255, 0.9) 52%,
+    rgba(240, 176, 195, 0.16)
+  );
+  --theme-gradient-accent-card: linear-gradient(
+    180deg,
+    rgba(240, 176, 195, 0.18),
+    rgba(255, 255, 255, 0.9)
+  );
+  --theme-gradient-page: radial-gradient(circle at top right, rgba(71, 121, 184, 0.05), transparent 28%),
+    radial-gradient(circle at bottom left, rgba(240, 176, 195, 0.12), transparent 28%);
+  --theme-gradient-public: radial-gradient(circle at top left, rgba(71, 121, 184, 0.16), transparent 34%),
+    radial-gradient(circle at bottom right, rgba(240, 176, 195, 0.22), transparent 38%);
+}
+
+html.dark {
+  color-scheme: dark;
+
+  --theme-primary: #E04B2A;
+  --theme-primary-hover: #C43D1E;
+  --theme-secondary: #3A3530;
+  --theme-accent: #D4A574;
+  --theme-text: #F0E8DC;
+  --theme-subtitle: #A89E90;
+  --theme-bg: #0A0A0A;
+  --theme-surface: #141414;
+  --theme-surface-muted: #1A1714;
+  --theme-border: #2A2520;
+  --theme-error: #F07070;
+  --theme-error-bg: #2A1515;
+  --theme-error-border: #5C3030;
+  --theme-disabled: #6B4A42;
+  --theme-on-primary: #ffffff;
+
+  --theme-shadow-sm: 0 8px 28px rgba(224, 75, 42, 0.12);
+  --theme-shadow-md: 0 20px 60px rgba(0, 0, 0, 0.35);
+  --theme-shadow-lg: 0 24px 80px rgba(0, 0, 0, 0.45);
+  --theme-shadow-primary: 0 12px 28px rgba(224, 75, 42, 0.28);
+  --theme-shadow-sidebar: 8px 0 40px rgba(0, 0, 0, 0.35);
+  --theme-gradient-hero: linear-gradient(
+    135deg,
+    rgba(224, 75, 42, 0.1),
+    rgba(20, 20, 20, 0.95) 52%,
+    rgba(212, 165, 116, 0.12)
+  );
+  --theme-gradient-accent-card: linear-gradient(
+    180deg,
+    rgba(212, 165, 116, 0.14),
+    rgba(20, 20, 20, 0.95)
+  );
+  --theme-gradient-page: radial-gradient(circle at top right, rgba(224, 75, 42, 0.06), transparent 28%),
+    radial-gradient(circle at bottom left, rgba(212, 165, 116, 0.08), transparent 28%);
+  --theme-gradient-public: radial-gradient(circle at top left, rgba(224, 75, 42, 0.1), transparent 34%),
+    radial-gradient(circle at bottom right, rgba(212, 165, 116, 0.12), transparent 38%);
+}
+
+/* QR / print surfaces always use light palette */
+.force-light {
+  color-scheme: light;
+
+  --theme-primary: #4779B8;
+  --theme-primary-hover: #35679e;
+  --theme-secondary: #d0cccc;
+  --theme-accent: #F0B0C3;
+  --theme-text: #000000;
+  --theme-subtitle: #666666;
+  --theme-bg: #ffffff;
+  --theme-surface: #ffffff;
+  --theme-surface-muted: #fafafa;
+  --theme-border: #e0e0e0;
+  --theme-error: #c94b4b;
+  --theme-error-bg: #fff4f4;
+  --theme-error-border: #f5b0b0;
+  --theme-disabled: #9cb8d8;
+  --theme-on-primary: #ffffff;
+
+  --theme-shadow-sm: 0 8px 28px rgba(71, 121, 184, 0.1);
+  --theme-shadow-md: 0 20px 60px rgba(15, 23, 42, 0.06);
+  --theme-shadow-lg: 0 24px 80px rgba(15, 23, 42, 0.08);
+  --theme-shadow-primary: 0 12px 28px rgba(71, 121, 184, 0.24);
+  --theme-shadow-sidebar: 8px 0 40px rgba(15, 23, 42, 0.04);
+  --theme-gradient-hero: linear-gradient(
+    135deg,
+    rgba(71, 121, 184, 0.08),
+    rgba(255, 255, 255, 0.9) 52%,
+    rgba(240, 176, 195, 0.16)
+  );
+  --theme-gradient-accent-card: linear-gradient(
+    180deg,
+    rgba(240, 176, 195, 0.18),
+    rgba(255, 255, 255, 0.9)
+  );
+  --theme-gradient-page: radial-gradient(circle at top right, rgba(71, 121, 184, 0.05), transparent 28%),
+    radial-gradient(circle at bottom left, rgba(240, 176, 195, 0.12), transparent 28%);
+  --theme-gradient-public: radial-gradient(circle at top left, rgba(71, 121, 184, 0.16), transparent 34%),
+    radial-gradient(circle at bottom right, rgba(240, 176, 195, 0.22), transparent 38%);
 }
 
 @layer base {
+  html {
+    height: 100%;
+  }
+
+  body {
+    height: 100%;
+    overflow-y: auto;
+    transition: background-color 0.2s ease, color 0.2s ease;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    body {
+      transition: none;
+    }
+  }
+
   h1,
   h2 {
     font-family: var(--font-display);
@@ -25,22 +175,48 @@
   }
 }
 
-html {
-  height: 100%;
-}
+@layer utilities {
+  .bg-hero-gradient {
+    background-image: var(--theme-gradient-hero);
+  }
 
-body {
-    height: 100%;
-    overflow-y: auto;
-    /* scroll-behavior: smooth; */
+  .bg-accent-card {
+    background-image: var(--theme-gradient-accent-card);
+  }
+
+  .bg-page-gradient {
+    background-image: var(--theme-gradient-page);
+  }
+
+  .bg-public-gradient {
+    background-image: var(--theme-gradient-public);
+  }
+
+  .shadow-theme-sm {
+    box-shadow: var(--theme-shadow-sm);
+  }
+
+  .shadow-theme-md {
+    box-shadow: var(--theme-shadow-md);
+  }
+
+  .shadow-theme-lg {
+    box-shadow: var(--theme-shadow-lg);
+  }
+
+  .shadow-theme-primary {
+    box-shadow: var(--theme-shadow-primary);
+  }
+
+  .shadow-theme-sidebar {
+    box-shadow: var(--theme-shadow-sidebar);
+  }
 }
 
 .modal-open-bg {
-  /* Prevent background scroll when a modal is open. No color overlay is applied here. */
   overflow: hidden !important;
 }
 
-/* Screen: hide print-only QR sheet. Print: hide chrome + show QR full page. */
 .qr-print-sheet {
   display: none;
 }
