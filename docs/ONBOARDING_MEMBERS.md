@@ -14,6 +14,10 @@ This guide is for CSA members using the points system.
    - **Events** (JT-specific events appear after you are assigned a Jiating)
    - **My Points**
 
+### Appearance (light / dark)
+
+Use the theme control in the sidebar (or on the sign-in page before you log in). It cycles **Light → Dark → System** (System follows your device setting). Your choice is remembered on this browser; when you are signed in it is also saved to your account for other devices that have not picked a theme yet.
+
 Roster-imported members still must **sign in with Google once** so their account links to the existing roster row. They do **not** fill out registration (name, class, and phone already came from the CSV). Until that first login, officers will see them as **Not signed in** on the member list.
 
 ## Registration form (name fields)

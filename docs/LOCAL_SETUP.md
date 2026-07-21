@@ -39,7 +39,7 @@ Migrations live in `supabase/migrations/`.
 
 This repo’s migrations are **incremental from mid-project**, not a full dump of production. A fresh `supabase db reset` does **not** recreate every core table, RLS policy, or historical view that already exists on the live project.
 
-What *is* in migrations (recent): JT mixer links, weekly JT cap, `member_semester_points`, attendance count RPCs, security/cap fixes, `top_leaderboard_members_per_jt`, and `close_semester` (archives from `member_semester_points`).
+What *is* in migrations (recent): JT mixer links, weekly JT cap, `member_semester_points`, attendance count RPCs, security/cap fixes, `top_leaderboard_members_per_jt`, `close_semester` (archives from `member_semester_points`), and `members.theme_preference` (light/dark/system UI theme).
 
 What is **not** fully captured: baseline `members` / `events` / `attendance` / RLS history and many older helpers. For local work matching production:
 

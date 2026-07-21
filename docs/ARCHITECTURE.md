@@ -30,7 +30,7 @@ This document explains how the system is structured, how requests flow through t
 ## Data model (high-level)
 
 Core tables (names reflect actual schema):
-- `members`: one row per person (email, role, status, jt family, auth uid)
+- `members`: one row per person (email, role, status, jt family, auth uid, `theme_preference`)
 - `events`: point-earning opportunities; has scope (CSA-wide / JT shared / JT specific)
 - `event_jt_families`: which Jiatings participate in a Mixer (and similar multi-family events)
 - `event_rsvps`: optional RSVP CSV tags per event (`member_id` nullable; `is_guest` for dismissed non-members); used only for check-in badges, not attendance gating
@@ -77,6 +77,14 @@ Public routes (no sign-in required): `/`, `/login` (redirects to `/` when logged
 - renders the app shell (`Sidebar` + page content)
 
 `pending` page redirects active members to `/leaderboard`. Officer/admin sections have their own layouts that enforce role membership.
+
+### Theming (light / dark / system)
+
+- Tokens live in `src/app/globals.css` (`@theme inline` → `--theme-*` CSS variables). `html.dark` swaps the palette; `next-themes` toggles the `dark` class on `<html>`.
+- UI: `ThemeProvider` (root layout), `ThemeToggle` (sidebar + public shell), `BrandMark` (light/dark logos in `public/logo-light.png` / `public/logo-dark.png`).
+- Persistence: browser `localStorage` key `csa-theme` is the source of truth on a device. Logged-in users also store `members.theme_preference` (`light` | `dark` | `system`, default `system`) via `updateThemePreference` in `src/app/actions/theme.ts`.
+- `ThemeSync` (dashboard layout) seeds from the DB **only when this browser has no saved theme**; it does not overwrite an existing local choice.
+- QR check-in / officer QR fullscreen stay on the light palette (`.force-light`).
 
 ### 3) Data fetching
 Most routes fetch data via Supabase server client.
