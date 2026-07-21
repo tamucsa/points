@@ -228,7 +228,7 @@ Member **Events** (`/events`) is narrower: only the member’s JT-specific event
 
 ### Step-by-step: Upload Howdy Week guest CSV
 
-1. Create a **Howdy Week** event and **publish** it (members can see it on the calendar at 0 points).
+1. Create a **Howdy Week** event and **publish** it (members see it on `/events` at 0 points; it also syncs to the **CSA Member Calendar**).
 2. Collect responses with a Google Form (**Name**, **Email** `@tamu.edu` required, **Year** as graduation year number only). Suggested disclaimer: CSA may store name, email, and year to record attendance, contact about joining, and link attendance if they register.
 3. Open the event detail page → **Howdy Week guest CSV**.
 4. Upload the CSV. Re-upload **replaces** the guest list for that event. Non-`@tamu.edu` rows are skipped.

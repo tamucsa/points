@@ -76,7 +76,7 @@ Before enabling in an environment:
 2. Complete the Google Calendar sharing steps and set `GOOGLE_*` variables described in `docs/ENVIRONMENT.md`.
 3. Set `GOOGLE_CALENDAR_SYNC_ENABLED=true` only after the service account can write to the calendar.
 
-Verify after enable: create an eligible test event (e.g. General Meeting), confirm it appears on the CSA Member Calendar, then edit schedule/location and delete it — Calendar should update/remove accordingly. Mixer and Jiating Event must not appear.
+Verify after enable: create an eligible test event (e.g. General Meeting or Howdy Week), confirm it appears on the CSA Member Calendar, then edit schedule/location and delete it — Calendar should update/remove accordingly. Mixer and Jiating Event must not appear.
 
 ## Google Places autocomplete
 

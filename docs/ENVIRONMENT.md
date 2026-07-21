@@ -51,7 +51,7 @@ If a variable is missing after pulling, add it in Vercel (Project → Settings �
 
 ## Optional — Google Calendar sync (CSA Member Calendar)
 
-App → Google pushes eligible org events to the shared **CSA Member Calendar**. Members’ Google sign-in scopes are unchanged; sync uses a **service account**, not user OAuth.
+App → Google pushes eligible org events to the shared **CSA Member Calendar** (General Meeting, CSA-Wide, CSA-Wide Mixers, Howdy Week, Jiating Olympics, Sports, Philanthropy, Dance, Concessions). Members’ Google sign-in scopes are unchanged; sync uses a **service account**, not user OAuth.
 
 ### Setup (one-time in Google Cloud / Calendar)
 
