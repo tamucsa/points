@@ -8,6 +8,7 @@ const GOOGLE_CALENDAR_SYNC_CATEGORIES = new Set([
   "General Meeting",
   "CSA-Wide",
   "CSA-Wide Mixers",
+  "Howdy Week",
   "Jiating Olympics",
   "Sports",
   "Philanthropy",

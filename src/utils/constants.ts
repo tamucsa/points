@@ -60,6 +60,7 @@ export const JT_EVENT_MIXER_WEEKLY_ATTENDANCE_CAP = 4
 export const CATEGORY_COLORS: Record<string, string> = {
   'CSA-Wide': '#4779B8',
   'CSA-Wide Mixers': '#5a8fd4',
+  'Howdy Week': '#4779B8',
   'Jiating Olympics': '#f7934f',
   'Jiating Event': '#6b7fd7',
   Sports: '#4fc787',

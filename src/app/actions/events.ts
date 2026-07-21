@@ -153,6 +153,9 @@ export async function publishEvent(eventId: string) {
     };
   }
   if (event.publish_status === "published") {
+    // Already published: still attempt Calendar sync (covers categories
+    // newly added to the allowlist that never got a google_event_id).
+    await syncCalendarAfterPublish(supabase, event);
     return { success: true, error: null };
   }
 
@@ -709,7 +712,9 @@ export async function updateEventSchedule(
 
   const { data: event } = await supabase
     .from("events")
-    .select("id, name, description, rsvp_url, google_event_id, check_in_type")
+    .select(
+      "id, name, description, rsvp_url, google_event_id, check_in_type, category, parent_event_id, publish_status",
+    )
     .eq("id", eventId)
     .maybeSingle();
 
@@ -789,29 +794,22 @@ export async function updateEventSchedule(
     };
   }
 
-  // Sync whenever a Google id exists (covers legacy/mis-synced rows).
-  if (event.google_event_id) {
-    const sync = await updateCalendarEvent(event.google_event_id, {
+  // Sync published eligible events (create if never synced, e.g. Howdy Week
+  // added to the allowlist after publish; update when google_event_id exists).
+  if (event.publish_status === "published") {
+    await syncCalendarAfterPublish(supabase, {
+      id: event.id,
+      category: event.category,
       name,
       description,
       location,
-      startsAt,
-      endsAt,
-      rsvpUrl: event.rsvp_url,
-      appEventId: event.id,
+      starts_at: startsAt,
+      ends_at: endsAt,
+      rsvp_url: event.rsvp_url,
+      google_event_id: event.google_event_id,
+      parent_event_id: event.parent_event_id,
+      check_in_type: event.check_in_type,
     });
-
-    if (sync.ok && !sync.skipped) {
-      await supabase
-        .from("events")
-        .update(syncSuccessFields(event.google_event_id))
-        .eq("id", eventId);
-    } else if (!sync.ok) {
-      await supabase
-        .from("events")
-        .update(syncErrorFields(sync.error))
-        .eq("id", eventId);
-    }
   }
 
   return { success: true, error: null };
