@@ -36,14 +36,14 @@ export default function QRFullScreen({
 
   return (
     <>
-      <div className="qr-screen-only flex min-h-screen flex-col items-center justify-center gap-6 bg-bg px-6 py-10">
+      <div className="force-light qr-screen-only flex min-h-screen flex-col items-center justify-center gap-6 bg-bg px-6 py-10">
         <h1 className="max-w-lg text-center text-3xl font-extrabold text-text">{event.name}</h1>
         {event.location && (
           <p className="text-base text-subtitle">
             <IconLabel icon={MapPin} label={event.location} href={event.location_maps_url} />
           </p>
         )}
-        <div className="rounded-3xl bg-white p-7 shadow-[0_20px_60px_rgba(71,121,184,0.15)]">
+        <div className="rounded-3xl bg-surface p-7 shadow-theme-md">
           <QRCodeSVG value={checkInUrl} size={300} level="H" />
         </div>
         <div className="flex flex-wrap items-center justify-center gap-4 text-lg text-subtitle">
@@ -59,7 +59,7 @@ export default function QRFullScreen({
         <button
           type="button"
           onClick={() => window.print()}
-          className="inline-flex items-center gap-2 rounded-xl bg-primary px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-[#35679e]"
+          className="inline-flex items-center gap-2 rounded-xl bg-primary px-5 py-2.5 text-sm font-semibold text-on-primary shadow-sm transition hover:bg-primary-hover"
         >
           <Printer className="size-4" aria-hidden />
           Print QR Code

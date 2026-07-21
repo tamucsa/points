@@ -193,7 +193,7 @@ export default function ColorPickerField({
           autoComplete="off"
           maxLength={7}
           aria-label={`${label || 'Color'} hex`}
-          className="w-[7.5rem] rounded-xl border border-home-border bg-white px-3 py-2.5 font-mono text-sm uppercase tracking-wide text-text shadow-sm focus:border-primary/40 focus:outline-none focus:ring-2 focus:ring-primary/20 disabled:opacity-60"
+          className="w-[7.5rem] rounded-xl border border-home-border bg-surface px-3 py-2.5 font-mono text-sm uppercase tracking-wide text-text shadow-sm focus:border-primary/40 focus:outline-none focus:ring-2 focus:ring-primary/20 disabled:opacity-60"
           onChange={e => {
             const raw = e.target.value
             setText(raw)
@@ -216,7 +216,7 @@ export default function ColorPickerField({
         <div
           role="dialog"
           aria-label="Color picker"
-          className="absolute left-0 top-[calc(100%+0.5rem)] z-50 w-[14.5rem] rounded-2xl border border-home-border bg-white p-3 shadow-[0_16px_40px_rgba(15,23,42,0.14)]"
+          className="absolute left-0 top-[calc(100%+0.5rem)] z-50 w-[14.5rem] rounded-2xl border border-home-border bg-surface p-3 shadow-theme-md"
         >
           <div
             ref={svRef}

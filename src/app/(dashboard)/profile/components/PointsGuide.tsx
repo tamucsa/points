@@ -76,13 +76,13 @@ export default function PointsGuide({ attendance }: Props) {
         toward your total — you&apos;ll still show as attended with a &ldquo;cap reached&rdquo; tag.
       </p>
 
-      <div className="mb-4 overflow-hidden rounded-4xl border border-home-border bg-white shadow-sm">
+      <div className="mb-4 overflow-hidden rounded-4xl border border-home-border bg-surface shadow-sm">
         <div className="border-b border-home-border bg-bg px-5 py-3 text-sm font-semibold text-text">
           Event categories
         </div>
         <div className="grid gap-px bg-home-border sm:grid-cols-2">
           {BUCKET_CATEGORIES.map(group => (
-            <div key={group.bucket} className="bg-white px-5 py-4">
+            <div key={group.bucket} className="bg-surface px-5 py-4">
               <div className="mb-3 text-xs font-semibold uppercase tracking-[0.06em] text-subtitle">
                 Counts toward {group.bucket}
               </div>
@@ -106,7 +106,7 @@ export default function PointsGuide({ attendance }: Props) {
       </div>
 
       <div className="grid gap-3 lg:grid-cols-2">
-        <div className="rounded-4xl border border-home-border bg-white p-5 shadow-sm">
+        <div className="rounded-4xl border border-home-border bg-surface p-5 shadow-sm">
           <div className="text-sm font-semibold text-text">Sports Spectator cap</div>
           <p className="mt-2 text-sm leading-6 text-subtitle">
             Per semester, at most{' '}
@@ -132,7 +132,7 @@ export default function PointsGuide({ attendance }: Props) {
           </div>
         </div>
 
-        <div className="rounded-4xl border border-home-border bg-white p-5 shadow-sm">
+        <div className="rounded-4xl border border-home-border bg-surface p-5 shadow-sm">
           <div className="text-sm font-semibold text-text">Jiating Event + Jiating Mixer cap</div>
           <p className="mt-2 text-sm leading-6 text-subtitle">
             Each week (Monday–Sunday, Central time), at most{' '}

@@ -68,13 +68,13 @@ export default function CheckinClient({ event, code, userEmail, member, alreadyC
   const pointLabel = `${event.point_value} point${event.point_value !== 1 ? 's' : ''}`
 
   return (
-    <div className="relative min-h-screen overflow-hidden bg-bg px-6 py-10 text-text">
-      <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(71,121,184,0.16),transparent_34%),radial-gradient(circle_at_bottom_right,rgba(240,176,195,0.22),transparent_38%)]" />
+    <div className="force-light relative min-h-screen overflow-hidden bg-bg px-6 py-10 text-text">
+      <div className="absolute inset-0 bg-public-gradient" />
 
       <div className="relative mx-auto flex min-h-[calc(100vh-5rem)] w-full max-w-lg items-center justify-center">
-        <div className="w-full overflow-hidden rounded-4xl border border-home-border bg-white shadow-[0_24px_80px_rgba(15,23,42,0.08)]">
-          <div className="bg-[linear-gradient(135deg,rgba(71,121,184,0.08),rgba(255,255,255,0.9)_52%,rgba(240,176,195,0.16))] p-8 sm:p-10">
-            <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-primary/15 bg-white/80 px-4 py-2 text-xs font-semibold uppercase tracking-[0.24em] text-primary backdrop-blur">
+        <div className="w-full overflow-hidden rounded-4xl border border-home-border bg-surface shadow-theme-lg">
+          <div className="bg-hero-gradient p-8 sm:p-10">
+            <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-primary/15 bg-surface/80 px-4 py-2 text-xs font-semibold uppercase tracking-[0.24em] text-primary backdrop-blur">
               Event Check-in
             </div>
 
@@ -102,7 +102,7 @@ export default function CheckinClient({ event, code, userEmail, member, alreadyC
                   </p>
                   <button
                     onClick={signIn}
-                    className="flex w-full items-center justify-center rounded-xl bg-primary px-4 py-3 text-[15px] font-semibold text-white shadow-[0_12px_28px_rgba(71,121,184,0.24)] transition hover:bg-[#35679e]"
+                    className="flex w-full items-center justify-center rounded-xl bg-primary px-4 py-3 text-[15px] font-semibold text-on-primary shadow-theme-primary transition hover:bg-primary-hover"
                   >
                     Sign in to Check In
                   </button>
@@ -116,7 +116,7 @@ export default function CheckinClient({ event, code, userEmail, member, alreadyC
                   </p>
                   <button
                     onClick={() => router.push('/register')}
-                    className="mt-4 w-full rounded-xl bg-primary px-4 py-2 text-sm font-semibold text-white"
+                    className="mt-4 w-full rounded-xl bg-primary px-4 py-2 text-sm font-semibold text-on-primary"
                   >
                     Complete Registration
                   </button>
@@ -124,13 +124,13 @@ export default function CheckinClient({ event, code, userEmail, member, alreadyC
               )}
 
               {userEmail && member && member.status === 'pending_member' && (
-                <div className="rounded-2xl border border-accent/35 bg-[linear-gradient(180deg,rgba(240,176,195,0.18),rgba(255,255,255,0.9))] p-4">
+                <div className="rounded-2xl border border-accent/35 bg-accent-card p-4">
                   <p className="text-sm leading-6 text-subtitle">
                     Your membership is awaiting approval. You&apos;ll be able to check in once an admin activates you.
                   </p>
                   <button
                     onClick={() => router.push('/pending')}
-                    className="mt-4 w-full rounded-xl border border-home-border bg-white px-4 py-2 text-sm font-medium text-subtitle"
+                    className="mt-4 w-full rounded-xl border border-home-border bg-surface px-4 py-2 text-sm font-medium text-subtitle"
                   >
                     View Status
                   </button>
@@ -152,14 +152,14 @@ export default function CheckinClient({ event, code, userEmail, member, alreadyC
                     Checking in as <span className="font-medium text-text">{member.full_name}</span>
                   </p>
                   {error && (
-                    <div className="rounded-2xl border border-[#f5b0b0] bg-[#fff4f4] p-3">
-                      <p className="text-sm text-[#c94b4b]">{error}</p>
+                    <div className="rounded-2xl border border-error-border bg-error-bg p-3">
+                      <p className="text-sm text-error">{error}</p>
                     </div>
                   )}
                   <button
                     onClick={checkIn}
                     disabled={submitting}
-                    className="flex w-full items-center justify-center rounded-xl bg-primary px-4 py-3 text-[15px] font-semibold text-white shadow-[0_12px_28px_rgba(71,121,184,0.24)] transition hover:bg-[#35679e] disabled:cursor-not-allowed disabled:bg-[#9cb8d8]"
+                    className="flex w-full items-center justify-center rounded-xl bg-primary px-4 py-3 text-[15px] font-semibold text-on-primary shadow-theme-primary transition hover:bg-primary-hover disabled:cursor-not-allowed disabled:bg-disabled"
                   >
                     {submitting ? 'Checking in…' : 'Check In'}
                   </button>
@@ -182,7 +182,7 @@ export default function CheckinClient({ event, code, userEmail, member, alreadyC
                   )}
                   <button
                     onClick={() => router.push('/events')}
-                    className="mt-4 w-full rounded-xl border border-home-border bg-white px-4 py-2 text-sm font-medium text-subtitle transition hover:border-primary/30 hover:text-primary"
+                    className="mt-4 w-full rounded-xl border border-home-border bg-surface px-4 py-2 text-sm font-medium text-subtitle transition hover:border-primary/30 hover:text-primary"
                   >
                     View Events
                   </button>

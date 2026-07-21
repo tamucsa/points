@@ -2,7 +2,18 @@ export const OFFICER_MEMBERS_PAGE_SIZE = 25
 export const EVENTS_PAGE_SIZE = 10
 
 export const inputClassName =
-  'w-full rounded-xl border border-home-border bg-white px-4 py-3 text-sm text-text outline-none transition placeholder:text-[#8b96aa] focus:border-primary focus:ring-2 focus:ring-primary/15'
+  'w-full rounded-xl border border-home-border bg-surface px-4 py-3 text-sm text-text outline-none transition placeholder:text-subtitle focus:border-primary focus:ring-2 focus:ring-primary/15'
+
+export const primaryButtonClassName =
+  'inline-flex items-center justify-center rounded-xl bg-primary px-4 py-3 text-[15px] font-semibold text-on-primary shadow-theme-primary transition hover:bg-primary-hover disabled:cursor-not-allowed disabled:bg-disabled'
+
+export const errorAlertClassName =
+  'rounded-2xl border border-error-border bg-error-bg p-3.5'
+
+export const errorTextClassName = 'text-sm leading-6 text-error'
+
+export const cardClassName =
+  'overflow-hidden rounded-4xl border border-home-border bg-surface shadow-theme-lg'
 
 export const labelClassName =
   'mb-2 block text-xs font-semibold uppercase tracking-[0.06em] text-subtitle'

@@ -128,13 +128,13 @@ export default function MembersClient({
         </select>
         <button
           type="submit"
-          className="rounded-xl bg-primary px-4 py-3 text-sm font-semibold text-white transition hover:bg-primary/90 sm:shrink-0"
+          className="rounded-xl bg-primary px-4 py-3 text-sm font-semibold text-on-primary transition hover:bg-primary/90 sm:shrink-0"
         >
           Search
         </button>
       </form>
 
-      <div className="overflow-x-auto rounded-4xl border border-home-border bg-white shadow-sm">
+      <div className="overflow-x-auto rounded-4xl border border-home-border bg-surface shadow-sm">
         <div className="grid min-w-[800px] grid-cols-[1fr_6.5rem_7rem_4rem_4rem_4rem_4rem_5.5rem] border-b border-home-border bg-bg px-5 py-3 text-[11px] font-semibold uppercase tracking-[0.05em] text-subtitle">
           <div>Member</div>
           <div>Sign-in</div>
@@ -201,7 +201,7 @@ export default function MembersClient({
             {page > 1 ? (
               <Link
                 href={buildMembersUrl(page - 1, query, filterJT, filterLinked)}
-                className="rounded-xl border border-home-border bg-white px-4 py-2 text-sm font-medium text-subtitle transition hover:border-primary/30 hover:text-primary"
+                className="rounded-xl border border-home-border bg-surface px-4 py-2 text-sm font-medium text-subtitle transition hover:border-primary/30 hover:text-primary"
               >
                 Previous
               </Link>
@@ -216,7 +216,7 @@ export default function MembersClient({
             {page < totalPages ? (
               <Link
                 href={buildMembersUrl(page + 1, query, filterJT, filterLinked)}
-                className="rounded-xl border border-home-border bg-white px-4 py-2 text-sm font-medium text-subtitle transition hover:border-primary/30 hover:text-primary"
+                className="rounded-xl border border-home-border bg-surface px-4 py-2 text-sm font-medium text-subtitle transition hover:border-primary/30 hover:text-primary"
               >
                 Next
               </Link>

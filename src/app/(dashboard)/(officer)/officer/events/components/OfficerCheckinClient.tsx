@@ -195,7 +195,7 @@ export default function OfficerCheckinClient({
                 className={`shrink-0 rounded-xl border px-3 py-2 text-sm font-semibold transition ${
                   active
                     ? 'border-primary bg-primary/10 text-primary'
-                    : 'border-home-border bg-white text-subtitle hover:border-primary/30 hover:text-text'
+                    : 'border-home-border bg-surface text-subtitle hover:border-primary/30 hover:text-text'
                 }`}
               >
                 <span className="inline-flex items-center gap-2">
@@ -219,7 +219,7 @@ export default function OfficerCheckinClient({
         placeholder="Search by name or email…"
         value={search}
         onChange={e => setSearch(e.target.value)}
-        className="mb-4 w-full rounded-xl border border-home-border bg-white px-4 py-3 text-sm text-text outline-none focus:border-primary focus:ring-2 focus:ring-primary/15"
+        className="mb-4 w-full rounded-xl border border-home-border bg-surface px-4 py-3 text-sm text-text outline-none focus:border-primary focus:ring-2 focus:ring-primary/15"
       />
 
       {showTabs && activeTabId && tabCheckedInCount != null && (
@@ -230,8 +230,8 @@ export default function OfficerCheckinClient({
       )}
 
       {error && (
-        <div className="mb-4 rounded-2xl border border-[#f5b0b0] bg-[#fff4f4] p-3">
-          <p className="text-sm text-[#c94b4b]">{error}</p>
+        <div className="mb-4 rounded-2xl border border-error-border bg-error-bg p-3">
+          <p className="text-sm text-error">{error}</p>
         </div>
       )}
 
@@ -241,7 +241,7 @@ export default function OfficerCheckinClient({
         </div>
       )}
 
-      <div className="overflow-hidden rounded-4xl border border-home-border bg-white shadow-sm">
+      <div className="overflow-hidden rounded-4xl border border-home-border bg-surface shadow-sm">
         {filtered.length === 0 && (
           <EmptyState
             icon={Users}
@@ -307,7 +307,7 @@ export default function OfficerCheckinClient({
                 className={
                   isCheckedIn
                     ? 'shrink-0 rounded-xl border border-primary/30 bg-primary/10 px-4 py-2 text-sm font-semibold text-primary transition hover:border-primary/50 hover:bg-primary/20 disabled:opacity-60'
-                    : 'shrink-0 rounded-xl bg-primary px-4 py-2 text-sm font-semibold text-white transition hover:bg-[#35679e] disabled:bg-[#9cb8d8]'
+                    : 'shrink-0 rounded-xl bg-primary px-4 py-2 text-sm font-semibold text-on-primary transition hover:bg-primary-hover disabled:bg-disabled'
                 }
               >
                 {isSaving ? 'Saving…' : isCheckedIn ? '✓ Checked In' : 'Check In'}
@@ -323,14 +323,14 @@ export default function OfficerCheckinClient({
           onClick={closeUncheckModal}
         >
           <div
-            className="w-full max-w-md rounded-4xl border border-home-border bg-white p-6 shadow-xl sm:p-8"
+            className="w-full max-w-md rounded-4xl border border-home-border bg-surface p-6 shadow-xl sm:p-8"
             onClick={e => e.stopPropagation()}
             role="dialog"
             aria-modal="true"
             aria-labelledby="remove-checkin-title"
           >
-            <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-2xl bg-[#fff4f4]">
-              <UserX className="size-5 text-[#c94b4b]" aria-hidden />
+            <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-2xl bg-error-bg">
+              <UserX className="size-5 text-error" aria-hidden />
             </div>
             <h2 id="remove-checkin-title" className="text-center text-lg font-bold text-text">
               Remove check-in?
@@ -343,7 +343,7 @@ export default function OfficerCheckinClient({
               {event.point_value} point{event.point_value === 1 ? '' : 's'} from their total.
             </p>
             {uncheckError && (
-              <p className="mt-4 rounded-2xl border border-[#f5b0b0] bg-[#fff4f4] px-4 py-3 text-center text-sm text-[#c94b4b]">
+              <p className="mt-4 rounded-2xl border border-error-border bg-error-bg px-4 py-3 text-center text-sm text-error">
                 {uncheckError}
               </p>
             )}
@@ -352,7 +352,7 @@ export default function OfficerCheckinClient({
                 type="button"
                 disabled={!!saving}
                 onClick={closeUncheckModal}
-                className="rounded-xl border border-home-border bg-white px-4 py-2.5 text-sm font-semibold text-subtitle transition hover:border-primary/30 hover:bg-bg hover:text-text disabled:opacity-60"
+                className="rounded-xl border border-home-border bg-surface px-4 py-2.5 text-sm font-semibold text-subtitle transition hover:border-primary/30 hover:bg-bg hover:text-text disabled:opacity-60"
               >
                 Cancel
               </button>
@@ -360,7 +360,7 @@ export default function OfficerCheckinClient({
                 type="button"
                 disabled={!!saving}
                 onClick={() => void confirmRemoveCheckIn()}
-                className="rounded-xl border border-[#f5b0b0] bg-[#fff4f4] px-4 py-2.5 text-sm font-semibold text-[#c94b4b] transition hover:border-[#e88a8a] hover:bg-[#ffe8e8] disabled:opacity-60"
+                className="rounded-xl border border-error-border bg-error-bg px-4 py-2.5 text-sm font-semibold text-error transition hover:border-error hover:bg-error-bg disabled:opacity-60"
               >
                 {saving ? 'Removing…' : 'Remove Check-In'}
               </button>

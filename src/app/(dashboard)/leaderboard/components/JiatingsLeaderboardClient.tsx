@@ -44,7 +44,7 @@ export default function JiatingsLeaderboardClient({
       <LeaderboardTabs />
 
       {loadError ? (
-        <div className="overflow-hidden rounded-4xl border border-home-border bg-white shadow-sm">
+        <div className="overflow-hidden rounded-4xl border border-home-border bg-surface shadow-sm">
           <EmptyState
             icon={AlertCircle}
             title="Couldn’t load Jiating leaderboard"
@@ -58,7 +58,7 @@ export default function JiatingsLeaderboardClient({
           {jiatings.map(jiating => (
             <div
               key={jiating.id}
-              className="overflow-hidden rounded-4xl border border-home-border bg-white shadow-[0_20px_60px_rgba(15,23,42,0.06)]"
+              className="overflow-hidden rounded-4xl border border-home-border bg-surface shadow-theme-md"
             >
               <div
                 className="border-b border-home-border px-5 py-4"

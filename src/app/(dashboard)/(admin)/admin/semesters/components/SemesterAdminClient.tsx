@@ -81,13 +81,13 @@ function SemesterMeta({ label, value }: { label: string; value: string }) {
 }
 
 const inputClass =
-  'rounded-xl border border-home-border bg-white px-3 py-2.5 text-text shadow-sm'
+  'rounded-xl border border-home-border bg-surface px-3 py-2.5 text-text shadow-sm'
 const btnPrimary =
-  'rounded-xl bg-primary px-4 py-2.5 text-sm font-semibold text-white transition disabled:cursor-not-allowed disabled:bg-[#9cb8d8]'
+  'rounded-xl bg-primary px-4 py-2.5 text-sm font-semibold text-on-primary transition disabled:cursor-not-allowed disabled:bg-disabled'
 const btnSecondary =
-  'rounded-xl border border-home-border bg-white px-3 py-2 text-sm font-medium text-text transition hover:border-primary/40 disabled:opacity-60'
+  'rounded-xl border border-home-border bg-surface px-3 py-2 text-sm font-medium text-text transition hover:border-primary/40 disabled:opacity-60'
 const btnDanger =
-  'rounded-xl bg-red-600 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-red-700 disabled:cursor-not-allowed disabled:opacity-60'
+  'rounded-xl bg-red-600 px-4 py-2.5 text-sm font-semibold text-on-primary transition hover:bg-red-700 disabled:cursor-not-allowed disabled:opacity-60'
 
 function PastSemesterCard({ semester }: { semester: SemesterListItem }) {
   const memberLabel =
@@ -96,7 +96,7 @@ function PastSemesterCard({ semester }: { semester: SemesterListItem }) {
       : null
 
   return (
-    <article className="rounded-3xl border border-home-border bg-white p-5">
+    <article className="rounded-3xl border border-home-border bg-surface p-5">
       <div className="mb-4 flex items-start justify-between gap-3">
         <h3 className="text-base font-semibold text-text">{semester.name}</h3>
         <span className="shrink-0 rounded-full bg-home-border/60 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wide text-subtitle">
@@ -420,7 +420,7 @@ function ActiveSemesterCard({
           {jtFamilies.map(jt => (
             <li
               key={jt.id ?? jt.name}
-              className="rounded-2xl border border-home-border bg-white px-3 py-2.5"
+              className="rounded-2xl border border-home-border bg-surface px-3 py-2.5"
             >
               {editingJtId === jt.id ? (
                 <div className="flex flex-col gap-2 sm:flex-row sm:items-end">
@@ -466,7 +466,7 @@ function ActiveSemesterCard({
                       </button>
                       <button
                         type="button"
-                        className="rounded-xl border border-red-200 bg-white px-3 py-2 text-sm font-medium text-red-700 transition hover:border-red-300 disabled:opacity-60"
+                        className="rounded-xl border border-red-200 bg-surface px-3 py-2 text-sm font-medium text-red-700 transition hover:border-red-300 disabled:opacity-60"
                         disabled={jtBusy}
                         onClick={() => void handleDeactivateJt(jt)}
                       >
@@ -484,7 +484,7 @@ function ActiveSemesterCard({
         </ul>
 
         {addingJt && (
-          <form onSubmit={handleAddJt} className="mt-3 flex flex-col gap-2 rounded-2xl border border-dashed border-home-border bg-white p-3 sm:flex-row sm:items-end">
+          <form onSubmit={handleAddJt} className="mt-3 flex flex-col gap-2 rounded-2xl border border-dashed border-home-border bg-surface p-3 sm:flex-row sm:items-end">
             <label className="flex flex-1 flex-col gap-1 text-sm">
               <span className="font-medium text-text">Name</span>
               <input
@@ -674,7 +674,7 @@ export default function SemesterAdminClient({
           <h2 className="mb-3 text-sm font-semibold uppercase tracking-[0.06em] text-subtitle">
             Start new semester
           </h2>
-          <div className="rounded-3xl border border-home-border bg-white p-6 shadow-sm">
+          <div className="rounded-3xl border border-home-border bg-surface p-6 shadow-sm">
             <form onSubmit={handleStart} className="grid gap-4 sm:grid-cols-2">
               <label className="flex flex-col gap-1.5 text-sm sm:col-span-2">
                 <span className="font-medium text-text">Semester name</span>
@@ -808,7 +808,7 @@ export default function SemesterAdminClient({
             type="button"
             onClick={() => setPastOpen(open => !open)}
             aria-expanded={pastOpen}
-            className="flex w-full items-center justify-between rounded-2xl border border-home-border bg-white px-4 py-3 text-left shadow-sm transition hover:border-primary/30"
+            className="flex w-full items-center justify-between rounded-2xl border border-home-border bg-surface px-4 py-3 text-left shadow-sm transition hover:border-primary/30"
           >
             <span className="text-sm font-semibold text-text">
               Past semesters

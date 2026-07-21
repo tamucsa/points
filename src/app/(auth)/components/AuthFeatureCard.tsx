@@ -14,7 +14,7 @@ export default function AuthFeatureCard({
   accent = false,
 }: AuthFeatureCardProps) {
   return (
-    <div className="flex h-full flex-col rounded-2xl border border-home-border bg-white/85 p-4 shadow-sm">
+    <div className="flex h-full flex-col rounded-2xl border border-home-border bg-surface/85 p-4 shadow-sm">
       <div
         className={`mb-3 flex h-8 w-8 shrink-0 items-center justify-center rounded-xl ${
           accent ? 'bg-accent/15' : 'bg-primary/10'

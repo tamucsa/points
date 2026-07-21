@@ -69,7 +69,7 @@ const checkInTypeBtn = (active: boolean) =>
   `inline-flex min-h-11 w-full items-center justify-center rounded-xl border px-3 py-2.5 text-sm font-medium leading-none transition ${
     active
       ? "border-primary bg-primary/10 text-primary"
-      : "border-home-border bg-white text-subtitle hover:border-primary/30"
+      : "border-home-border bg-surface text-subtitle hover:border-primary/30"
   }`;
 
 export default function NewEventClient({
@@ -213,7 +213,7 @@ export default function NewEventClient({
       <BackLink href="/officer/events" label="Back to Events" />
       <PageHeader title="New Event" subtitle={semesterName} />
 
-      <div className="mt-6 flex flex-col gap-5 rounded-4xl border border-home-border bg-white p-6 shadow-sm">
+      <div className="mt-6 flex flex-col gap-5 rounded-4xl border border-home-border bg-surface p-6 shadow-sm">
         <div>
           <label className={labelClassName}>Event Name *</label>
           <input
@@ -361,7 +361,7 @@ export default function NewEventClient({
                     className={`flex cursor-pointer items-center gap-3 rounded-xl border px-3 py-2.5 text-sm transition ${
                       checked
                         ? "border-primary/40 bg-primary/10 text-primary"
-                        : "border-home-border bg-white text-text hover:border-primary/30"
+                        : "border-home-border bg-surface text-text hover:border-primary/30"
                     }`}
                   >
                     <input
@@ -494,7 +494,7 @@ export default function NewEventClient({
               className={`relative h-6 w-11 rounded-full transition ${form.has_spectators ? "bg-primary" : "bg-home-border"}`}
             >
               <span
-                className={`absolute top-0.5 h-5 w-5 rounded-full bg-white transition ${form.has_spectators ? "left-[1.35rem]" : "left-0.5"}`}
+                className={`absolute top-0.5 h-5 w-5 rounded-full bg-surface transition ${form.has_spectators ? "left-[1.35rem]" : "left-0.5"}`}
               />
             </button>
           </div>
@@ -516,8 +516,8 @@ export default function NewEventClient({
         </div>
 
         {error && (
-          <div className="rounded-2xl border border-[#f5b0b0] bg-[#fff4f4] p-3">
-            <p className="text-sm text-[#c94b4b]">{error}</p>
+          <div className="rounded-2xl border border-error-border bg-error-bg p-3">
+            <p className="text-sm text-error">{error}</p>
           </div>
         )}
 
@@ -565,7 +565,7 @@ export default function NewEventClient({
             type="button"
             onClick={() => void handleSubmit("draft")}
             disabled={submitting}
-            className="rounded-xl border border-home-border bg-white px-4 py-3 text-[15px] font-semibold text-subtitle transition hover:border-primary/30 hover:text-text disabled:opacity-60"
+            className="rounded-xl border border-home-border bg-surface px-4 py-3 text-[15px] font-semibold text-subtitle transition hover:border-primary/30 hover:text-text disabled:opacity-60"
           >
             {submitting ? "Saving…" : "Draft Event"}
           </button>
@@ -581,7 +581,7 @@ export default function NewEventClient({
             type="button"
             onClick={() => void handleSubmit("publish")}
             disabled={submitting}
-            className="rounded-xl bg-primary px-4 py-3 text-[15px] font-semibold text-white disabled:bg-[#9cb8d8]"
+            className="rounded-xl bg-primary px-4 py-3 text-[15px] font-semibold text-on-primary disabled:bg-disabled"
           >
             {submitting ? "Publishing…" : "Publish Event"}
           </button>

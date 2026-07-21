@@ -40,7 +40,7 @@ export default function JiatingFamilyFilter({
           id="jiating-family-filter"
           value={value ?? ''}
           onChange={e => onChange(e.target.value || null)}
-          className="w-full cursor-pointer appearance-none rounded-xl border border-home-border bg-white py-2.5 pl-4 pr-10 text-sm font-semibold text-text outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/15"
+          className="w-full cursor-pointer appearance-none rounded-xl border border-home-border bg-surface py-2.5 pl-4 pr-10 text-sm font-semibold text-text outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/15"
           aria-label="Filter by which Jiating events count toward"
         >
           <option value="">

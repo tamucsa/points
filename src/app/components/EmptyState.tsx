@@ -30,7 +30,7 @@ export default function EmptyState({
 
   return (
     <div
-      className={`rounded-4xl border border-home-border bg-white px-10 py-12 text-center shadow-sm ${className}`}
+      className={`rounded-4xl border border-home-border bg-surface px-10 py-12 text-center shadow-sm ${className}`}
     >
       <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-primary/10">
         <Icon className="size-6 text-primary/70" aria-hidden />

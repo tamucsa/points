@@ -29,9 +29,9 @@ export default async function PendingPage() {
   return (
     <PublicPageShell showFooter={false}>
       <div className="flex min-h-[calc(100vh-5rem)] items-center justify-center">
-        <div className="w-full max-w-xl overflow-hidden rounded-4xl border border-home-border bg-white shadow-[0_24px_80px_rgba(15,23,42,0.08)]">
-          <div className="bg-[linear-gradient(135deg,rgba(71,121,184,0.08),rgba(255,255,255,0.9)_52%,rgba(240,176,195,0.16))] p-8 sm:p-10 lg:p-12">
-            <div className="mb-6 inline-flex items-center gap-2 rounded-full border border-primary/15 bg-white/80 px-4 py-2 text-xs font-semibold uppercase tracking-[0.24em] text-primary backdrop-blur">
+        <div className="w-full max-w-xl overflow-hidden rounded-4xl border border-home-border bg-surface shadow-theme-lg">
+          <div className="bg-hero-gradient p-8 sm:p-10 lg:p-12">
+            <div className="mb-6 inline-flex items-center gap-2 rounded-full border border-primary/15 bg-surface/80 px-4 py-2 text-xs font-semibold uppercase tracking-[0.24em] text-primary backdrop-blur">
               Texas A&amp;M Chinese Student Association
             </div>
 
@@ -54,13 +54,13 @@ export default async function PendingPage() {
             </div>
 
             <div className="mt-8 grid gap-4 sm:grid-cols-2">
-              <div className="rounded-2xl border border-home-border bg-white/85 p-4 shadow-sm">
+              <div className="rounded-2xl border border-home-border bg-surface/85 p-4 shadow-sm">
                 <div className="text-sm font-semibold text-primary">Next Step</div>
                 <div className="mt-1 text-sm leading-6 text-subtitle">
                   Wait for an admin to approve your account.
                 </div>
               </div>
-              <div className="rounded-2xl border border-home-border bg-white/85 p-4 shadow-sm">
+              <div className="rounded-2xl border border-home-border bg-surface/85 p-4 shadow-sm">
                 <div className="text-sm font-semibold text-accent">Access</div>
                 <div className="mt-1 text-sm leading-6 text-subtitle">
                   Leaderboard and events unlock once you&apos;re an active member.

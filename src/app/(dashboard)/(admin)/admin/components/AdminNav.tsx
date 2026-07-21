@@ -12,7 +12,7 @@ export default function AdminNav() {
   const pathname = usePathname()
 
   return (
-    <nav className="mb-6 inline-flex rounded-2xl border border-home-border bg-white p-1 shadow-sm">
+    <nav className="mb-6 inline-flex rounded-2xl border border-home-border bg-surface p-1 shadow-sm">
       {LINKS.map(link => {
         const active = pathname.startsWith(link.href)
         return (
@@ -21,7 +21,7 @@ export default function AdminNav() {
             href={link.href}
             className={`rounded-xl px-4 py-2 text-sm font-medium transition ${
               active
-                ? 'bg-primary text-white shadow-sm'
+                ? 'bg-primary text-on-primary shadow-sm'
                 : 'text-subtitle hover:bg-bg hover:text-text'
             }`}
           >

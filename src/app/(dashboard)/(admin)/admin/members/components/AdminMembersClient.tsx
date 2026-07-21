@@ -256,7 +256,7 @@ export default function AdminMembersClient({
       </div>
 
       {/* Tabs */}
-      <div className="mb-6 inline-flex flex-wrap rounded-2xl border border-home-border bg-white p-1 shadow-sm">
+      <div className="mb-6 inline-flex flex-wrap rounded-2xl border border-home-border bg-surface p-1 shadow-sm">
         {([
           { id: 'pending' as const, label: `Pending JT (${pendingJt.length})` },
           { id: 'signups' as const, label: `Pending signup (${pendingSignups.length})` },
@@ -267,7 +267,7 @@ export default function AdminMembersClient({
             key={t.id}
             type="button"
             onClick={() => router.push(tabHref(t.id))}
-            className={`rounded-xl px-4 py-2 text-sm font-medium transition ${tab === t.id ? 'bg-primary text-white shadow-sm' : 'text-subtitle hover:bg-bg hover:text-text'}`}
+            className={`rounded-xl px-4 py-2 text-sm font-medium transition ${tab === t.id ? 'bg-primary text-on-primary shadow-sm' : 'text-subtitle hover:bg-bg hover:text-text'}`}
           >
             {t.label}
           </button>
@@ -276,7 +276,7 @@ export default function AdminMembersClient({
 
       {/* Pending JT — active members without a Jiating */}
       {tab === 'pending' && (
-        <div className="overflow-hidden rounded-4xl border border-home-border bg-white shadow-sm">
+        <div className="overflow-hidden rounded-4xl border border-home-border bg-surface shadow-sm">
           <div className="border-b border-home-border bg-bg px-5 py-3 text-xs leading-5 text-subtitle">
             Active members who can use the site but still need a Jiating (e.g. imported after dues, before sorting).
           </div>
@@ -301,7 +301,7 @@ export default function AdminMembersClient({
                 <select
                   value={assignments[m.id] ?? ''}
                   onChange={e => setAssignments(a => ({ ...a, [m.id]: e.target.value }))}
-                  className="cursor-pointer appearance-none rounded-xl border border-home-border bg-white py-2 pl-3 pr-10 text-sm text-text shadow-sm"
+                  className="cursor-pointer appearance-none rounded-xl border border-home-border bg-surface py-2 pl-3 pr-10 text-sm text-text shadow-sm"
                 >
                   <option value="">Assign JT…</option>
                   {jtFamilies.map(jt => (
@@ -316,7 +316,7 @@ export default function AdminMembersClient({
               <button
                 onClick={() => void assignJT(m.id)}
                 disabled={!assignments[m.id] || saving === m.id}
-                className="rounded-xl bg-primary px-4 py-2 text-sm font-semibold text-white transition disabled:cursor-not-allowed disabled:bg-[#9cb8d8]"
+                className="rounded-xl bg-primary px-4 py-2 text-sm font-semibold text-on-primary transition disabled:cursor-not-allowed disabled:bg-disabled"
               >
                 {saving === m.id ? 'Saving…' : 'Assign'}
               </button>
@@ -327,7 +327,7 @@ export default function AdminMembersClient({
 
       {/* Pending signup — self-registered, gated from the site */}
       {tab === 'signups' && (
-        <div className="overflow-hidden rounded-4xl border border-home-border bg-white shadow-sm">
+        <div className="overflow-hidden rounded-4xl border border-home-border bg-surface shadow-sm">
           <div className="border-b border-home-border bg-bg px-5 py-3 text-xs leading-5 text-subtitle">
             Self-registered accounts waiting for membership approval. Approving makes them active; JT is optional.
           </div>
@@ -352,7 +352,7 @@ export default function AdminMembersClient({
                 <select
                   value={assignments[m.id] ?? ''}
                   onChange={e => setAssignments(a => ({ ...a, [m.id]: e.target.value }))}
-                  className="cursor-pointer appearance-none rounded-xl border border-home-border bg-white py-2 pl-3 pr-10 text-sm text-text shadow-sm"
+                  className="cursor-pointer appearance-none rounded-xl border border-home-border bg-surface py-2 pl-3 pr-10 text-sm text-text shadow-sm"
                 >
                   <option value="">JT optional…</option>
                   {jtFamilies.map(jt => (
@@ -367,7 +367,7 @@ export default function AdminMembersClient({
               <button
                 onClick={() => void approveSignup(m.id)}
                 disabled={saving === m.id}
-                className="rounded-xl bg-primary px-4 py-2 text-sm font-semibold text-white transition disabled:cursor-not-allowed disabled:bg-[#9cb8d8]"
+                className="rounded-xl bg-primary px-4 py-2 text-sm font-semibold text-on-primary transition disabled:cursor-not-allowed disabled:bg-disabled"
               >
                 {saving === m.id ? 'Saving…' : 'Approve'}
               </button>
@@ -390,7 +390,7 @@ export default function AdminMembersClient({
 
       {/* Import tab */}
       {tab === 'import' && (
-        <div className="rounded-4xl border border-home-border bg-white p-7 shadow-sm">
+        <div className="rounded-4xl border border-home-border bg-surface p-7 shadow-sm">
           <div className="mb-2 text-base font-semibold text-text">
             Import from CSV
           </div>
@@ -406,7 +406,7 @@ export default function AdminMembersClient({
                 onClick={() => setImportMode(option.id)}
                 className={`rounded-xl px-3 py-1.5 text-xs font-medium transition ${
                   importMode === option.id
-                    ? 'bg-white text-text shadow-sm'
+                    ? 'bg-surface text-text shadow-sm'
                     : 'text-subtitle hover:text-text'
                 }`}
               >
@@ -461,7 +461,7 @@ export default function AdminMembersClient({
           <button
             type="button"
             onClick={() => downloadMemberImportTemplate(jtFamilies)}
-            className="mb-5 inline-flex items-center gap-2 rounded-xl border border-home-border bg-bg px-4 py-2.5 text-sm font-medium text-primary transition hover:border-primary/30 hover:bg-white"
+            className="mb-5 inline-flex items-center gap-2 rounded-xl border border-home-border bg-bg px-4 py-2.5 text-sm font-medium text-primary transition hover:border-primary/30 hover:bg-surface"
           >
             <span aria-hidden>↓</span>
             Download example CSV
@@ -498,7 +498,7 @@ export default function AdminMembersClient({
                 ? 'cursor-not-allowed border-home-border bg-bg opacity-70'
                 : dragActive
                   ? 'border-primary bg-primary/5'
-                  : 'border-home-border bg-bg hover:border-primary/40 hover:bg-white'
+                  : 'border-home-border bg-bg hover:border-primary/40 hover:bg-surface'
             }`}
           >
             <div className="mb-3 flex h-12 w-12 items-center justify-center rounded-2xl bg-primary/10">

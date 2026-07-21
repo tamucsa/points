@@ -68,7 +68,7 @@ export default function MemberDetailClient({ member, attendance, history }: Prop
     <div className="mx-auto max-w-3xl px-6 py-8 lg:px-8">
       <BackLink href="/officer/members" label="Back to Members" className="mb-5" />
 
-      <div className="mb-6 flex flex-col gap-4 rounded-4xl border border-home-border bg-white p-6 shadow-sm sm:flex-row sm:items-center">
+      <div className="mb-6 flex flex-col gap-4 rounded-4xl border border-home-border bg-surface p-6 shadow-sm sm:flex-row sm:items-center">
         <MemberAvatar
           name={displayName}
           profileImageUrl={member.profile_image_url}
@@ -102,7 +102,7 @@ export default function MemberDetailClient({ member, attendance, history }: Prop
 
       <div className="mb-6 grid grid-cols-2 gap-3 sm:grid-cols-4">
         {breakdown.map(cat => (
-          <div key={cat.label} className="rounded-3xl border border-home-border bg-white p-4 text-center shadow-sm">
+          <div key={cat.label} className="rounded-3xl border border-home-border bg-surface p-4 text-center shadow-sm">
             <div className="text-2xl font-extrabold text-primary">{cat.value}</div>
             <div className="mt-1 text-xs text-subtitle">{cat.label}</div>
           </div>
@@ -110,7 +110,7 @@ export default function MemberDetailClient({ member, attendance, history }: Prop
       </div>
 
       <h2 className="mb-3 text-lg font-bold text-text">This Semester</h2>
-      <div className="mb-6 overflow-hidden rounded-4xl border border-home-border bg-white shadow-sm">
+      <div className="mb-6 overflow-hidden rounded-4xl border border-home-border bg-surface shadow-sm">
         {attendance.length === 0 && (
           <EmptyState
             icon={Calendar}
@@ -150,7 +150,7 @@ export default function MemberDetailClient({ member, attendance, history }: Prop
       {history.length > 0 && (
         <>
           <h2 className="mb-3 text-lg font-bold text-text">Past Semesters</h2>
-          <div className="overflow-hidden rounded-4xl border border-home-border bg-white shadow-sm">
+          <div className="overflow-hidden rounded-4xl border border-home-border bg-surface shadow-sm">
             {history.map(sem => (
               <div key={sem.id} className="flex items-center justify-between border-b border-home-border px-5 py-4 last:border-b-0">
                 <div>

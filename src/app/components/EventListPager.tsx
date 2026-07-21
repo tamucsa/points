@@ -51,7 +51,7 @@ export default function EventListPager({
           type="button"
           disabled={safePage <= 1}
           onClick={() => onPageChange(safePage - 1)}
-          className="rounded-xl border border-home-border bg-white px-3 py-2 text-sm font-medium text-subtitle transition hover:border-primary/30 hover:text-text disabled:opacity-40"
+          className="rounded-xl border border-home-border bg-surface px-3 py-2 text-sm font-medium text-subtitle transition hover:border-primary/30 hover:text-text disabled:opacity-40"
         >
           Previous
         </button>
@@ -59,7 +59,7 @@ export default function EventListPager({
           type="button"
           disabled={safePage >= totalPages}
           onClick={() => onPageChange(safePage + 1)}
-          className="rounded-xl border border-home-border bg-white px-3 py-2 text-sm font-medium text-subtitle transition hover:border-primary/30 hover:text-text disabled:opacity-40"
+          className="rounded-xl border border-home-border bg-surface px-3 py-2 text-sm font-medium text-subtitle transition hover:border-primary/30 hover:text-text disabled:opacity-40"
         >
           Next
         </button>
