@@ -22,6 +22,7 @@ import {
   syncSuccessFields,
   updateCalendarEvent,
 } from "@/utils/google-calendar";
+import { setSentryUser, withServerAction } from "@/utils/sentry";
 import { createActionSupabase } from "@/utils/supabase/action";
 
 export type EventPublishMode = "draft" | "publish" | "schedule";
@@ -132,6 +133,10 @@ async function syncCalendarAfterPublish(
 
 /** Mark draft/scheduled event (and spectator child) published; sync Calendar if eligible. */
 export async function publishEvent(eventId: string) {
+  return withServerAction("publishEvent", () => publishEventImpl(eventId));
+}
+
+async function publishEventImpl(eventId: string) {
   if (!eventId) return { success: false, error: "Event not found." };
 
   const { supabase, error: authError } = await requireOfficer();
@@ -186,6 +191,15 @@ export async function publishEvent(eventId: string) {
 
 /** Update the auto-publish date/time for an event that is still scheduled. */
 export async function updateScheduledPublish(
+  eventId: string,
+  input: { scheduleDate: string; scheduleTime: string },
+) {
+  return withServerAction("updateScheduledPublish", () =>
+    updateScheduledPublishImpl(eventId, input),
+  );
+}
+
+async function updateScheduledPublishImpl(
   eventId: string,
   input: { scheduleDate: string; scheduleTime: string },
 ) {
@@ -268,6 +282,12 @@ export async function updateScheduledPublish(
 
 /** Used by cron: publish all scheduled events whose publish_at has passed. */
 export async function publishDueScheduledEvents() {
+  return withServerAction("publishDueScheduledEvents", () =>
+    publishDueScheduledEventsImpl(),
+  );
+}
+
+async function publishDueScheduledEventsImpl() {
   const { createAdminSupabase } = await import("@/utils/supabase/admin");
   const admin = createAdminSupabase();
   const now = new Date().toISOString();
@@ -338,6 +358,7 @@ async function requireOfficer() {
     };
   }
 
+  setSentryUser(member);
   return { supabase, error: null, member };
 }
 
@@ -350,7 +371,7 @@ async function requireAdmin() {
 
   const { data: member } = await supabase
     .from("members")
-    .select("role")
+    .select("id, role")
     .eq("auth_uid", user.id)
     .maybeSingle();
 
@@ -358,10 +379,15 @@ async function requireAdmin() {
     return { supabase, error: "Admin access required." as const };
   }
 
+  setSentryUser(member);
   return { supabase, error: null };
 }
 
 export async function deleteEvent(eventId: string) {
+  return withServerAction("deleteEvent", () => deleteEventImpl(eventId));
+}
+
+async function deleteEventImpl(eventId: string) {
   if (!eventId) return { success: false, error: "Event not found." };
 
   const { supabase, error: authError } = await requireAdmin();
@@ -403,6 +429,10 @@ export async function deleteEvent(eventId: string) {
 }
 
 export async function createEvent(input: CreateEventInput) {
+  return withServerAction("createEvent", () => createEventImpl(input));
+}
+
+async function createEventImpl(input: CreateEventInput) {
   if (!input.name.trim())
     return { success: false, error: "Event name is required." };
   if (!input.eventDate)
@@ -427,9 +457,7 @@ export async function createEvent(input: CreateEventInput) {
   const startTime = dateOnly
     ? MANUAL_POINTS_DEFAULT_START_TIME
     : input.startTime;
-  const endTime = dateOnly
-    ? MANUAL_POINTS_DEFAULT_END_TIME
-    : input.endTime;
+  const endTime = dateOnly ? MANUAL_POINTS_DEFAULT_END_TIME : input.endTime;
   const location = dateOnly ? "" : input.location.trim();
   const locationMapsUrl = dateOnly
     ? null
@@ -459,11 +487,7 @@ export async function createEvent(input: CreateEventInput) {
   if (authError) return { success: false, error: authError };
 
   const { value: startsAt, error: startError } =
-    await resolveCentralEventTimestamp(
-      supabase,
-      input.eventDate,
-      startTime,
-    );
+    await resolveCentralEventTimestamp(supabase, input.eventDate, startTime);
   if (!startsAt)
     return { success: false, error: startError ?? "Invalid start time." };
 
@@ -633,6 +657,16 @@ export async function updateEventRsvp(
   rsvpUrl: string | null,
   rsvpDeadline: string | null,
 ) {
+  return withServerAction("updateEventRsvp", () =>
+    updateEventRsvpImpl(eventId, rsvpUrl, rsvpDeadline),
+  );
+}
+
+async function updateEventRsvpImpl(
+  eventId: string,
+  rsvpUrl: string | null,
+  rsvpDeadline: string | null,
+) {
   const { supabase, error: authError } = await requireOfficer();
   if (authError) return { success: false, error: authError };
 
@@ -701,6 +735,23 @@ export async function updateEventSchedule(
     description?: string | null;
   },
 ) {
+  return withServerAction("updateEventSchedule", () =>
+    updateEventScheduleImpl(eventId, input),
+  );
+}
+
+async function updateEventScheduleImpl(
+  eventId: string,
+  input: {
+    name?: string;
+    eventDate: string;
+    startTime: string;
+    endTime: string | null;
+    location: string;
+    locationMapsUrl?: string | null;
+    description?: string | null;
+  },
+) {
   if (!eventId) return { success: false, error: "Event not found." };
   if (input.name !== undefined && !input.name.trim())
     return { success: false, error: "Event name is required." };
@@ -724,9 +775,7 @@ export async function updateEventSchedule(
   const startTime = dateOnly
     ? MANUAL_POINTS_DEFAULT_START_TIME
     : input.startTime;
-  const endTime = dateOnly
-    ? MANUAL_POINTS_DEFAULT_END_TIME
-    : input.endTime;
+  const endTime = dateOnly ? MANUAL_POINTS_DEFAULT_END_TIME : input.endTime;
   const location = dateOnly ? "" : input.location.trim();
   const locationMapsUrl = dateOnly
     ? null
@@ -738,11 +787,7 @@ export async function updateEventSchedule(
     return { success: false, error: "Location is required." };
 
   const { value: startsAt, error: startError } =
-    await resolveCentralEventTimestamp(
-      supabase,
-      input.eventDate,
-      startTime,
-    );
+    await resolveCentralEventTimestamp(supabase, input.eventDate, startTime);
   if (!startsAt)
     return { success: false, error: startError ?? "Invalid start time." };
 
@@ -765,8 +810,7 @@ export async function updateEventSchedule(
     input.description !== undefined
       ? input.description?.trim() || null
       : event.description;
-  const name =
-    input.name !== undefined ? input.name.trim() : event.name;
+  const name = input.name !== undefined ? input.name.trim() : event.name;
   const patch = {
     starts_at: startsAt,
     ends_at: endsAt,
@@ -816,6 +860,15 @@ export async function updateEventSchedule(
 }
 
 export async function updateEventMixerFamilies(
+  eventId: string,
+  jtFamilyIds: string[],
+) {
+  return withServerAction("updateEventMixerFamilies", () =>
+    updateEventMixerFamiliesImpl(eventId, jtFamilyIds),
+  );
+}
+
+async function updateEventMixerFamiliesImpl(
   eventId: string,
   jtFamilyIds: string[],
 ) {
