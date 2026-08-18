@@ -1,0 +1,25 @@
+name: CI
+
+on:
+  push:
+    branches: [develop, main]
+  pull_request:
+    branches: [develop, main]
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      # Full `npm run lint` is not gated: biome check still reports
+      # pre-existing format/import findings across the tree.
+      - name: Lint test harness
+        run: npx biome check src/utils/csv.test.ts vitest.config.mts
+      - run: npx tsc --noEmit
+      - run: npm test

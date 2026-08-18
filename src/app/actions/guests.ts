@@ -927,7 +927,7 @@ async function exportHowdyWeekGuestsImpl(
 
   const rows = listed.rows;
 
-  const escape = (value: string) => {
+  const escapeCsvField = (value: string) => {
     if (/[",\n\r]/.test(value)) return `"${value.replace(/"/g, '""')}"`;
     return value;
   };
@@ -944,14 +944,14 @@ async function exportHowdyWeekGuestsImpl(
     header.join(","),
     ...rows.map((row) =>
       [
-        escape(row.full_name ?? ""),
-        escape(row.email),
+        escapeCsvField(row.full_name ?? ""),
+        escapeCsvField(row.email),
         row.graduation_year != null ? String(row.graduation_year) : "",
         String(row.event_count),
         row.last_attended_at
           ? new Date(row.last_attended_at).toISOString().slice(0, 10)
           : "",
-        escape(row.events.map((e) => e.name).join("; ")),
+        escapeCsvField(row.events.map((e) => e.name).join("; ")),
       ].join(","),
     ),
   ];
