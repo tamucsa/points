@@ -4,7 +4,7 @@ import { linkEventGuestsByEmail } from "@/app/actions/guests";
 import {
   isMemberRole,
   type MemberRole,
-  validateClassYear,
+  validateClassification,
   validateRegistrationNames,
 } from "@/utils/members";
 import { setSentryUser, withServerAction } from "@/utils/sentry";
@@ -303,7 +303,7 @@ async function importMembersImpl(
       continue;
     }
 
-    const classResult = validateClassYear(row.classYear);
+    const classResult = validateClassification(row.classYear);
     if (!classResult.ok) {
       summary.errors.push(`${email} — ${classResult.error}`);
       continue;
@@ -324,8 +324,8 @@ async function importMembersImpl(
       if (jtChanged && jtFamilyId) patch.jt_family_id = jtFamilyId;
       if (existing.full_name !== fullName) patch.full_name = fullName;
       if (existing.phone !== phone) patch.phone = phone;
-      if (existing.graduation_year !== classResult.year)
-        patch.graduation_year = classResult.year;
+      if (existing.graduation_year !== classResult.value)
+        patch.graduation_year = classResult.value;
       if (existing.status !== "active") patch.status = "active";
 
       if (Object.keys(patch).length === 0) {
@@ -382,7 +382,7 @@ async function importMembersImpl(
         email,
         full_name: fullName,
         phone,
-        graduation_year: classResult.year,
+        graduation_year: classResult.value,
         jt_family_id: jtFamilyId,
         status: "active",
         role: "member",
@@ -406,7 +406,7 @@ async function importMembersImpl(
 export async function registerMember(input: {
   firstName: string;
   lastName: string;
-  classYear: number;
+  classYear: string;
   phone: string;
 }) {
   return withServerAction("registerMember", () => registerMemberImpl(input));
@@ -415,7 +415,7 @@ export async function registerMember(input: {
 async function registerMemberImpl(input: {
   firstName: string;
   lastName: string;
-  classYear: number;
+  classYear: string;
   phone: string;
 }) {
   const supabase = await createActionSupabase();
@@ -427,13 +427,16 @@ async function registerMemberImpl(input: {
   const names = validateRegistrationNames(input.firstName, input.lastName);
   if (!names.ok) return { success: false, error: names.error };
 
+  const classResult = validateClassification(input.classYear);
+  if (!classResult.ok) return { success: false, error: classResult.error };
+
   const { data: created, error } = await supabase
     .from("members")
     .insert({
       auth_uid: user.id,
       email: user.email,
       full_name: names.fullName,
-      graduation_year: input.classYear,
+      graduation_year: classResult.value,
       phone: input.phone.trim() || null,
       profile_image_url: user.user_metadata.avatar_url,
       status: "pending_member",

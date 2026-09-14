@@ -1,8 +1,9 @@
 'use client'
 
-import { POINT_BUCKET_LABELS } from '@/utils/constants'
+import { POINT_BUCKET_LABELS, CHECKIN_METHOD_LABELS } from '@/utils/constants'
 import { formatEventSchedule } from '@/utils/datetime'
 import { isManualPointsCheckIn } from '@/utils/events'
+import { formatClassification } from '@/utils/members'
 import JtFamilyBadge from '@/app/(dashboard)/leaderboard/components/JtFamilyBadge'
 import MemberAvatar from '@/app/components/MemberAvatar'
 import EmptyState from '@/app/components/EmptyState'
@@ -14,7 +15,7 @@ interface Member {
   id: string
   full_name: string
   profile_image_url: string | null
-  graduation_year: number | null
+  graduation_year: string | number | null
 }
 
 interface Points {
@@ -69,12 +70,6 @@ const CATEGORY_COLORS: Record<string, string> = {
   default:             '#888',
 }
 
-const CHECKIN_LABELS: Record<string, string> = {
-  officer: 'Officer',
-  qr_scan: 'QR Scan',
-  self:    'Self',
-}
-
 export default function ProfileClient({
   member,
   points,
@@ -119,9 +114,9 @@ export default function ProfileClient({
               <JtFamilyBadge name={points.jt_family} color={points.jt_color} />
             </div>
           )}
-          {member.graduation_year && (
+          {formatClassification(member.graduation_year) && (
             <div className="mt-2 text-sm text-subtitle">
-              Class of {member.graduation_year}
+              {formatClassification(member.graduation_year)}
             </div>
           )}
         </div>
@@ -232,7 +227,7 @@ export default function ProfileClient({
 
                 {/* Check-in method */}
                 <div className="text-xs text-subtitle">
-                  {CHECKIN_LABELS[row.check_in_method] ?? row.check_in_method}
+                  {CHECKIN_METHOD_LABELS[row.check_in_method] ?? row.check_in_method}
                 </div>
               </div>
             )

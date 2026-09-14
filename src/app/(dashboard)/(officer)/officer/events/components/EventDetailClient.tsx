@@ -37,6 +37,7 @@ import {
   isImportCheckIn,
   isMixerCategory,
 } from "@/utils/events";
+import { memberRoleLabel } from "@/utils/members";
 
 interface Event {
   id: string;
@@ -68,6 +69,7 @@ interface AttendanceRow {
     id: string;
     full_name: string;
     profile_image_url: string | null;
+    role: string;
   } | null;
 }
 
@@ -958,6 +960,7 @@ export default function EventDetailClient({
         {!attendanceLoadError &&
           attendance.map((row) => {
             const displayName = row.members?.full_name ?? "Unknown member";
+            const roleLabel = memberRoleLabel(row.members?.role ?? "member");
             return (
               <div
                 key={row.id}
@@ -986,8 +989,13 @@ export default function EventDetailClient({
                     </span>
                   )}
                   <span className="rounded-md bg-bg px-2 py-0.5 text-[11px] text-subtitle">
-                    <CheckInMethodBadge checkInMethod={row.check_in_method} />
+                    {roleLabel}
                   </span>
+                  {row.check_in_method !== "officer" && (
+                    <span className="rounded-md bg-bg px-2 py-0.5 text-[11px] text-subtitle">
+                      <CheckInMethodBadge checkInMethod={row.check_in_method} />
+                    </span>
+                  )}
                   {!row.verified && (
                     <span className="rounded-md bg-orange-50 px-2 py-0.5 text-[11px] text-orange-600">
                       Unverified

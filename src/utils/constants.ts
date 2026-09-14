@@ -39,7 +39,7 @@ export const CHECKIN_TYPE_LABELS: Record<string, string> = {
 }
 
 export const CHECKIN_METHOD_LABELS: Record<string, string> = {
-  officer: 'Officer',
+  officer: 'Officer Check-in',
   qr_scan: 'QR Scan',
   self: 'Self',
   csv_import: 'CSV Import',
