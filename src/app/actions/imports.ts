@@ -1,65 +1,64 @@
-'use server'
+"use server";
 
-import { fetchAllPages } from '@/utils/supabase/fetchAll'
-import { createActionSupabase } from '@/utils/supabase/action'
 import {
   isCsaWideMixersCategory,
   isImportCheckIn,
   isManualPointsCheckIn,
-} from '@/utils/events'
-import {
-  lookupMembersByEmail,
-  normalizeEmail,
-} from '@/utils/member-lookup'
+} from "@/utils/events";
+import { lookupMembersByEmail, normalizeEmail } from "@/utils/member-lookup";
+import { setSentryUser, withServerAction } from "@/utils/sentry";
+import { createActionSupabase } from "@/utils/supabase/action";
+import { fetchAllPages } from "@/utils/supabase/fetchAll";
 
-type ActionSupabase = Awaited<ReturnType<typeof createActionSupabase>>
+type ActionSupabase = Awaited<ReturnType<typeof createActionSupabase>>;
 
 async function requireOfficer() {
-  const supabase = await createActionSupabase()
+  const supabase = await createActionSupabase();
   const {
     data: { user },
-  } = await supabase.auth.getUser()
-  if (!user) return { supabase, error: 'Not authenticated.' as const }
+  } = await supabase.auth.getUser();
+  if (!user) return { supabase, error: "Not authenticated." as const };
 
   const { data: member } = await supabase
-    .from('members')
-    .select('id, role')
-    .eq('auth_uid', user.id)
-    .maybeSingle()
+    .from("members")
+    .select("id, role")
+    .eq("auth_uid", user.id)
+    .maybeSingle();
 
-  if (!member || !['officer', 'admin'].includes(member.role)) {
-    return { supabase, error: 'Officer access required.' as const }
+  if (!member || !["officer", "admin"].includes(member.role)) {
+    return { supabase, error: "Officer access required." as const };
   }
 
-  return { supabase, member, error: null }
+  setSentryUser(member);
+  return { supabase, member, error: null };
 }
 
 function organizationIsCsa(organization: string | null | undefined): boolean {
-  return (organization ?? '').toLowerCase().includes('csa')
+  return (organization ?? "").toLowerCase().includes("csa");
 }
 
-type CheckInMethod = 'csv_import' | 'manual'
+type CheckInMethod = "csv_import" | "manual";
 
 type StagingInsert = {
-  event_id: string
-  kind: EventImportKind
-  email: string
-  full_name: string | null
-  organization: string | null
-  points: number | null
-  member_id: string | null
-  is_guest: boolean
-  applied: boolean
-}
+  event_id: string;
+  kind: EventImportKind;
+  email: string;
+  full_name: string | null;
+  organization: string | null;
+  points: number | null;
+  member_id: string | null;
+  is_guest: boolean;
+  applied: boolean;
+};
 
 type AttendanceInsert = {
-  member_id: string
-  event_id: string
-  semester_id: string
-  check_in_method: CheckInMethod
-  recorded_by: string
-  point_value_override?: number
-}
+  member_id: string;
+  event_id: string;
+  semester_id: string;
+  check_in_method: CheckInMethod;
+  recorded_by: string;
+  point_value_override?: number;
+};
 
 /**
  * Atomically replace an event's import: upsert attendance, prune members no
@@ -73,16 +72,16 @@ async function syncImportData(
   attendanceInserts: AttendanceInsert[],
   stagingInserts: StagingInsert[],
 ): Promise<string | null> {
-  const { error } = await supabase.rpc('replace_event_import', {
+  const { error } = await supabase.rpc("replace_event_import", {
     p_event_id: eventId,
     p_check_in_method: checkInMethod,
-    p_attendance: attendanceInserts.map(row => ({
+    p_attendance: attendanceInserts.map((row) => ({
       member_id: row.member_id,
       semester_id: row.semester_id,
       recorded_by: row.recorded_by,
       point_value_override: row.point_value_override ?? null,
     })),
-    p_staging: stagingInserts.map(row => ({
+    p_staging: stagingInserts.map((row) => ({
       kind: row.kind,
       email: row.email,
       full_name: row.full_name,
@@ -92,43 +91,49 @@ async function syncImportData(
       is_guest: row.is_guest,
       applied: row.applied,
     })),
-  })
+  });
 
   if (error) {
-    return 'Failed to apply the import. No changes were saved — please try again.'
+    return "Failed to apply the import. No changes were saved — please try again.";
   }
-  return null
+  return null;
 }
 
-export type EventImportKind = 'mixer_attendance' | 'manual_points'
+export type EventImportKind = "mixer_attendance" | "manual_points";
 
 export interface MixerCsvRow {
-  fullName: string
-  email: string
-  organization: string
+  fullName: string;
+  email: string;
+  organization: string;
 }
 
 export interface ManualPointsCsvRow {
-  fullName: string
-  email: string
-  points: number
+  fullName: string;
+  email: string;
+  points: number;
 }
 
 export interface EventImportRow {
-  id: string
-  email: string
-  full_name: string | null
-  organization: string | null
-  points: number | null
-  member_id: string | null
-  is_guest: boolean
-  applied: boolean
-  kind: EventImportKind
-  member_name: string | null
+  id: string;
+  email: string;
+  full_name: string | null;
+  organization: string | null;
+  points: number | null;
+  member_id: string | null;
+  is_guest: boolean;
+  applied: boolean;
+  kind: EventImportKind;
+  member_name: string | null;
 }
 
 export async function listEventImportRows(eventId: string) {
-  const { supabase, error: authError } = await requireOfficer()
+  return withServerAction("listEventImportRows", () =>
+    listEventImportRowsImpl(eventId),
+  );
+}
+
+async function listEventImportRowsImpl(eventId: string) {
+  const { supabase, error: authError } = await requireOfficer();
   if (authError) {
     return {
       rows: [] as EventImportRow[],
@@ -137,30 +142,30 @@ export async function listEventImportRows(eventId: string) {
       guestCount: 0,
       hasUpload: false,
       error: authError,
-    }
+    };
   }
 
   const { data, error } = await fetchAllPages<{
-    id: string
-    email: string
-    full_name: string | null
-    organization: string | null
-    points: number | null
-    member_id: string | null
-    is_guest: boolean
-    applied: boolean
-    kind: EventImportKind
-    members: { full_name: string } | { full_name: string }[] | null
+    id: string;
+    email: string;
+    full_name: string | null;
+    organization: string | null;
+    points: number | null;
+    member_id: string | null;
+    is_guest: boolean;
+    applied: boolean;
+    kind: EventImportKind;
+    members: { full_name: string } | { full_name: string }[] | null;
   }>((from, to) =>
     supabase
-      .from('event_import_rows')
+      .from("event_import_rows")
       .select(
-        'id, email, full_name, organization, points, member_id, is_guest, applied, kind, members(full_name)',
+        "id, email, full_name, organization, points, member_id, is_guest, applied, kind, members(full_name)",
       )
-      .eq('event_id', eventId)
-      .order('email')
+      .eq("event_id", eventId)
+      .order("email")
       .range(from, to),
-  )
+  );
 
   if (error) {
     return {
@@ -169,12 +174,12 @@ export async function listEventImportRows(eventId: string) {
       unmatchedCount: 0,
       guestCount: 0,
       hasUpload: false,
-      error: 'Failed to load import list.',
-    }
+      error: "Failed to load import list.",
+    };
   }
 
-  const rows: EventImportRow[] = data.map(row => {
-    const member = Array.isArray(row.members) ? row.members[0] : row.members
+  const rows: EventImportRow[] = data.map((row) => {
+    const member = Array.isArray(row.members) ? row.members[0] : row.members;
     return {
       id: row.id,
       email: row.email,
@@ -186,16 +191,16 @@ export async function listEventImportRows(eventId: string) {
       applied: row.applied,
       kind: row.kind,
       member_name: member?.full_name ?? null,
-    }
-  })
+    };
+  });
 
-  let matchedCount = 0
-  let unmatchedCount = 0
-  let guestCount = 0
+  let matchedCount = 0;
+  let unmatchedCount = 0;
+  let guestCount = 0;
   for (const row of rows) {
-    if (row.is_guest) guestCount++
-    else if (row.member_id) matchedCount++
-    else unmatchedCount++
+    if (row.is_guest) guestCount++;
+    else if (row.member_id) matchedCount++;
+    else unmatchedCount++;
   }
 
   return {
@@ -205,38 +210,47 @@ export async function listEventImportRows(eventId: string) {
     guestCount,
     hasUpload: rows.length > 0,
     error: null,
-  }
+  };
 }
 
 /** Clear all import staging + import-method attendance for an event. */
 export async function clearEventImport(eventId: string) {
-  const { supabase, error: authError } = await requireOfficer()
-  if (authError) return { success: false as const, error: authError }
+  return withServerAction("clearEventImport", () =>
+    clearEventImportImpl(eventId),
+  );
+}
+
+async function clearEventImportImpl(eventId: string) {
+  const { supabase, error: authError } = await requireOfficer();
+  if (authError) return { success: false as const, error: authError };
 
   const { data: event } = await supabase
-    .from('events')
-    .select('id, check_in_type, publish_status')
-    .eq('id', eventId)
-    .maybeSingle()
+    .from("events")
+    .select("id, check_in_type, publish_status")
+    .eq("id", eventId)
+    .maybeSingle();
 
-  if (!event) return { success: false as const, error: 'Event not found.' }
+  if (!event) return { success: false as const, error: "Event not found." };
   if (!isImportCheckIn(event.check_in_type)) {
-    return { success: false as const, error: 'This event does not use CSV import.' }
-  }
-  if (event.publish_status !== 'published') {
     return {
       success: false as const,
-      error: 'Publish this event before clearing imports.',
-    }
+      error: "This event does not use CSV import.",
+    };
+  }
+  if (event.publish_status !== "published") {
+    return {
+      success: false as const,
+      error: "Publish this event before clearing imports.",
+    };
   }
 
   const method: CheckInMethod = isManualPointsCheckIn(event.check_in_type)
-    ? 'manual'
-    : 'csv_import'
+    ? "manual"
+    : "csv_import";
 
-  const syncError = await syncImportData(supabase, eventId, method, [], [])
-  if (syncError) return { success: false as const, error: syncError }
-  return { success: true as const, error: null }
+  const syncError = await syncImportData(supabase, eventId, method, [], []);
+  if (syncError) return { success: false as const, error: syncError };
+  return { success: true as const, error: null };
 }
 
 /** Replace mixer attendance from a shared multi-org Google Form CSV. */
@@ -244,7 +258,20 @@ export async function replaceMixerAttendanceCsv(
   eventId: string,
   rows: MixerCsvRow[],
 ) {
-  const { supabase, member: officer, error: authError } = await requireOfficer()
+  return withServerAction("replaceMixerAttendanceCsv", () =>
+    replaceMixerAttendanceCsvImpl(eventId, rows),
+  );
+}
+
+async function replaceMixerAttendanceCsvImpl(
+  eventId: string,
+  rows: MixerCsvRow[],
+) {
+  const {
+    supabase,
+    member: officer,
+    error: authError,
+  } = await requireOfficer();
   if (authError) {
     return {
       success: false as const,
@@ -252,14 +279,14 @@ export async function replaceMixerAttendanceCsv(
       unmatched: 0,
       skipped: 0,
       errors: [authError],
-    }
+    };
   }
 
   const { data: event } = await supabase
-    .from('events')
-    .select('id, category, check_in_type, semester_id, publish_status')
-    .eq('id', eventId)
-    .maybeSingle()
+    .from("events")
+    .select("id, category, check_in_type, semester_id, publish_status")
+    .eq("id", eventId)
+    .maybeSingle();
 
   if (!event) {
     return {
@@ -267,26 +294,29 @@ export async function replaceMixerAttendanceCsv(
       matched: 0,
       unmatched: 0,
       skipped: 0,
-      errors: ['Event not found.'],
-    }
+      errors: ["Event not found."],
+    };
   }
-  if (!isCsaWideMixersCategory(event.category) || event.check_in_type !== 'csv_import') {
+  if (
+    !isCsaWideMixersCategory(event.category) ||
+    event.check_in_type !== "csv_import"
+  ) {
     return {
       success: false as const,
       matched: 0,
       unmatched: 0,
       skipped: 0,
-      errors: ['CSV attendance import is only for CSA-Wide Mixers events.'],
-    }
+      errors: ["CSV attendance import is only for CSA-Wide Mixers events."],
+    };
   }
-  if (event.publish_status !== 'published') {
+  if (event.publish_status !== "published") {
     return {
       success: false as const,
       matched: 0,
       unmatched: 0,
       skipped: 0,
-      errors: ['Publish this event before importing attendance.'],
-    }
+      errors: ["Publish this event before importing attendance."],
+    };
   }
 
   // Empty upload = clear all (explicit wipe).
@@ -294,10 +324,10 @@ export async function replaceMixerAttendanceCsv(
     const syncError = await syncImportData(
       supabase,
       eventId,
-      'csv_import',
+      "csv_import",
       [],
       [],
-    )
+    );
     if (syncError) {
       return {
         success: false as const,
@@ -305,7 +335,7 @@ export async function replaceMixerAttendanceCsv(
         unmatched: 0,
         skipped: 0,
         errors: [syncError],
-      }
+      };
     }
     return {
       success: true as const,
@@ -314,38 +344,40 @@ export async function replaceMixerAttendanceCsv(
       skipped: 0,
       cleared: true as const,
       errors: [] as string[],
-    }
+    };
   }
 
-  const errors: string[] = []
-  let skipped = 0
+  const errors: string[] = [];
+  let skipped = 0;
   const byEmail = new Map<
     string,
     { email: string; fullName: string; organization: string }
-  >()
+  >();
 
   for (const row of rows) {
-    const email = normalizeEmail(row.email ?? '')
-    const fullName = (row.fullName ?? '').trim()
-    const organization = (row.organization ?? '').trim()
+    const email = normalizeEmail(row.email ?? "");
+    const fullName = (row.fullName ?? "").trim();
+    const organization = (row.organization ?? "").trim();
 
     if (!organizationIsCsa(organization)) {
-      skipped++
-      continue
+      skipped++;
+      continue;
     }
 
     if (!email) {
-      errors.push(`Skipped a CSA row with blank email${fullName ? ` (${fullName})` : ''}.`)
-      continue
+      errors.push(
+        `Skipped a CSA row with blank email${fullName ? ` (${fullName})` : ""}.`,
+      );
+      continue;
     }
-    if (!email.includes('@')) {
-      errors.push(`${email} — not a valid email.`)
-      continue
+    if (!email.includes("@")) {
+      errors.push(`${email} — not a valid email.`);
+      continue;
     }
     if (byEmail.has(email)) {
-      errors.push(`${email} — duplicate row; using the last entry.`)
+      errors.push(`${email} — duplicate row; using the last entry.`);
     }
-    byEmail.set(email, { email, fullName, organization })
+    byEmail.set(email, { email, fullName, organization });
   }
 
   if (byEmail.size === 0) {
@@ -359,17 +391,17 @@ export async function replaceMixerAttendanceCsv(
           ? errors
           : [
               skipped > 0
-                ? 'CSV had no CSA organization rows — previous import was left unchanged.'
-                : 'CSV had no usable emails — previous import was left unchanged.',
+                ? "CSV had no CSA organization rows — previous import was left unchanged."
+                : "CSV had no usable emails — previous import was left unchanged.",
             ],
-    }
+    };
   }
 
-  const emails = [...byEmail.keys()]
+  const emails = [...byEmail.keys()];
   const { memberByEmail, error: lookupError } = await lookupMembersByEmail(
     supabase,
     emails,
-  )
+  );
   if (lookupError) {
     return {
       success: false as const,
@@ -377,17 +409,17 @@ export async function replaceMixerAttendanceCsv(
       unmatched: 0,
       skipped,
       errors: [lookupError],
-    }
+    };
   }
 
-  const stagingInserts: StagingInsert[] = []
-  const attendanceInserts: AttendanceInsert[] = []
+  const stagingInserts: StagingInsert[] = [];
+  const attendanceInserts: AttendanceInsert[] = [];
 
   for (const { email, fullName, organization } of byEmail.values()) {
-    const memberId = memberByEmail.get(email) ?? null
+    const memberId = memberByEmail.get(email) ?? null;
     stagingInserts.push({
       event_id: eventId,
-      kind: 'mixer_attendance',
+      kind: "mixer_attendance",
       email,
       full_name: fullName || null,
       organization: organization || null,
@@ -395,25 +427,25 @@ export async function replaceMixerAttendanceCsv(
       member_id: memberId,
       is_guest: false,
       applied: Boolean(memberId),
-    })
+    });
     if (memberId) {
       attendanceInserts.push({
         member_id: memberId,
         event_id: eventId,
         semester_id: event.semester_id,
-        check_in_method: 'csv_import',
+        check_in_method: "csv_import",
         recorded_by: officer!.id,
-      })
+      });
     }
   }
 
   const syncError = await syncImportData(
     supabase,
     eventId,
-    'csv_import',
+    "csv_import",
     attendanceInserts,
     stagingInserts,
-  )
+  );
   if (syncError) {
     return {
       success: false as const,
@@ -421,7 +453,7 @@ export async function replaceMixerAttendanceCsv(
       unmatched: 0,
       skipped,
       errors: [syncError],
-    }
+    };
   }
 
   return {
@@ -430,7 +462,7 @@ export async function replaceMixerAttendanceCsv(
     unmatched: stagingInserts.length - attendanceInserts.length,
     skipped,
     errors,
-  }
+  };
 }
 
 /** Replace monetary / manual philanthropy points from CSV. */
@@ -438,7 +470,20 @@ export async function replaceManualPointsCsv(
   eventId: string,
   rows: ManualPointsCsvRow[],
 ) {
-  const { supabase, member: officer, error: authError } = await requireOfficer()
+  return withServerAction("replaceManualPointsCsv", () =>
+    replaceManualPointsCsvImpl(eventId, rows),
+  );
+}
+
+async function replaceManualPointsCsvImpl(
+  eventId: string,
+  rows: ManualPointsCsvRow[],
+) {
+  const {
+    supabase,
+    member: officer,
+    error: authError,
+  } = await requireOfficer();
   if (authError) {
     return {
       success: false as const,
@@ -446,14 +491,14 @@ export async function replaceManualPointsCsv(
       unmatched: 0,
       skipped: 0,
       errors: [authError],
-    }
+    };
   }
 
   const { data: event } = await supabase
-    .from('events')
-    .select('id, category, check_in_type, semester_id, publish_status')
-    .eq('id', eventId)
-    .maybeSingle()
+    .from("events")
+    .select("id, category, check_in_type, semester_id, publish_status")
+    .eq("id", eventId)
+    .maybeSingle();
 
   if (!event) {
     return {
@@ -461,8 +506,8 @@ export async function replaceManualPointsCsv(
       matched: 0,
       unmatched: 0,
       skipped: 0,
-      errors: ['Event not found.'],
-    }
+      errors: ["Event not found."],
+    };
   }
   if (!isManualPointsCheckIn(event.check_in_type)) {
     return {
@@ -470,21 +515,21 @@ export async function replaceManualPointsCsv(
       matched: 0,
       unmatched: 0,
       skipped: 0,
-      errors: ['Manual points import is only for Manual Points events.'],
-    }
+      errors: ["Manual points import is only for Manual Points events."],
+    };
   }
-  if (event.publish_status !== 'published') {
+  if (event.publish_status !== "published") {
     return {
       success: false as const,
       matched: 0,
       unmatched: 0,
       skipped: 0,
-      errors: ['Publish this event before importing points.'],
-    }
+      errors: ["Publish this event before importing points."],
+    };
   }
 
   if (rows.length === 0) {
-    const syncError = await syncImportData(supabase, eventId, 'manual', [], [])
+    const syncError = await syncImportData(supabase, eventId, "manual", [], []);
     if (syncError) {
       return {
         success: false as const,
@@ -492,7 +537,7 @@ export async function replaceManualPointsCsv(
         unmatched: 0,
         skipped: 0,
         errors: [syncError],
-      }
+      };
     }
     return {
       success: true as const,
@@ -501,45 +546,49 @@ export async function replaceManualPointsCsv(
       skipped: 0,
       cleared: true as const,
       errors: [] as string[],
-    }
+    };
   }
 
-  const errors: string[] = []
+  const errors: string[] = [];
   const byEmail = new Map<
     string,
     { email: string; fullName: string; points: number }
-  >()
+  >();
 
   for (const row of rows) {
-    const email = normalizeEmail(row.email ?? '')
-    const fullName = (row.fullName ?? '').trim()
-    const points = Number(row.points)
+    const email = normalizeEmail(row.email ?? "");
+    const fullName = (row.fullName ?? "").trim();
+    const points = Number(row.points);
 
     if (!email) {
-      errors.push(`Skipped a row with blank email${fullName ? ` (${fullName})` : ''}.`)
-      continue
+      errors.push(
+        `Skipped a row with blank email${fullName ? ` (${fullName})` : ""}.`,
+      );
+      continue;
     }
-    if (!email.includes('@')) {
-      errors.push(`${email} — not a valid email.`)
-      continue
+    if (!email.includes("@")) {
+      errors.push(`${email} — not a valid email.`);
+      continue;
     }
     if (!Number.isFinite(points) || !Number.isInteger(points) || points < 1) {
       errors.push(
         `${email} — points must be a positive whole number (got ${row.points}).`,
-      )
-      continue
+      );
+      continue;
     }
     if (points > 100) {
-      errors.push(`${email} — points ${points} exceeds the max of 100 per row.`)
-      continue
+      errors.push(
+        `${email} — points ${points} exceeds the max of 100 per row.`,
+      );
+      continue;
     }
     if (byEmail.has(email)) {
-      const prev = byEmail.get(email)!
+      const prev = byEmail.get(email)!;
       errors.push(
         `${email} — duplicate row; using the last entry (${points} pts, was ${prev.points}).`,
-      )
+      );
     }
-    byEmail.set(email, { email, fullName, points })
+    byEmail.set(email, { email, fullName, points });
   }
 
   if (byEmail.size === 0) {
@@ -551,15 +600,15 @@ export async function replaceManualPointsCsv(
       errors:
         errors.length > 0
           ? errors
-          : ['CSV had no usable rows — previous import was left unchanged.'],
-    }
+          : ["CSV had no usable rows — previous import was left unchanged."],
+    };
   }
 
-  const emails = [...byEmail.keys()]
+  const emails = [...byEmail.keys()];
   const { memberByEmail, error: lookupError } = await lookupMembersByEmail(
     supabase,
     emails,
-  )
+  );
   if (lookupError) {
     return {
       success: false as const,
@@ -567,17 +616,17 @@ export async function replaceManualPointsCsv(
       unmatched: 0,
       skipped: 0,
       errors: [lookupError],
-    }
+    };
   }
 
-  const stagingInserts: StagingInsert[] = []
-  const attendanceInserts: AttendanceInsert[] = []
+  const stagingInserts: StagingInsert[] = [];
+  const attendanceInserts: AttendanceInsert[] = [];
 
   for (const { email, fullName, points } of byEmail.values()) {
-    const memberId = memberByEmail.get(email) ?? null
+    const memberId = memberByEmail.get(email) ?? null;
     stagingInserts.push({
       event_id: eventId,
-      kind: 'manual_points',
+      kind: "manual_points",
       email,
       full_name: fullName || null,
       organization: null,
@@ -585,26 +634,26 @@ export async function replaceManualPointsCsv(
       member_id: memberId,
       is_guest: false,
       applied: Boolean(memberId),
-    })
+    });
     if (memberId) {
       attendanceInserts.push({
         member_id: memberId,
         event_id: eventId,
         semester_id: event.semester_id,
-        check_in_method: 'manual',
+        check_in_method: "manual",
         recorded_by: officer!.id,
         point_value_override: points,
-      })
+      });
     }
   }
 
   const syncError = await syncImportData(
     supabase,
     eventId,
-    'manual',
+    "manual",
     attendanceInserts,
     stagingInserts,
-  )
+  );
   if (syncError) {
     return {
       success: false as const,
@@ -612,7 +661,7 @@ export async function replaceManualPointsCsv(
       unmatched: 0,
       skipped: 0,
       errors: [syncError],
-    }
+    };
   }
 
   return {
@@ -621,88 +670,101 @@ export async function replaceManualPointsCsv(
     unmatched: stagingInserts.length - attendanceInserts.length,
     skipped: 0,
     errors,
-  }
+  };
 }
 
 export async function matchImportRow(rowId: string, memberId: string) {
-  const { supabase, member: officer, error: authError } = await requireOfficer()
-  if (authError) return { success: false, error: authError }
+  return withServerAction("matchImportRow", () =>
+    matchImportRowImpl(rowId, memberId),
+  );
+}
+
+async function matchImportRowImpl(rowId: string, memberId: string) {
+  const {
+    supabase,
+    member: officer,
+    error: authError,
+  } = await requireOfficer();
+  if (authError) return { success: false, error: authError };
 
   const { data: row } = await supabase
-    .from('event_import_rows')
+    .from("event_import_rows")
     .select(
-      'id, event_id, kind, email, full_name, points, is_guest, applied, member_id',
+      "id, event_id, kind, email, full_name, points, is_guest, applied, member_id",
     )
-    .eq('id', rowId)
-    .maybeSingle()
+    .eq("id", rowId)
+    .maybeSingle();
 
-  if (!row) return { success: false, error: 'Import row not found.' }
+  if (!row) return { success: false, error: "Import row not found." };
 
   const { data: event } = await supabase
-    .from('events')
-    .select('id, semester_id, check_in_type, publish_status')
-    .eq('id', row.event_id)
-    .maybeSingle()
+    .from("events")
+    .select("id, semester_id, check_in_type, publish_status")
+    .eq("id", row.event_id)
+    .maybeSingle();
 
-  if (!event) return { success: false, error: 'Event not found.' }
-  if (event.publish_status !== 'published') {
-    return { success: false, error: 'Publish this event before applying matches.' }
+  if (!event) return { success: false, error: "Event not found." };
+  if (event.publish_status !== "published") {
+    return {
+      success: false,
+      error: "Publish this event before applying matches.",
+    };
   }
 
   const { data: member } = await supabase
-    .from('members')
-    .select('id, full_name, email')
-    .eq('id', memberId)
-    .maybeSingle()
+    .from("members")
+    .select("id, full_name, email")
+    .eq("id", memberId)
+    .maybeSingle();
 
-  if (!member) return { success: false, error: 'Member not found.' }
+  if (!member) return { success: false, error: "Member not found." };
 
   const { data: existingAttendance } = await supabase
-    .from('attendance')
-    .select('id')
-    .eq('event_id', row.event_id)
-    .eq('member_id', memberId)
-    .maybeSingle()
+    .from("attendance")
+    .select("id")
+    .eq("event_id", row.event_id)
+    .eq("member_id", memberId)
+    .maybeSingle();
 
   if (existingAttendance) {
     return {
       success: false,
-      error: 'That member already has attendance for this event.',
-    }
+      error: "That member already has attendance for this event.",
+    };
   }
 
-  const isManual = row.kind === 'manual_points'
+  const isManual = row.kind === "manual_points";
   if (isManual && (row.points == null || row.points < 1)) {
-    return { success: false, error: 'This row has no valid points amount.' }
+    return { success: false, error: "This row has no valid points amount." };
   }
 
   const attendancePayload: Record<string, unknown> = {
     member_id: memberId,
     event_id: row.event_id,
     semester_id: event.semester_id,
-    check_in_method: isManual ? 'manual' : 'csv_import',
+    check_in_method: isManual ? "manual" : "csv_import",
     recorded_by: officer!.id,
-  }
+  };
   if (isManual) {
-    attendancePayload.point_value_override = row.points
+    attendancePayload.point_value_override = row.points;
   }
 
   const { error: attendanceError } = await supabase
-    .from('attendance')
-    .insert(attendancePayload)
+    .from("attendance")
+    .insert(attendancePayload);
 
   if (attendanceError) {
-    if (attendanceError.code === '23505') {
+    if (attendanceError.code === "23505") {
       return {
         success: false,
-        error: 'That member already has attendance for this event.',
-      }
+        error: "That member already has attendance for this event.",
+      };
     }
-    return { success: false, error: 'Failed to create attendance.' }
+    return { success: false, error: "Failed to create attendance." };
   }
 
   const { error } = await supabase
-    .from('event_import_rows')
+    .from("event_import_rows")
     .update({
       member_id: memberId,
       is_guest: false,
@@ -710,43 +772,49 @@ export async function matchImportRow(rowId: string, memberId: string) {
       email: normalizeEmail(member.email),
       full_name: member.full_name,
     })
-    .eq('id', rowId)
+    .eq("id", rowId);
 
   if (error) {
     return {
       success: false,
-      error: 'Attendance created, but failed to update the import row.',
-    }
+      error: "Attendance created, but failed to update the import row.",
+    };
   }
 
-  return { success: true, error: null }
+  return { success: true, error: null };
 }
 
 export async function dismissImportRowAsGuest(rowId: string) {
-  const { supabase, error: authError } = await requireOfficer()
-  if (authError) return { success: false, error: authError }
+  return withServerAction("dismissImportRowAsGuest", () =>
+    dismissImportRowAsGuestImpl(rowId),
+  );
+}
+
+async function dismissImportRowAsGuestImpl(rowId: string) {
+  const { supabase, error: authError } = await requireOfficer();
+  if (authError) return { success: false, error: authError };
 
   const { data: row } = await supabase
-    .from('event_import_rows')
-    .select('id, event_id, member_id, applied')
-    .eq('id', rowId)
-    .maybeSingle()
+    .from("event_import_rows")
+    .select("id, event_id, member_id, applied")
+    .eq("id", rowId)
+    .maybeSingle();
 
-  if (!row) return { success: false, error: 'Import row not found.' }
+  if (!row) return { success: false, error: "Import row not found." };
 
   if (row.applied && row.member_id) {
     await supabase
-      .from('attendance')
+      .from("attendance")
       .delete()
-      .eq('event_id', row.event_id)
-      .eq('member_id', row.member_id)
+      .eq("event_id", row.event_id)
+      .eq("member_id", row.member_id);
   }
 
   const { error } = await supabase
-    .from('event_import_rows')
+    .from("event_import_rows")
     .update({ member_id: null, is_guest: true, applied: false })
-    .eq('id', rowId)
+    .eq("id", rowId);
 
-  if (error) return { success: false, error: 'Failed to mark as guest.' }
-  return { success: true, error: null }
+  if (error) return { success: false, error: "Failed to mark as guest." };
+  return { success: true, error: null };
 }

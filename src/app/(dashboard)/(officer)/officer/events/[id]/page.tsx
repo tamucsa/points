@@ -21,8 +21,8 @@ type AttendanceQueryRow = {
   recorded_at: string
   point_value_override: number | null
   members:
-    | { id: string; full_name: string; profile_image_url: string | null }
-    | { id: string; full_name: string; profile_image_url: string | null }[]
+    | { id: string; full_name: string; profile_image_url: string | null; role: string }
+    | { id: string; full_name: string; profile_image_url: string | null; role: string }[]
     | null
 }
 
@@ -54,7 +54,8 @@ export default async function EventDetailPage({ params }: { params: Promise<{ id
           members!attendance_member_id_fkey (
             id,
             full_name,
-            profile_image_url
+            profile_image_url,
+            role
           )
         `)
         .eq('event_id', id)

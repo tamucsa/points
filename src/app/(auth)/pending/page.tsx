@@ -1,46 +1,57 @@
-import { Hourglass } from 'lucide-react'
-import { redirect } from 'next/navigation'
-import PublicPageShell from '@/app/(auth)/components/PublicPageShell'
-import { countHowdyWeekAttendanceByMemberIds } from '@/app/actions/guests'
-import { getActiveSemester } from '@/utils/supabase/auth'
-import { createServerSupabase } from '@/utils/supabase/server'
+import { Hourglass } from "lucide-react";
+import { redirect } from "next/navigation";
+import PublicPageShell from "@/app/(auth)/components/PublicPageShell";
+import { countHowdyWeekAttendanceByMemberIds } from "@/app/actions/guests";
+import SentryUser from "@/app/components/SentryUser";
+import { setSentryUser } from "@/utils/sentry";
+import { getActiveSemester } from "@/utils/supabase/auth";
+import { createServerSupabase } from "@/utils/supabase/server";
 
 export default async function PendingPage() {
-  const supabase = await createServerSupabase()
+  const supabase = await createServerSupabase();
 
-  const { data: { user } } = await supabase.auth.getUser()
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
 
   if (!user) {
-    redirect('/')
+    redirect("/");
   }
 
   const { data: member } = await supabase
-    .from('members')
-    .select('id, status')
-    .eq('auth_uid', user.id)
-    .maybeSingle()
+    .from("members")
+    .select("id, status, role")
+    .eq("auth_uid", user.id)
+    .maybeSingle();
 
-  if (member?.status === 'active') {
-    redirect('/leaderboard')
+  if (!member) {
+    redirect("/");
   }
 
-  if (member?.status !== 'pending_member' && member?.status !== 'pending_jt') {
-    redirect('/')
+  if (member.status === "active") {
+    redirect("/leaderboard");
   }
 
-  const semester = await getActiveSemester()
-  let howdyWeekCount = 0
+  if (member.status !== "pending_member" && member.status !== "pending_jt") {
+    redirect("/");
+  }
+
+  setSentryUser(member);
+
+  const semester = await getActiveSemester();
+  let howdyWeekCount = 0;
   if (member?.id && semester) {
     const counts = await countHowdyWeekAttendanceByMemberIds(
       supabase,
       [member.id],
       semester.id,
-    )
-    howdyWeekCount = counts.get(member.id) ?? 0
+    );
+    howdyWeekCount = counts.get(member.id) ?? 0;
   }
 
   return (
     <PublicPageShell showFooter={false}>
+      <SentryUser id={member.id} role={member.role} />
       <div className="flex min-h-[calc(100vh-5rem)] items-center justify-center">
         <div className="w-full max-w-xl overflow-hidden rounded-4xl border border-home-border bg-surface shadow-theme-lg">
           <div className="bg-hero-gradient p-8 sm:p-10 lg:p-12">
@@ -56,25 +67,29 @@ export default async function PendingPage() {
                 You&apos;re registered!
               </h1>
               <p className="mx-auto mt-4 max-w-lg text-base leading-7 text-subtitle sm:text-lg">
-                An admin still needs to confirm your CSA membership before you can use the points
-                dashboard. If you already paid dues, make sure your email is on the roster — rostered
-                members skip this step after Google sign-in.
+                An admin still needs to confirm your CSA membership before you
+                can use the points dashboard. If you already paid dues, make
+                sure your email is on the roster — rostered members skip this
+                step after Google sign-in.
               </p>
               <p className="mx-auto mt-4 max-w-lg text-base leading-7 text-subtitle sm:text-lg">
-                Note that this is not the same as the registration form. If you haven&apos;t filled
-                out the membership registration form and paid dues, please make sure to complete that!
+                Note that this is not the same as the registration form. If you
+                haven&apos;t filled out the membership registration form and
+                paid dues, please make sure to complete that!
               </p>
               {howdyWeekCount > 0 && (
                 <p className="mx-auto mt-4 inline-flex rounded-full border border-primary/20 bg-primary/10 px-4 py-2 text-sm font-semibold text-primary">
                   Attended {howdyWeekCount} Howdy Week event
-                  {howdyWeekCount === 1 ? '' : 's'}
+                  {howdyWeekCount === 1 ? "" : "s"}
                 </p>
               )}
             </div>
 
             <div className="mt-8 grid gap-4 sm:grid-cols-2">
               <div className="rounded-2xl border border-home-border bg-surface/85 p-4 shadow-sm">
-                <div className="text-sm font-semibold text-primary">Next Step</div>
+                <div className="text-sm font-semibold text-primary">
+                  Next Step
+                </div>
                 <div className="mt-1 text-sm leading-6 text-subtitle">
                   Wait for an admin to approve your account.
                 </div>
@@ -82,7 +97,8 @@ export default async function PendingPage() {
               <div className="rounded-2xl border border-home-border bg-surface/85 p-4 shadow-sm">
                 <div className="text-sm font-semibold text-accent">Access</div>
                 <div className="mt-1 text-sm leading-6 text-subtitle">
-                  Leaderboard and events unlock once you&apos;re an active member.
+                  Leaderboard and events unlock once you&apos;re an active
+                  member.
                 </div>
               </div>
             </div>
@@ -90,5 +106,5 @@ export default async function PendingPage() {
         </div>
       </div>
     </PublicPageShell>
-  )
+  );
 }

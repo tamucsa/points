@@ -35,17 +35,23 @@ Operational recommendation:
 
 ## Post-deploy verification checklist
 
+Smoke after every production deploy. Cap / season cases live in `docs/OPERATIONS.md` → **Verification checklists**.
+
 - Homepage (`/`) loads with app description, sign-in, and links to Privacy Policy and Terms of Service.
-- `/privacy` and `/terms` are publicly accessible.
-- Sign-in works (TAMU domain enforcement).
-- Redirects behave correctly for:
-  - unauthenticated users
-  - `pending_member` members
-  - active members
-- Officer routes are inaccessible to non-officers.
-- Admin routes are inaccessible to non-admins.
-- Leaderboard renders and shows correct totals.
-- Check-in flow works (self/QR and officer check-in).
+- `/privacy` and `/terms` are publicly accessible without signing in.
+- Sign-in works with a `@tamu.edu` Google account; a non-TAMU account is rejected.
+- Redirects:
+  - signed-out users hitting `/leaderboard` (or other gated routes) go to `/`
+  - signed-in users with no `members` row go to `/register`
+  - `pending_member` goes to `/pending` (cannot open the dashboard)
+  - `active` members land on `/leaderboard`
+- A regular member cannot open `/officer/*` or `/admin/*`.
+- An officer can open `/officer/*` but not `/admin/*`.
+- An admin can open both.
+- `/leaderboard` renders for an active member (names and point totals, not an empty error state).
+- Self/QR check-in (`/checkin/[code]`) records attendance for an active member.
+- Officer check-in on `/officer/events/[id]/checkin` records attendance.
+- Duplicate check-in for the same member + event is rejected.
 
 ## Google OAuth (production)
 

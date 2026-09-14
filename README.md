@@ -31,7 +31,7 @@ Open `http://localhost:3000`.
 - **Environment variables**: `docs/ENVIRONMENT.md`
 - **Architecture (developer onboarding / transfer)**: `docs/ARCHITECTURE.md`
 - **Operations (all workflows)**: `docs/OPERATIONS.md`
-- **Known issues / planned features**: [GitHub Issues](https://github.com/tamucsa/points/issues) (labels `known-issue`, `planned-feature`)
+- **Issues**: [GitHub Issues](https://github.com/tamucsa/points/issues) (types **Feature**, **Bug**, **Task**)
 - **Deployment**: `docs/DEPLOYMENT.md`
 - **User onboarding**:
   - Members: `docs/ONBOARDING_MEMBERS.md`
@@ -43,3 +43,4 @@ Open `http://localhost:3000`.
 - **Build**: `npm run build`
 - **Lint**: `npm run lint`
 - **Format**: `npm run format`
+- **Test**: `npm test`

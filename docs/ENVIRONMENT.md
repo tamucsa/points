@@ -114,6 +114,39 @@ Draft / scheduled events become visible to members when published. A **GitHub Ac
 
 Officers can always use **Publish now** if a schedule is delayed.
 
+Sentry cron check-ins are **not** used for this job. GitHub emails on every Actions failure, so a missed publish is not silent.
+
+## Error tracking (Sentry)
+
+Production uses [Sentry](https://tamu-csa.sentry.io) (`tamu-csa` / `points`) for errors, traces, and **error-only** session replay. The SDK no-ops if the DSN is unset, so local `next dev` works without Sentry. Pull these from Vercel with the rest of `.env.local`.
+
+Events identify the logged-in member by **id** (plus a `member.role` tag), never email or name. Replay masks text and blocks media. Server frames do not include local variable values.
+
+Client events go through a Next.js tunnel at `/monitoring` so ad blockers are less likely to drop them. Middleware excludes that path.
+
+### `NEXT_PUBLIC_SENTRY_DSN`
+- **Purpose**: Browser SDK DSN (also used as a fallback for server/edge if `SENTRY_DSN` is unset).
+- **Where to get it**: Sentry → project **points** → Settings → Client Keys (DSN).
+- **Security**: Embedded in the client bundle by Next.js. The DSN is not a secret (it only lets you *send* events, not read them), but don’t paste it into issues or docs.
+
+### `SENTRY_DSN`
+- **Purpose**: Server and edge SDK DSN. Same value as `NEXT_PUBLIC_SENTRY_DSN` is fine.
+- **Security**: Server-only variable name. Still not a credential; kept off `NEXT_PUBLIC_` so server init does not depend only on the public env.
+
+### `SENTRY_ORG`
+- **Purpose**: Org slug for source-map upload during `next build` (`tamu-csa`).
+- **Where to get it**: Sentry org URL / Settings.
+- **Security**: Not a secret.
+
+### `SENTRY_PROJECT`
+- **Purpose**: Project slug for source-map upload (`points`).
+- **Security**: Not a secret.
+
+### `SENTRY_AUTH_TOKEN`
+- **Purpose**: Build-time token so Vercel/`next build` can upload source maps and create releases. Without it, production stack traces stay minified.
+- **Where to get it**: Sentry → Settings → Auth Tokens (org token with project release permissions, or the token from the Next.js wizard).
+- **Security**: Secret. Never `NEXT_PUBLIC_*`. Required at **build** on Production and Preview. Development is stored non-sensitive in Vercel because Development env vars cannot be marked sensitive and still be pulled with `vercel env pull`.
+
 ## Notes
 
 - Variables prefixed with `NEXT_PUBLIC_` are embedded in the client bundle by Next.js and are safe only for **non-secret** values.

@@ -1,12 +1,9 @@
 import { notFound, redirect } from 'next/navigation'
 import OfficerCheckinClient from '@/app/(dashboard)/(officer)/officer/events/components/OfficerCheckinClient'
 import { isImportCheckIn, isMixerCategory } from '@/utils/events'
+import { memberRoleLabel } from '@/utils/members'
 import { fetchAllPages } from '@/utils/supabase/fetchAll'
 import { getCurrentMember } from '@/utils/supabase/auth'
-
-function memberRoleLabel(role: string): 'Member' | 'Officer' {
-  return role === 'officer' || role === 'admin' ? 'Officer' : 'Member'
-}
 
 export default async function OfficerCheckinPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params

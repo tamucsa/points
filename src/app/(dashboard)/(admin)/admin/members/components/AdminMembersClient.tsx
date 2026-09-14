@@ -13,13 +13,13 @@ import AdminRolesPanel, {
   type RoleMember,
 } from '@/app/(dashboard)/(admin)/admin/members/components/AdminRolesPanel'
 import MemberAvatar from '@/app/components/MemberAvatar'
-import type { MemberRole } from '@/utils/members'
+import { formatClassification, type MemberRole } from '@/utils/members'
 
 interface PendingMember {
   id: string
   full_name: string
   email: string
-  graduation_year: number | null
+  graduation_year: string | number | null
   created_at: string
   howdy_week_count?: number
 }
@@ -68,7 +68,7 @@ function buildMemberImportTemplate(jtFamilies: JTFamily[]) {
   return `Full Name,TAMU Email,Jiating,Phone,Class
 John Smith,john.smith@tamu.edu,${jt1},(979) 555-0101,2027
 Jane Doe,jane.doe@tamu.edu,,(979) 555-0102,2028
-Alex Chen,alex.chen@tamu.edu,${jt2},979-555-0199,2026`
+Alex Chen,alex.chen@tamu.edu,${jt2},979-555-0199,Graduate Student`
 }
 
 function downloadMemberImportTemplate(jtFamilies: JTFamily[]) {
@@ -294,8 +294,8 @@ export default function AdminMembersClient({
                   {m.full_name}
                 </div>
                 <div className="text-xs text-subtitle">{m.email}</div>
-                {m.graduation_year && (
-                  <div className="text-xs text-subtitle/80">Class of {m.graduation_year}</div>
+                {formatClassification(m.graduation_year) && (
+                  <div className="text-xs text-subtitle/80">{formatClassification(m.graduation_year)}</div>
                 )}
               </div>
               <div className="relative">
@@ -345,8 +345,8 @@ export default function AdminMembersClient({
                   {m.full_name}
                 </div>
                 <div className="text-xs text-subtitle">{m.email}</div>
-                {m.graduation_year && (
-                  <div className="text-xs text-subtitle/80">Class of {m.graduation_year}</div>
+                {formatClassification(m.graduation_year) && (
+                  <div className="text-xs text-subtitle/80">{formatClassification(m.graduation_year)}</div>
                 )}
                 {(m.howdy_week_count ?? 0) > 0 && (
                   <div className="mt-0.5 text-[11px] font-medium text-primary">
@@ -438,7 +438,7 @@ export default function AdminMembersClient({
                 { name: 'TAMU Email', required: true, note: 'Must be a @tamu.edu address' },
                 { name: 'Jiating', required: false, note: 'Optional — match an active Jiating name, or leave blank until sorting' },
                 { name: 'Phone', required: true, note: 'Contact phone number' },
-                { name: 'Class', required: true, note: 'Graduation year, e.g. 2027' },
+                { name: 'Class', required: true, note: 'Graduation year, e.g. 2027, or Graduate Student' },
               ].map(col => (
                 <li key={col.name} className="flex flex-col gap-0.5 px-4 py-3 sm:flex-row sm:items-baseline sm:justify-between">
                   <div className="flex items-center gap-2">

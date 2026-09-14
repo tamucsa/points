@@ -13,6 +13,35 @@ export function isMemberRole(value: string): value is MemberRole {
   return (MEMBER_ROLES as readonly string[]).includes(value)
 }
 
+export function memberRoleLabel(role: string): 'Member' | 'Officer' {
+  return role === 'officer' || role === 'admin' ? 'Officer' : 'Member'
+}
+
+export const GRADUATE_STUDENT_CLASSIFICATION = 'Graduate Student'
+
+const GRADUATE_STUDENT_ALIASES = new Set([
+  'graduate student',
+  'graduate',
+  'grad student',
+  'grad',
+])
+
+export function classificationOptions(): string[] {
+  const currentYear = new Date().getFullYear()
+  const years = Array.from({ length: 6 }, (_, i) => String(currentYear + i))
+  return [...years, GRADUATE_STUDENT_CLASSIFICATION]
+}
+
+export function formatClassification(
+  value: string | number | null | undefined,
+): string | null {
+  if (value == null || value === '') return null
+  const text = String(value)
+  if (text === GRADUATE_STUDENT_CLASSIFICATION) return GRADUATE_STUDENT_CLASSIFICATION
+  if (/^\d{4}$/.test(text)) return `Class of ${text}`
+  return text
+}
+
 export function parseGoogleName(metadata: {
   full_name?: string
   given_name?: string
@@ -56,17 +85,25 @@ export function validateRegistrationNames(
   }
 }
 
-export function validateClassYear(
+export function validateClassification(
   value: string,
-): { ok: true; year: number } | { ok: false; error: string } {
+): { ok: true; value: string } | { ok: false; error: string } {
   const trimmed = value.trim()
-  if (!trimmed) return { ok: false, error: 'Class is required.' }
+  if (!trimmed) return { ok: false, error: 'Classification is required.' }
 
-  const year = parseInt(trimmed, 10)
-  const currentYear = new Date().getFullYear()
-  if (Number.isNaN(year) || year < currentYear || year > currentYear + 6) {
-    return { ok: false, error: 'Please enter a valid class year.' }
+  if (GRADUATE_STUDENT_ALIASES.has(trimmed.toLowerCase())) {
+    return { ok: true, value: GRADUATE_STUDENT_CLASSIFICATION }
   }
 
-  return { ok: true, year }
+  if (!/^\d{4}$/.test(trimmed)) {
+    return { ok: false, error: 'Please enter a valid classification.' }
+  }
+
+  const year = Number.parseInt(trimmed, 10)
+  const currentYear = new Date().getFullYear()
+  if (year < currentYear || year > currentYear + 6) {
+    return { ok: false, error: 'Please enter a valid classification.' }
+  }
+
+  return { ok: true, value: trimmed }
 }

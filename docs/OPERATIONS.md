@@ -32,7 +32,7 @@ Related docs:
 - User guides: `docs/ONBOARDING_MEMBERS.md`, `docs/ONBOARDING_OFFICERS.md`, `docs/ONBOARDING_ADMINS.md`
 - Deployment: `docs/DEPLOYMENT.md`
 - Points policy: `docs/OPERATIONS.md` → **Points rules**
-- Known issues & planned features: [GitHub Issues](https://github.com/tamucsa/points/issues) (`known-issue`, `planned-feature` labels)
+- Issues: [GitHub Issues](https://github.com/tamucsa/points/issues) (types **Feature**, **Bug**, **Task**)
 
 ---
 
@@ -451,11 +451,52 @@ See `docs/DEPLOYMENT.md` for full deployment steps.
 
 ---
 
-## Planned features (not yet in app)
+## 9. Verification checklists
 
-Track the roadmap in [GitHub Issues](https://github.com/tamucsa/points/issues?q=is%3Aissue+is%3Aopen+label%3Aplanned-feature) (`planned-feature` label).
+Post-deploy smoke is also in `docs/DEPLOYMENT.md`. Use this section for rarer, domain-heavy runs. After you walk a case in the app, write the **test user**, **event**, and **result** next to the item — empty boxes do not count as verified.
 
-Bugs and debt on existing behavior: [known-issue issues](https://github.com/tamucsa/points/issues?q=is%3Aissue+is%3Aopen+label%3Aknown-issue).
+### After every production deploy
+
+- Homepage (`/`) loads with app description, sign-in, and links to Privacy Policy and Terms of Service.
+- `/privacy` and `/terms` are publicly accessible without signing in.
+- Sign-in works with a `@tamu.edu` Google account; a non-TAMU account is rejected.
+- Redirects: signed-out → `/`; no member row → `/register`; `pending_member` → `/pending`; `active` → `/leaderboard`.
+- Member cannot open `/officer/*` or `/admin/*`; officer cannot open `/admin/*`; admin can open both.
+- `/leaderboard` renders for an active member.
+- Self/QR check-in and officer check-in both record attendance; a duplicate check-in is rejected.
+
+### Before Howdy Week / first GM
+
+Walk these in a running environment (prefer non-prod if you have it). Fill notes after you actually click through.
+
+- Check-in → `attendance.counted` → `member_semester_points` → leaderboard totals match what you expect.
+  - Notes:
+- Auth: register / pending / dashboard redirects match member status.
+  - Notes:
+- Sports Spectator: 11th check-in in the semester stays on the attendance list with `counted = false` and does not add Sports points.
+  - Notes:
+- Weekly Jiating Event + Mixer: 5th counting attendance in the same Chicago week (Mon–Sun) is not counted; **Jiating Olympics is outside this cap**.
+  - Notes:
+- Duplicate check-in is rejected. Remove check-in only when the person was **not** at the event (caps are not a reason to delete the row).
+  - Notes:
+- Howdy Week CSV: unmatched guests link by email at **0 pts** (deferred award is still an open Feature — confirm current behavior only).
+  - Notes:
+
+### Before closing a semester
+
+- Confirm the correct semester is active, then run close on a copy or with a second person watching.
+- After close: archived `semester_summaries`, no longer the active semester, Spring JT clearing if this is Spring.
+  - Notes:
+
+---
+
+## GitHub Issues
+
+Work is tracked with GitHub issue **types** (not labels):
+
+- **[Feature](https://github.com/tamucsa/points/issues?q=is%3Aissue+is%3Aopen+type%3AFeature)** — new functionality
+- **[Bug](https://github.com/tamucsa/points/issues?q=is%3Aissue+is%3Aopen+type%3ABug)** — unexpected behavior
+- **[Task](https://github.com/tamucsa/points/issues?q=is%3Aissue+is%3Aopen+type%3ATask)** — bounded work (cron, docs, refactors)
 
 > **Attendance corrections:** Officers remove mistaken check-ins from the check-in page or event detail. `counted` is set by caps, not by officers.
 

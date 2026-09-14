@@ -7,7 +7,12 @@ import AuthFeatureCard from '@/app/(auth)/components/AuthFeatureCard'
 import MemberAvatar from '@/app/components/MemberAvatar'
 import PageLoading from '@/app/components/PageLoading'
 import PublicPageShell from '@/app/(auth)/components/PublicPageShell'
-import { parseGoogleName, validateClassYear, validateRegistrationNames } from '@/utils/members'
+import {
+  classificationOptions,
+  parseGoogleName,
+  validateClassification,
+  validateRegistrationNames,
+} from '@/utils/members'
 import { GoogleUser } from '@/utils/types'
 import { createBrowserSupabase } from '@/utils/supabase/client'
 
@@ -69,7 +74,7 @@ export default function RegisterPage() {
       return
     }
 
-    const classResult = validateClassYear(form.class_year)
+    const classResult = validateClassification(form.class_year)
     if (!classResult.ok) {
       setError(classResult.error)
       return
@@ -80,7 +85,7 @@ export default function RegisterPage() {
     const result = await registerMember({
       firstName: form.first_name,
       lastName: form.last_name,
-      classYear: classResult.year,
+      classYear: classResult.value,
       phone: form.phone,
     })
 
@@ -130,7 +135,7 @@ export default function RegisterPage() {
               />
               <AuthFeatureCard
                 icon={GraduationCap}
-                title="Class"
+                title="Classification"
                 description="Set your class so officers can organize members."
               />
               <AuthFeatureCard
@@ -193,16 +198,16 @@ export default function RegisterPage() {
 
                 <div>
                   <label className="mb-2 block text-xs font-semibold uppercase tracking-[0.06em] text-subtitle">
-                    Class *
+                    Classification *
                   </label>
                   <select
                     value={form.class_year}
                     onChange={e => setForm(f => ({ ...f, class_year: e.target.value }))}
                     className={`${inputClassName} cursor-pointer`}
                   >
-                    <option value="">Select class…</option>
-                    {Array.from({ length: 6 }, (_, i) => new Date().getFullYear() + i).map(y => (
-                      <option key={y} value={y}>{y}</option>
+                    <option value="">Select classification…</option>
+                    {classificationOptions().map(option => (
+                      <option key={option} value={option}>{option}</option>
                     ))}
                   </select>
                 </div>
