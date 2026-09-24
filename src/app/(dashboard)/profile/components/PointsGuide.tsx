@@ -8,13 +8,21 @@ import {
 import { isInCurrentChicagoWeek } from '@/utils/datetime'
 import {
   CATEGORY_CONFIG,
+  JIATING_MIXER_SIX_WAY_POINTS,
   SPECTATOR_EVENT_CATEGORY,
   type EventCategory,
 } from '@/utils/events'
 
+const JIATING_SIX_WAY_MIXER_LABEL = 'Jiating 6-Way Mixer'
+
+type GuideCategory =
+  | EventCategory
+  | typeof SPECTATOR_EVENT_CATEGORY
+  | typeof JIATING_SIX_WAY_MIXER_LABEL
+
 const BUCKET_CATEGORIES: {
   bucket: (typeof POINT_BUCKET_LABELS)[keyof typeof POINT_BUCKET_LABELS]
-  categories: Array<EventCategory | typeof SPECTATOR_EVENT_CATEGORY>
+  categories: GuideCategory[]
 }[] = [
   {
     bucket: POINT_BUCKET_LABELS.csa,
@@ -22,7 +30,12 @@ const BUCKET_CATEGORIES: {
   },
   {
     bucket: POINT_BUCKET_LABELS.jt,
-    categories: ['Jiating Olympics', 'Jiating Event', 'Jiating Mixer'],
+    categories: [
+      'Jiating Olympics',
+      'Jiating Event',
+      'Jiating Mixer',
+      JIATING_SIX_WAY_MIXER_LABEL,
+    ],
   },
   {
     bucket: POINT_BUCKET_LABELS.sports,
@@ -34,8 +47,9 @@ const BUCKET_CATEGORIES: {
   },
 ]
 
-function categoryPointValue(category: EventCategory | typeof SPECTATOR_EVENT_CATEGORY) {
+function categoryPointValue(category: GuideCategory) {
   if (category === SPECTATOR_EVENT_CATEGORY) return 1
+  if (category === JIATING_SIX_WAY_MIXER_LABEL) return JIATING_MIXER_SIX_WAY_POINTS
   return CATEGORY_CONFIG[category].pointValue
 }
 

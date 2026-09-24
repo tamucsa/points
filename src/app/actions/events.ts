@@ -12,6 +12,7 @@ import {
   isManualPointsCheckIn,
   isMixerCategory,
   isSportsCategory,
+  jiatingMixerPointValue,
   MANUAL_POINTS_DEFAULT_END_TIME,
   MANUAL_POINTS_DEFAULT_START_TIME,
   parentCreateEventError,
@@ -492,7 +493,6 @@ async function createEventImpl(input: CreateEventInput) {
       : "officer");
 
   const dateOnly = isManualPointsCheckIn(checkInType);
-  const pointValue = dateOnly ? 0 : config.pointValue;
   const startTime = dateOnly
     ? MANUAL_POINTS_DEFAULT_START_TIME
     : input.startTime;
@@ -524,6 +524,18 @@ async function createEventImpl(input: CreateEventInput) {
 
   const { supabase, member, error: authError } = await requireEventStaff();
   if (authError) return { success: false, error: authError };
+
+  let pointValue = dateOnly ? 0 : config.pointValue;
+  if (!dateOnly && isMixerCategory(input.category)) {
+    const { data: activeFamilies } = await supabase
+      .from("jt_families")
+      .select("id")
+      .eq("is_active", true);
+    pointValue = jiatingMixerPointValue(
+      mixerFamilyIds,
+      (activeFamilies ?? []).map((row) => row.id),
+    );
+  }
 
   if (isParentOnly(member)) {
     const parentError = parentCreateEventError({
@@ -1016,6 +1028,26 @@ async function updateEventMixerFamiliesImpl(
 
   if (insertError) {
     return { success: false, error: "Failed to save Mixer families." };
+  }
+
+  const { data: activeFamilies } = await supabase
+    .from("jt_families")
+    .select("id")
+    .eq("is_active", true);
+  const nextPoints = jiatingMixerPointValue(
+    familyIds,
+    (activeFamilies ?? []).map((row) => row.id),
+  );
+  const { error: pointsError } = await supabase
+    .from("events")
+    .update({ point_value: nextPoints })
+    .eq("id", eventId);
+
+  if (pointsError) {
+    return {
+      success: false,
+      error: "Families saved, but Mixer points could not be updated.",
+    };
   }
 
   return { success: true, error: null };

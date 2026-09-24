@@ -222,7 +222,7 @@ Member **Events** (`/events`) is narrower: only the member’s JT-specific event
     - *RSVP Required* — provide RSVP URL and deadline; after the form closes, upload a Name/Email CSV on the event page to tag members as **RSVPed** / **Not RSVPed** on check-in (optional tags; does not filter or block check-in). Re-upload replaces the list. Unmatched emails can be matched manually or marked as guests.
   - **Date**, **location**, **description** (as needed)
 4. For **Sports** events, optionally enable **Spectator check-in** (creates a child spectator event).
-5. For **Mixers**, select at least two participating Jiatings (editable later on the event detail page).
+5. For **Mixers**, select at least two participating Jiatings (editable later on the event detail page). Selecting all 6 active Jiatings makes the Mixer 3 points; any fewer is 2 points. Changing families later updates the stored point value and recomputes check-in totals.
 6. For **Howdy Week**, check-in is fixed to CSV import (0 points). Publish the event, then upload the guest CSV on the event detail page.
 7. Submit the form.
 8. Confirm the event appears on `/officer/events`.
@@ -314,7 +314,7 @@ Canonical scoring policy for CSA Points. Change here when club policy changes; k
 | Philanthropy     | 3      | CSA-wide               | Officer chooses                         |
 | Concessions      | 3      | CSA-wide               | Officer                                 |
 | Jiating Olympics | 2      | JT shared              | Officer                                 |
-| Jiating Mixer    | 2      | JT shared              | Officer                                 |
+| Jiating Mixer    | 2 (3 if all 6 Jiatings) | JT shared              | Officer                                 |
 | Jiating Event    | 1      | JT specific            | Officer                                 |
 | Sports           | 1      | CSA-wide               | Officer (+ optional Spectator child)    |
 | Dance            | 1      | CSA-wide               | Officer                                 |
