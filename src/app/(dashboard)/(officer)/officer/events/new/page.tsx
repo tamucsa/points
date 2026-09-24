@@ -1,5 +1,6 @@
 import { redirect } from 'next/navigation'
 import NewEventClient from '@/app/(dashboard)/(officer)/officer/events/components/NewEventClient'
+import { isParentOnly } from '@/utils/members'
 import { getActiveSemester, getCurrentMember } from '@/utils/supabase/auth'
 
 export default async function NewEventPage() {
@@ -23,6 +24,7 @@ export default async function NewEventPage() {
       jtFamilies={jtFamilies ?? []}
       officerJtFamilyId={member.jt_family_id}
       createdBy={member.id}
+      parentOnly={isParentOnly(member)}
     />
   )
 }

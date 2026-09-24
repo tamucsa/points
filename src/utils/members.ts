@@ -9,12 +9,79 @@ export type MemberRole = 'member' | 'officer' | 'admin'
 
 export const MEMBER_ROLES: MemberRole[] = ['member', 'officer', 'admin']
 
+export const MEMBER_ROLE_LABELS: Record<MemberRole, string> = {
+  member: 'Member',
+  officer: 'Officer',
+  admin: 'Admin',
+}
+
+export type MemberAccess = {
+  role: string
+  is_parent?: boolean | null
+}
+
 export function isMemberRole(value: string): value is MemberRole {
   return (MEMBER_ROLES as readonly string[]).includes(value)
 }
 
-export function memberRoleLabel(role: string): 'Member' | 'Officer' {
-  return role === 'officer' || role === 'admin' ? 'Officer' : 'Member'
+export function isOfficerRole(role: string): boolean {
+  return role === 'officer' || role === 'admin'
+}
+
+export function isParent(member: MemberAccess): boolean {
+  return member.is_parent === true || member.role === 'parent'
+}
+
+/** Parent without officer/admin — limited to their Jiating Event / Mixer. */
+export function isParentOnly(member: MemberAccess): boolean {
+  return isParent(member) && !isOfficerRole(member.role)
+}
+
+export function canAccessOfficerMembers(member: MemberAccess): boolean {
+  return isOfficerRole(member.role) || isParent(member)
+}
+
+export function canAccessOfficerEvents(member: MemberAccess): boolean {
+  return isOfficerRole(member.role) || isParent(member)
+}
+
+export type MemberAccessLabel = 'Member' | 'Parent' | 'Officer' | 'Officer · Parent'
+
+export function memberRoleLabel(
+  role: string,
+  isParentFlag?: boolean | null,
+): MemberAccessLabel {
+  const staff = isOfficerRole(role)
+  const parent = isParentFlag === true || role === 'parent'
+  if (staff && parent) return 'Officer · Parent'
+  if (parent) return 'Parent'
+  if (staff) return 'Officer'
+  return 'Member'
+}
+
+/** Leaderboard / attendance points. Parents check in but never earn points. */
+export function earnsPoints(member: MemberAccess): boolean {
+  return !isParent(member)
+}
+
+export function roleEarnsPoints(role: string, isParentFlag?: boolean | null): boolean {
+  return earnsPoints({ role, is_parent: isParentFlag })
+}
+
+/** Battle Pass and reduced-fee rewards — dues members only, not parents or officers. */
+export function earnsRewards(member: MemberAccess): boolean {
+  return member.role === 'member' && !isParent(member)
+}
+
+export function roleEarnsRewards(role: string, isParentFlag?: boolean | null): boolean {
+  return earnsRewards({ role, is_parent: isParentFlag })
+}
+
+export function attendanceAwardsPoints(
+  member: MemberAccess,
+  counted: boolean,
+): boolean {
+  return earnsPoints(member) && counted
 }
 
 export const GRADUATE_STUDENT_CLASSIFICATION = 'Graduate Student'

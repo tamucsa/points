@@ -42,7 +42,7 @@ interface Props {
   roleTotalPages: number
   roleTotalCount: number
   roleQuery: string
-  roleFilter: 'all' | MemberRole
+  roleFilter: 'all' | MemberRole | 'parent'
 }
 
 interface CSVRow {

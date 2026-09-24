@@ -75,6 +75,8 @@ export default async function ProfilePage() {
         full_name: member.full_name,
         profile_image_url: member.profile_image_url,
         graduation_year: member.graduation_year ?? null,
+        role: member.role,
+        is_parent: member.is_parent,
       }}
       points={pointsError ? null : points}
       attendance={normalizedAttendance}

@@ -1,6 +1,7 @@
 import { createServerClient } from "@supabase/ssr";
 import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
+import { canAccessOfficerEvents } from "@/utils/members";
 
 /** Texas A&M / College Station — bias Places results toward campus. */
 export const TAMU_LOCATION_BIAS = {
@@ -49,11 +50,11 @@ export async function requireOfficerApi() {
 
   const { data: member } = await supabase
     .from("members")
-    .select("id, role")
+    .select("id, role, is_parent")
     .eq("auth_uid", user.id)
     .maybeSingle();
 
-  if (!member || !["officer", "admin"].includes(member.role)) {
+  if (!member || !canAccessOfficerEvents(member)) {
     return {
       error: NextResponse.json(
         { error: "Officer access required." },

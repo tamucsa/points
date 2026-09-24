@@ -1,5 +1,9 @@
 "use server";
 
+import {
+  attendanceAwardsPoints,
+  canAccessOfficerEvents,
+} from "@/utils/members";
 import { setSentryUser, withServerAction } from "@/utils/sentry";
 import { createActionSupabase } from "@/utils/supabase/action";
 
@@ -31,7 +35,7 @@ async function selfCheckInImpl(eventId: string, _semesterId?: string) {
 
   const { data: member } = await supabase
     .from("members")
-    .select("id, status, role")
+    .select("id, status, role, is_parent")
     .eq("auth_uid", user.id)
     .maybeSingle();
 
@@ -102,7 +106,12 @@ async function selfCheckInImpl(eventId: string, _semesterId?: string) {
   }
 
   const counted = await readCountedAfterTriggers(supabase, inserted.id);
-  return { success: true, error: null, counted };
+  return {
+    success: true,
+    error: null,
+    counted,
+    awardsPoints: attendanceAwardsPoints(member, counted),
+  };
 }
 
 export async function officerCheckIn(
@@ -129,11 +138,11 @@ async function officerCheckInImpl(
 
   const { data: officer } = await supabase
     .from("members")
-    .select("id, role")
+    .select("id, role, is_parent, jt_family_id")
     .eq("auth_uid", user.id)
     .maybeSingle();
 
-  if (!officer || !["officer", "admin"].includes(officer.role)) {
+  if (!officer || !canAccessOfficerEvents(officer)) {
     return {
       success: false,
       error: "Officer access required.",
@@ -145,7 +154,7 @@ async function officerCheckInImpl(
 
   const { data: event } = await supabase
     .from("events")
-    .select("scope, jt_family_id, semester_id, publish_status")
+    .select("scope, jt_family_id, semester_id, publish_status, category")
     .eq("id", eventId)
     .maybeSingle();
 
@@ -162,7 +171,7 @@ async function officerCheckInImpl(
 
   const { data: member } = await supabase
     .from("members")
-    .select("jt_family_id")
+    .select("jt_family_id, role, is_parent")
     .eq("id", memberId)
     .maybeSingle();
 
@@ -234,7 +243,12 @@ async function officerCheckInImpl(
   }
 
   const counted = await readCountedAfterTriggers(supabase, inserted.id);
-  return { success: true, error: null, counted };
+  return {
+    success: true,
+    error: null,
+    counted,
+    awardsPoints: attendanceAwardsPoints(member, counted),
+  };
 }
 
 export async function officerRemoveCheckIn(eventId: string, memberId: string) {
@@ -252,11 +266,11 @@ async function officerRemoveCheckInImpl(eventId: string, memberId: string) {
 
   const { data: officer } = await supabase
     .from("members")
-    .select("id, role")
+    .select("id, role, is_parent, jt_family_id")
     .eq("auth_uid", user.id)
     .maybeSingle();
 
-  if (!officer || !["officer", "admin"].includes(officer.role)) {
+  if (!officer || !canAccessOfficerEvents(officer)) {
     return { success: false, error: "Officer access required." };
   }
 

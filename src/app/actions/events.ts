@@ -6,14 +6,21 @@ import {
 } from "@/utils/event-times";
 import {
   type CheckInType,
+  canDeleteEvent,
+  eventDeleteDeniedMessage,
   getCategoryConfig,
   isManualPointsCheckIn,
   isMixerCategory,
   isSportsCategory,
   MANUAL_POINTS_DEFAULT_END_TIME,
   MANUAL_POINTS_DEFAULT_START_TIME,
+  parentCreateEventError,
   SPECTATOR_EVENT_CATEGORY,
 } from "@/utils/events";
+import {
+  canAccessOfficerEvents,
+  isParentOnly,
+} from "@/utils/members";
 import {
   createCalendarEvent,
   deleteCalendarEvent,
@@ -139,13 +146,13 @@ export async function publishEvent(eventId: string) {
 async function publishEventImpl(eventId: string) {
   if (!eventId) return { success: false, error: "Event not found." };
 
-  const { supabase, error: authError } = await requireOfficer();
+  const { supabase, member, error: authError } = await requireEventStaff();
   if (authError) return { success: false, error: authError };
 
   const { data: event } = await supabase
     .from("events")
     .select(
-      "id, category, name, description, location, starts_at, ends_at, rsvp_url, google_event_id, publish_status, parent_event_id, check_in_type",
+      "id, category, jt_family_id, name, description, location, starts_at, ends_at, rsvp_url, google_event_id, publish_status, parent_event_id, check_in_type",
     )
     .eq("id", eventId)
     .maybeSingle();
@@ -211,12 +218,12 @@ async function updateScheduledPublishImpl(
     };
   }
 
-  const { supabase, error: authError } = await requireOfficer();
+  const { supabase, member, error: authError } = await requireEventStaff();
   if (authError) return { success: false, error: authError };
 
   const { data: event } = await supabase
     .from("events")
-    .select("id, publish_status, parent_event_id")
+    .select("id, category, jt_family_id, publish_status, parent_event_id")
     .eq("id", eventId)
     .maybeSingle();
 
@@ -336,7 +343,7 @@ async function publishDueScheduledEventsImpl() {
   return { success: true as const, error: null, published };
 }
 
-async function requireOfficer() {
+async function requireEventStaff() {
   const supabase = await createActionSupabase();
   const {
     data: { user },
@@ -346,11 +353,11 @@ async function requireOfficer() {
 
   const { data: member } = await supabase
     .from("members")
-    .select("id, role")
+    .select("id, role, is_parent, jt_family_id")
     .eq("auth_uid", user.id)
     .maybeSingle();
 
-  if (!member || !["officer", "admin"].includes(member.role)) {
+  if (!member || !canAccessOfficerEvents(member)) {
     return {
       supabase,
       error: "Officer access required." as const,
@@ -360,6 +367,17 @@ async function requireOfficer() {
 
   setSentryUser(member);
   return { supabase, error: null, member };
+}
+
+async function mixerFamilyIdsForEvent(
+  supabase: Awaited<ReturnType<typeof createActionSupabase>>,
+  eventId: string,
+): Promise<string[]> {
+  const { data } = await supabase
+    .from("event_jt_families")
+    .select("jt_family_id")
+    .eq("event_id", eventId);
+  return (data ?? []).map((row) => row.jt_family_id);
 }
 
 async function requireAdmin() {
@@ -390,16 +408,37 @@ export async function deleteEvent(eventId: string) {
 async function deleteEventImpl(eventId: string) {
   if (!eventId) return { success: false, error: "Event not found." };
 
-  const { supabase, error: authError } = await requireAdmin();
+  const { supabase, member, error: authError } = await requireEventStaff();
   if (authError) return { success: false, error: authError };
 
   const { data: existing } = await supabase
     .from("events")
-    .select("id, google_event_id")
+    .select("id, category, jt_family_id, google_event_id")
     .eq("id", eventId)
     .maybeSingle();
 
   if (!existing) return { success: false, error: "Event not found." };
+
+  const mixerFamilyIds = isMixerCategory(existing.category)
+    ? await mixerFamilyIdsForEvent(supabase, eventId)
+    : [];
+
+  if (
+    !canDeleteEvent({
+      member,
+      category: existing.category,
+      jtFamilyId: existing.jt_family_id,
+      mixerFamilyIds,
+    })
+  ) {
+    return {
+      success: false,
+      error: eventDeleteDeniedMessage({
+        member,
+        category: existing.category,
+      }),
+    };
+  }
 
   // Soft-fail: Calendar delete errors do not block App delete.
   await deleteCalendarEvent(existing.google_event_id);
@@ -483,8 +522,18 @@ async function createEventImpl(input: CreateEventInput) {
     };
   }
 
-  const { supabase, error: authError } = await requireOfficer();
+  const { supabase, member, error: authError } = await requireEventStaff();
   if (authError) return { success: false, error: authError };
+
+  if (isParentOnly(member)) {
+    const parentError = parentCreateEventError({
+      category: input.category,
+      jtFamilyId: input.jtFamilyId,
+      jtFamilyIds: mixerFamilyIds,
+      memberJtFamilyId: member.jt_family_id,
+    });
+    if (parentError) return { success: false, error: parentError };
+  }
 
   const { value: startsAt, error: startError } =
     await resolveCentralEventTimestamp(supabase, input.eventDate, startTime);
@@ -667,7 +716,7 @@ async function updateEventRsvpImpl(
   rsvpUrl: string | null,
   rsvpDeadline: string | null,
 ) {
-  const { supabase, error: authError } = await requireOfficer();
+  const { supabase, error: authError } = await requireEventStaff();
   if (authError) return { success: false, error: authError };
 
   const { data: event } = await supabase
@@ -758,13 +807,13 @@ async function updateEventScheduleImpl(
   if (!input.eventDate)
     return { success: false, error: "Event date is required." };
 
-  const { supabase, error: authError } = await requireOfficer();
+  const { supabase, member, error: authError } = await requireEventStaff();
   if (authError) return { success: false, error: authError };
 
   const { data: event } = await supabase
     .from("events")
     .select(
-      "id, name, description, rsvp_url, google_event_id, check_in_type, category, parent_event_id, publish_status",
+      "id, name, description, rsvp_url, google_event_id, check_in_type, category, jt_family_id, parent_event_id, publish_status",
     )
     .eq("id", eventId)
     .maybeSingle();
@@ -882,16 +931,22 @@ async function updateEventMixerFamiliesImpl(
     };
   }
 
-  const { supabase, error: authError } = await requireOfficer();
+  const { supabase, member, error: authError } = await requireEventStaff();
   if (authError) return { success: false, error: authError };
 
   const { data: event } = await supabase
     .from("events")
-    .select("id, category")
+    .select("id, category, jt_family_id")
     .eq("id", eventId)
     .maybeSingle();
 
   if (!event) return { success: false, error: "Event not found." };
+  if (isParentOnly(member) && member.jt_family_id && !familyIds.includes(member.jt_family_id)) {
+    return {
+      success: false,
+      error: "Parents must keep their own Jiating in the Mixer.",
+    };
+  }
   if (!isMixerCategory(event.category)) {
     return {
       success: false,

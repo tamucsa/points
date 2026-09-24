@@ -23,6 +23,7 @@ import {
   getCategoryOwnerHint,
   isMixerCategory,
   isPhilanthropyCategory,
+  PARENT_EVENT_CATEGORIES,
 } from "@/utils/events";
 import { CHECKIN_TYPE_ICONS } from "@/utils/icons";
 
@@ -37,6 +38,7 @@ interface Props {
   jtFamilies: JTFamily[];
   officerJtFamilyId: string | null;
   createdBy: string;
+  parentOnly?: boolean;
 }
 
 const DEFAULT_CATEGORY: EventCategory = "General Meeting";
@@ -78,22 +80,27 @@ export default function NewEventClient({
   jtFamilies,
   officerJtFamilyId,
   createdBy,
+  parentOnly = false,
 }: Props) {
   const router = useRouter();
+  const categories = parentOnly ? PARENT_EVENT_CATEGORIES : EVENT_CATEGORIES;
+  const defaultCategory: EventCategory = parentOnly
+    ? "Jiating Event"
+    : DEFAULT_CATEGORY;
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [mixerFamilyIds, setMixerFamilyIds] = useState<string[]>(
     officerJtFamilyId ? [officerJtFamilyId] : [],
   );
   const [form, setForm] = useState(() => {
-    const defaults = applyCategoryDefaults(DEFAULT_CATEGORY, {
+    const defaults = applyCategoryDefaults(defaultCategory, {
       scope: "org",
       check_in_type: "officer",
       has_spectators: false,
     });
     return {
       name: "",
-      category: DEFAULT_CATEGORY,
+      category: defaultCategory,
       point_value: defaults.point_value,
       scope: defaults.scope,
       jt_family_id: officerJtFamilyId ?? "",
@@ -132,6 +139,7 @@ export default function NewEventClient({
     : BASE_CHECK_IN_OPTIONS;
 
   const toggleMixerFamily = (id: string) => {
+    if (parentOnly && id === officerJtFamilyId) return;
     setMixerFamilyIds((prev) =>
       prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id],
     );
@@ -161,6 +169,12 @@ export default function NewEventClient({
   const handleSubmit = async (publishMode: EventPublishMode) => {
     setSubmitting(true);
     setError(null);
+
+    if (parentOnly && !officerJtFamilyId) {
+      setError("Ask an admin to assign your Jiating before creating events.");
+      setSubmitting(false);
+      return;
+    }
 
     if (isMixer && mixerFamilyIds.length < 2) {
       setError("Select at least two Jiatings for a Mixer.");
@@ -211,7 +225,19 @@ export default function NewEventClient({
   return (
     <div className="mx-auto max-w-2xl px-6 py-8 lg:px-8">
       <BackLink href="/officer/events" label="Back to Events" />
-      <PageHeader title="New Event" subtitle={semesterName} />
+      <PageHeader
+        title="New Event"
+        subtitle={
+          parentOnly
+            ? `${semesterName} · Jiating Event or Mixer for your family`
+            : semesterName
+        }
+      />
+      {parentOnly && !officerJtFamilyId && (
+        <p className="mt-4 rounded-2xl border border-error-border bg-error-bg px-4 py-3 text-sm text-error">
+          Ask an admin to assign your Jiating before creating events.
+        </p>
+      )}
 
       <div className="mt-6 flex flex-col gap-5 rounded-4xl border border-home-border bg-surface p-6 shadow-sm">
         <div>
@@ -231,7 +257,7 @@ export default function NewEventClient({
             value={form.category}
             onChange={(e) => handleCategoryChange(e.target.value)}
           >
-            {EVENT_CATEGORIES.map((c) => (
+            {categories.map((c) => (
               <option key={c} value={c}>
                 {c}
               </option>
@@ -330,18 +356,25 @@ export default function NewEventClient({
         {isJTSpecific && (
           <div>
             <label className={labelClassName}>JT Family *</label>
-            <select
-              className={`${inputClassName} cursor-pointer`}
-              value={form.jt_family_id}
-              onChange={(e) => set("jt_family_id", e.target.value)}
-            >
-              <option value="">Select JT family…</option>
-              {jtFamilies.map((jt) => (
-                <option key={jt.id} value={jt.id}>
-                  {jt.name}
-                </option>
-              ))}
-            </select>
+            {parentOnly ? (
+              <p className="rounded-xl border border-home-border bg-bg px-4 py-3 text-sm text-text">
+                {jtFamilies.find((jt) => jt.id === officerJtFamilyId)?.name ??
+                  "Your Jiating"}
+              </p>
+            ) : (
+              <select
+                className={`${inputClassName} cursor-pointer`}
+                value={form.jt_family_id}
+                onChange={(e) => set("jt_family_id", e.target.value)}
+              >
+                <option value="">Select JT family…</option>
+                {jtFamilies.map((jt) => (
+                  <option key={jt.id} value={jt.id}>
+                    {jt.name}
+                  </option>
+                ))}
+              </select>
+            )}
           </div>
         )}
 
@@ -368,6 +401,7 @@ export default function NewEventClient({
                       type="checkbox"
                       checked={checked}
                       onChange={() => toggleMixerFamily(jt.id)}
+                      disabled={parentOnly && jt.id === officerJtFamilyId}
                       className="size-4 rounded border-home-border text-primary focus:ring-primary/30"
                     />
                     <span className="font-medium">{jt.name}</span>

@@ -111,7 +111,15 @@ export default async function OfficerEventsPage() {
       events={events ?? []}
       attendanceCounts={attendanceCounts}
       semester={semester}
-      isAdmin={member?.role === 'admin'}
+      memberAccess={
+        member
+          ? {
+              role: member.role,
+              is_parent: Boolean(member.is_parent),
+              jt_family_id: member.jt_family_id,
+            }
+          : { role: 'member', is_parent: false, jt_family_id: null }
+      }
       spectatorByParentId={spectatorByParentId}
       jtFamilies={jtFamilies ?? []}
       mixerFamiliesByEventId={mixerFamiliesByEventId}

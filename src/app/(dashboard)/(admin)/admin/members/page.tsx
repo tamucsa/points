@@ -33,8 +33,12 @@ export default async function AdminMembersPage({
       : 'pending'
   const page = Math.max(1, Number(pageParam) || 1)
   const query = q.trim()
-  const roleFilter: 'all' | MemberRole =
-    roleParam === 'all' || !isMemberRole(roleParam) ? 'all' : roleParam
+  const roleFilter: 'all' | MemberRole | 'parent' =
+    roleParam === 'parent'
+      ? 'parent'
+      : roleParam === 'all' || !isMemberRole(roleParam)
+        ? 'all'
+        : roleParam
 
   const [
     { data: pendingJt },
@@ -80,7 +84,7 @@ export default async function AdminMembersPage({
 
   let rolesQuery = supabase
     .from('members')
-    .select('id, full_name, email, profile_image_url, role, jt_families(name)', {
+    .select('id, full_name, email, profile_image_url, role, is_parent, jt_families(name)', {
       count: 'exact',
     })
     .eq('status', 'active')
@@ -91,7 +95,9 @@ export default async function AdminMembersPage({
     rolesQuery = rolesQuery.or(`full_name.ilike.${pattern},email.ilike.${pattern}`)
   }
 
-  if (roleFilter !== 'all') {
+  if (roleFilter === 'parent') {
+    rolesQuery = rolesQuery.eq('is_parent', true)
+  } else if (roleFilter !== 'all') {
     rolesQuery = rolesQuery.eq('role', roleFilter)
   }
 
@@ -108,6 +114,7 @@ export default async function AdminMembersPage({
       email: row.email,
       profile_image_url: row.profile_image_url,
       role: (isMemberRole(row.role) ? row.role : 'member') as MemberRole,
+      is_parent: Boolean(row.is_parent) || row.role === 'parent',
       jt_family_name: jt?.name ?? null,
     }
   })
