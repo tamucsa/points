@@ -9,11 +9,28 @@ export type MemberRole = 'member' | 'officer' | 'admin'
 
 export const MEMBER_ROLES: MemberRole[] = ['member', 'officer', 'admin']
 
-export const MEMBER_ROLE_LABELS: Record<MemberRole, string> = {
+/** First-class access assignments shown in admin role management. */
+export const ACCESS_PRESETS = [
+  'member',
+  'parent',
+  'officer',
+  'officer_parent',
+  'admin',
+  'admin_parent',
+] as const
+
+export type AccessPreset = (typeof ACCESS_PRESETS)[number]
+
+export const ACCESS_PRESET_LABELS: Record<AccessPreset, string> = {
   member: 'Member',
+  parent: 'Parent',
   officer: 'Officer',
+  officer_parent: 'Officer + Parent',
   admin: 'Admin',
+  admin_parent: 'Admin + Parent',
 }
+
+export type MemberRoleBadge = 'Member' | 'Parent' | 'Officer' | 'Admin'
 
 export type MemberAccess = {
   role: string
@@ -45,18 +62,67 @@ export function canAccessOfficerEvents(member: MemberAccess): boolean {
   return isOfficerRole(member.role) || isParent(member)
 }
 
-export type MemberAccessLabel = 'Member' | 'Parent' | 'Officer' | 'Officer · Parent'
+export function memberRoleBadges(
+  role: string,
+  isParentFlag?: boolean | null,
+  options?: { revealAdmin?: boolean },
+): MemberRoleBadge[] {
+  const parent = isParentFlag === true || role === 'parent'
+  const staff: MemberRoleBadge | null = isOfficerRole(role)
+    ? role === 'admin' && options?.revealAdmin
+      ? 'Admin'
+      : 'Officer'
+    : null
+  if (staff && parent) return [staff, 'Parent']
+  if (parent) return ['Parent']
+  if (staff) return [staff]
+  return ['Member']
+}
+
+export type MemberAccessLabel =
+  | 'Member'
+  | 'Parent'
+  | 'Officer'
+  | 'Admin'
+  | 'Officer · Parent'
+  | 'Admin · Parent'
 
 export function memberRoleLabel(
   role: string,
   isParentFlag?: boolean | null,
+  options?: { revealAdmin?: boolean },
 ): MemberAccessLabel {
-  const staff = isOfficerRole(role)
+  return memberRoleBadges(role, isParentFlag, options).join(' · ') as MemberAccessLabel
+}
+
+export function accessPresetFromMember(
+  role: string,
+  isParentFlag?: boolean | null,
+): AccessPreset {
   const parent = isParentFlag === true || role === 'parent'
-  if (staff && parent) return 'Officer · Parent'
-  if (parent) return 'Parent'
-  if (staff) return 'Officer'
-  return 'Member'
+  if (role === 'admin') return parent ? 'admin_parent' : 'admin'
+  if (role === 'officer') return parent ? 'officer_parent' : 'officer'
+  return parent ? 'parent' : 'member'
+}
+
+export function accessPresetToFields(preset: AccessPreset): {
+  role: MemberRole
+  is_parent: boolean
+} {
+  switch (preset) {
+    case 'parent':
+      return { role: 'member', is_parent: true }
+    case 'officer':
+      return { role: 'officer', is_parent: false }
+    case 'officer_parent':
+      return { role: 'officer', is_parent: true }
+    case 'admin':
+      return { role: 'admin', is_parent: false }
+    case 'admin_parent':
+      return { role: 'admin', is_parent: true }
+    default:
+      return { role: 'member', is_parent: false }
+  }
 }
 
 /** Leaderboard / attendance points. Parents check in but never earn points. */

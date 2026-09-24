@@ -96,7 +96,9 @@ export default async function AdminMembersPage({
   }
 
   if (roleFilter === 'parent') {
-    rolesQuery = rolesQuery.eq('is_parent', true)
+    rolesQuery = rolesQuery.or('is_parent.eq.true,role.eq.parent')
+  } else if (roleFilter === 'member') {
+    rolesQuery = rolesQuery.eq('role', 'member').eq('is_parent', false)
   } else if (roleFilter !== 'all') {
     rolesQuery = rolesQuery.eq('role', roleFilter)
   }

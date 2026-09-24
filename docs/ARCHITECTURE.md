@@ -126,11 +126,11 @@ Performance note:
 
 ## Role model
 
-`members.role` controls officer/admin access; `members.is_parent` stacks with any role:
-- `member`: normal access; earns points unless `is_parent`; eligible for rewards only if not a parent
-- `officer`: officer pages + check-in tools; earns points unless `is_parent`; not eligible for rewards
-- `admin`: admin pages + officer pages; earns points unless `is_parent`; not eligible for rewards
-- `is_parent`: attendance is tracked; **no points** and not on the leaderboard; not eligible for rewards. Same officer tools as officers (Members + Officer Events), except parent-only users may **create** only **Jiating Event** and **Jiating Mixer** for their own family. Parents may **delete** those JT events for their family; officers may **delete** every other category. Officer/admin + parent keeps full staff create access. Admins can still delete any event.
+`members.role` controls officer/admin access; `members.is_parent` marks the Parent role and can stack with officer/admin:
+- `member` without `is_parent`: normal access; earns points; eligible for rewards
+- Parent (`is_parent`, displayed as **Parent**, not Member): attendance is tracked; **no points** and not on the leaderboard; not eligible for rewards. Same officer tools as officers (Members + Officer Events), except parent-only users may **create** only **Jiating Event** and **Jiating Mixer** for their own family. Parents may **delete** those JT events for their family; officers may **delete** every other category. Officer/admin + parent keeps full staff create access. Admins can still delete any event.
+- `officer`: officer pages + check-in tools; earns points unless also Parent; not eligible for rewards. Displayed as **Officer**, or **Officer** and **Parent**.
+- `admin`: admin pages + officer pages; earns points unless also Parent; not eligible for rewards. Displayed as **Officer** (or **Officer** and **Parent**) everywhere except Admin → Roles, where the hidden Admin assignment is shown.
 
 ## Operations & ownership transfer checklist
 

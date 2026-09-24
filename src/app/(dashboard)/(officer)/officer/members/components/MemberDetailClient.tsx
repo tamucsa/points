@@ -4,10 +4,11 @@ import AccountLinkBadge from '@/app/(dashboard)/(officer)/officer/members/compon
 import BackLink from '@/app/components/BackLink'
 import MemberAvatar from '@/app/components/MemberAvatar'
 import EmptyState from '@/app/components/EmptyState'
+import RoleBadges from '@/app/components/RoleBadges'
 import { CATEGORY_COLORS, POINT_BUCKET_LABELS } from '@/utils/constants'
 import { formatEventSchedule } from '@/utils/datetime'
 import { isManualPointsCheckIn } from '@/utils/events'
-import { attendanceAwardsPoints, memberRoleLabel, roleEarnsPoints } from '@/utils/members'
+import { attendanceAwardsPoints, roleEarnsPoints } from '@/utils/members'
 import { Calendar } from 'lucide-react'
 
 interface Member {
@@ -61,7 +62,6 @@ export default function MemberDetailClient({ member, attendance, history }: Prop
   const displayName = member.full_name
   const role = member.role ?? 'member'
   const earnsPoints = roleEarnsPoints(role, member.is_parent)
-  const roleLabel = memberRoleLabel(role, member.is_parent)
 
   const breakdown = [
     { label: POINT_BUCKET_LABELS.csa, value: member.csa_points },
@@ -85,11 +85,7 @@ export default function MemberDetailClient({ member, attendance, history }: Prop
         <div className="min-w-0 flex-1">
           <div className="mb-2 flex flex-wrap items-center gap-2">
             <h1 className="text-2xl font-bold text-text">{displayName}</h1>
-            {roleLabel !== 'Member' && (
-              <span className="rounded-full bg-bg px-2 py-0.5 text-[11px] font-semibold text-subtitle">
-                {roleLabel}
-              </span>
-            )}
+            <RoleBadges role={role} isParent={member.is_parent} hideMember />
             <AccountLinkBadge linked={member.account_linked} />
           </div>
           <p className="text-sm text-subtitle">{member.email}</p>

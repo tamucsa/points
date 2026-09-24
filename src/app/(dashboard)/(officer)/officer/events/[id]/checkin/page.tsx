@@ -1,6 +1,6 @@
 import { notFound, redirect } from 'next/navigation'
 import OfficerCheckinClient from '@/app/(dashboard)/(officer)/officer/events/components/OfficerCheckinClient'
-import { canAccessOfficerEvents, memberRoleLabel } from '@/utils/members'
+import { canAccessOfficerEvents } from '@/utils/members'
 import { isImportCheckIn, isMixerCategory } from '@/utils/events'
 import { fetchAllPages } from '@/utils/supabase/fetchAll'
 import { getCurrentMember } from '@/utils/supabase/auth'
@@ -179,7 +179,8 @@ export default async function OfficerCheckinPage({ params }: { params: Promise<{
       jt_family_id: m.jt_family_id,
       jt_family_name: jtFamily?.name ?? null,
       jt_color: jtFamily?.color ?? null,
-      role_label: memberRoleLabel(m.role, m.is_parent),
+      role: m.role,
+      is_parent: Boolean(m.is_parent) || m.role === 'parent',
     }
   })
 

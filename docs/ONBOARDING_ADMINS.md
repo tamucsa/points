@@ -77,10 +77,10 @@ Typical flow: start fall (placeholders) → rename JTs when themes land → fall
 
 Go to **Admin** → **Members** → **Roles** (`/admin/members?tab=roles`).
 
-- Search active members and filter by role or Parent.
-- Set access role to **Member**, **Officer**, or **Admin**. Check **Parent** if they are a Jiating parent (this stacks with officer/admin).
+- Search active members and filter by Member, Parent, Officer, or Admin.
+- Set access to **Member**, **Parent**, **Officer**, **Officer + Parent**, **Admin**, or **Admin + Parent**. Parent is a role, not a tag on Member.
 - **Parent** never earns points, is hidden from the leaderboard, and will not qualify for Battle Pass or reduced-fee rewards. Attendance can still be recorded.
-- Parent-only users (Member + Parent) can create **Jiating Event** and **Jiating Mixer** for their own family, and delete those events for their family. Officer + Parent keeps full officer create access.
+- Parent-only users can create **Jiating Event** and **Jiating Mixer** for their own family, and delete those events for their family. Officer + Parent and Admin + Parent keep full staff create access.
 - Officers still earn points unless they are also marked Parent; they also will not qualify for those rewards.
 - Promoting to admin and demoting yourself require confirmation.
 - The last remaining admin cannot be demoted.

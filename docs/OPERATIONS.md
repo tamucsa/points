@@ -341,7 +341,7 @@ Leaderboard buckets (UI label **Sports & Dance** for the sports column):
 
 Attendance with `counted = false` still appears in history (profile / event detail) but does not add to leaderboard or totals.
 
-**Parent flag:** `members.is_parent` never earns points (`recompute_member_semester_points` writes zeros), including when the person is also an officer. Attendance is still stored. Parents are omitted from `/leaderboard`, `top_leaderboard_members_per_jt`, and `v_jt_leaderboard` totals/counts. Toggling Parent (or converting a leftover `role=parent` row) recomputes the active semester.
+**Parent:** `members.is_parent` never earns points (`recompute_member_semester_points` writes zeros), including when the person is also an officer or admin. Attendance is still stored. Parents are omitted from `/leaderboard`, `top_leaderboard_members_per_jt`, and `v_jt_leaderboard` totals/counts. Changing Parent (or converting a leftover `role=parent` row) recomputes the active semester.
 
 #### Timezone
 
@@ -407,7 +407,7 @@ Roles (`member`, `officer`, `admin`) control access to officer and admin pages. 
 
 **Parent** never earns points (`recompute_member_semester_points` stores 0). Parents are excluded from the public leaderboard, Jiating standings totals, and (when built) Battle Pass / reduced-fee rewards. Officer/admin without Parent still earn leaderboard points but are also excluded from those rewards.
 
-Parent-only users (Member + Parent) have the same Members roster and Officer Events tools as officers, except they can only **create** **Jiating Event** and **Jiating Mixer** for their own Jiating. Officers can **delete** events except those two categories; parents can **delete** JT Event/Mixer for their family. Someone who is Officer + Parent keeps full create access and both delete rules. Admins can delete any event.
+Parent-only users have the same Members roster and Officer Events tools as officers, except they can only **create** **Jiating Event** and **Jiating Mixer** for their own Jiating. Officers can **delete** events except those two categories; parents can **delete** JT Event/Mixer for their family. Officer + Parent and Admin + Parent keep full create access and both delete rules. Admins can delete any event.
 
 ### Step-by-step: Promote or demote a member
 

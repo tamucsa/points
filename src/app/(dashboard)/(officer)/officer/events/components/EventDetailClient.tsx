@@ -24,6 +24,7 @@ import IconLabel, { CheckInMethodBadge } from "@/app/components/IconLabel";
 import LocationAutocomplete from "@/app/components/LocationAutocomplete";
 import CollapsibleSettings from "@/app/components/CollapsibleSettings";
 import MemberAvatar from "@/app/components/MemberAvatar";
+import RoleBadges from "@/app/components/RoleBadges";
 import { inputClassName, labelClassName } from "@/utils/constants";
 import { EVENT_TIMEZONE, formatEventSchedule } from "@/utils/datetime";
 import {
@@ -37,7 +38,7 @@ import {
   isImportCheckIn,
   isMixerCategory,
 } from "@/utils/events";
-import { memberRoleLabel, roleEarnsPoints } from "@/utils/members";
+import { roleEarnsPoints } from "@/utils/members";
 
 interface Event {
   id: string;
@@ -970,10 +971,6 @@ export default function EventDetailClient({
         {!attendanceLoadError &&
           attendance.map((row) => {
             const displayName = row.members?.full_name ?? "Unknown member";
-            const roleLabel = memberRoleLabel(
-              row.members?.role ?? "member",
-              row.members?.is_parent,
-            );
             const earnsPoints = roleEarnsPoints(
               row.members?.role ?? "member",
               row.members?.is_parent,
@@ -1005,9 +1002,11 @@ export default function EventDetailClient({
                       {row.point_value_override === 1 ? "" : "s"}
                     </span>
                   )}
-                  <span className="rounded-md bg-bg px-2 py-0.5 text-[11px] text-subtitle">
-                    {roleLabel}
-                  </span>
+                  <RoleBadges
+                    role={row.members?.role ?? "member"}
+                    isParent={row.members?.is_parent}
+                    hideMember
+                  />
                   {row.check_in_method !== "officer" && (
                     <span className="rounded-md bg-bg px-2 py-0.5 text-[11px] text-subtitle">
                       <CheckInMethodBadge checkInMethod={row.check_in_method} />

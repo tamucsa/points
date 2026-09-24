@@ -6,6 +6,7 @@ import { isManualPointsCheckIn } from '@/utils/events'
 import { attendanceAwardsPoints, formatClassification, roleEarnsPoints } from '@/utils/members'
 import JtFamilyBadge from '@/app/(dashboard)/leaderboard/components/JtFamilyBadge'
 import MemberAvatar from '@/app/components/MemberAvatar'
+import RoleBadges from '@/app/components/RoleBadges'
 import EmptyState from '@/app/components/EmptyState'
 import PageHeader from '@/app/components/PageHeader'
 import PointsGuide from '@/app/(dashboard)/profile/components/PointsGuide'
@@ -112,6 +113,12 @@ export default function ProfileClient({
         />
         <div className="flex-1">
           <div className="text-2xl font-bold text-text">{displayName}</div>
+          <RoleBadges
+            role={member.role}
+            isParent={member.is_parent}
+            hideMember
+            className="mt-2"
+          />
           {points?.jt_family && (
             <div className="mt-2">
               <JtFamilyBadge name={points.jt_family} color={points.jt_color} />

@@ -6,6 +6,7 @@ import BackLink from '@/app/components/BackLink'
 import EmptyState from '@/app/components/EmptyState'
 import PageHeader from '@/app/components/PageHeader'
 import MemberAvatar from '@/app/components/MemberAvatar'
+import RoleBadges from '@/app/components/RoleBadges'
 import { UserX, Users } from 'lucide-react'
 
 interface Event {
@@ -30,7 +31,8 @@ interface Member {
   jt_family_id: string | null
   jt_family_name: string | null
   jt_color: string | null
-  role_label: 'Member' | 'Parent' | 'Officer' | 'Officer · Parent'
+  role: string
+  is_parent?: boolean
 }
 
 interface TabFamily {
@@ -123,8 +125,7 @@ export default function OfficerCheckinClient({
       const checkedMember = members.find(m => m.id === memberId)
       const memberName = checkedMember?.full_name ?? 'Member'
       setNotice(
-        checkedMember?.role_label === 'Parent' ||
-          checkedMember?.role_label === 'Officer · Parent'
+        checkedMember?.is_parent
           ? `${memberName} is checked in. Parents do not earn points.`
           : `${memberName} is checked in, but this attendance does not add points under current caps.`,
       )
@@ -281,6 +282,7 @@ export default function OfficerCheckinClient({
                   <div className="truncate text-sm font-medium text-text">
                     {displayName}
                   </div>
+                  <RoleBadges role={m.role} isParent={m.is_parent} hideMember />
                   {hasRsvpList && (
                     <span
                       className={`shrink-0 rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide ${
@@ -294,7 +296,7 @@ export default function OfficerCheckinClient({
                   )}
                 </div>
                 <div className="truncate text-xs text-subtitle">
-                  {m.email} · {m.role_label}
+                  {m.email}
                 </div>
               </div>
               <button
