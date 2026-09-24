@@ -14,6 +14,7 @@ import PageHeader from '@/app/components/PageHeader'
 import { EVENT_TIMEZONE, formatEventDate, isEventPast, sortEventsByStartsAt } from '@/utils/datetime'
 import {
   EVENT_FILTER_TABS,
+  canDeleteEvent,
   eventMatchesFilter,
   eventMatchesJiatingFamily,
   type EventFilterTabId,
@@ -59,7 +60,11 @@ interface Props {
   events: Event[]
   attendanceCounts: Record<string, number>
   semester: { id: string; name: string } | null
-  isAdmin: boolean
+  memberAccess: {
+    role: string
+    is_parent: boolean
+    jt_family_id: string | null
+  }
   spectatorByParentId: Record<string, SpectatorEvent>
   jtFamilies: JtFamily[]
   mixerFamiliesByEventId: Record<string, string[]>
@@ -81,7 +86,7 @@ export default function OfficerEventsClient({
   events,
   attendanceCounts,
   semester,
-  isAdmin,
+  memberAccess,
   spectatorByParentId,
   jtFamilies,
   mixerFamiliesByEventId,
@@ -445,7 +450,12 @@ export default function OfficerEventsClient({
               </button>
             </>
           )}
-          {isAdmin && (
+          {canDeleteEvent({
+            member: memberAccess,
+            category: event.category,
+            jtFamilyId: event.jt_family_id,
+            mixerFamilyIds: mixerFamiliesByEventId[event.id] ?? [],
+          }) && (
             <button
               type="button"
               onClick={() => {

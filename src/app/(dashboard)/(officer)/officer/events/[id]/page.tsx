@@ -9,8 +9,9 @@ import {
   isImportCheckIn,
   isMixerCategory,
 } from '@/utils/events'
+import { canAccessOfficerEvents, isParentOnly } from '@/utils/members'
 import { fetchAllPages } from '@/utils/supabase/fetchAll'
-import { getAuthUser } from '@/utils/supabase/auth'
+import { getCurrentMember } from '@/utils/supabase/auth'
 
 type AttendanceQueryRow = {
   id: string
@@ -21,15 +22,16 @@ type AttendanceQueryRow = {
   recorded_at: string
   point_value_override: number | null
   members:
-    | { id: string; full_name: string; profile_image_url: string | null; role: string }
-    | { id: string; full_name: string; profile_image_url: string | null; role: string }[]
+    | { id: string; full_name: string; profile_image_url: string | null; role: string; is_parent?: boolean }
+    | { id: string; full_name: string; profile_image_url: string | null; role: string; is_parent?: boolean }[]
     | null
 }
 
 export default async function EventDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
-  const { supabase, user } = await getAuthUser()
+  const { supabase, user, member } = await getCurrentMember()
   if (!user) redirect('/')
+  if (!member || !canAccessOfficerEvents(member)) redirect('/leaderboard')
 
   const { data: event } = await supabase
     .from('events')
@@ -55,7 +57,8 @@ export default async function EventDetailPage({ params }: { params: Promise<{ id
             id,
             full_name,
             profile_image_url,
-            role
+            role,
+            is_parent
           )
         `)
         .eq('event_id', id)
@@ -173,6 +176,8 @@ export default async function EventDetailPage({ params }: { params: Promise<{ id
       publishedSnapshot={publishedSnapshot}
       jtFamilies={jtFamilies}
       mixerFamilyIds={mixerFamilyIds}
+      parentOnly={isParentOnly(member)}
+      officerJtFamilyId={member.jt_family_id}
       spectatorEvent={spectatorEvent}
       rsvpRows={rsvpRows}
       rsvpMatchMembers={rsvpMatchMembers}

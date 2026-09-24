@@ -1,8 +1,8 @@
 import { redirect } from 'next/navigation'
-import { canAccessOfficerEvents } from '@/utils/members'
+import { canAccessOfficerMembers } from '@/utils/members'
 import { getCurrentMember } from '@/utils/supabase/auth'
 
-export default async function OfficerLayout({
+export default async function OfficerMembersLayout({
   children,
 }: {
   children: React.ReactNode
@@ -10,8 +10,8 @@ export default async function OfficerLayout({
   const { user, member } = await getCurrentMember()
 
   if (!user) redirect('/')
-  if (!member || !canAccessOfficerEvents(member)) {
-    redirect('/leaderboard')
+  if (!member || !canAccessOfficerMembers(member)) {
+    redirect('/officer/events')
   }
 
   return <>{children}</>

@@ -30,7 +30,7 @@ interface Member {
   jt_family_id: string | null
   jt_family_name: string | null
   jt_color: string | null
-  role_label: 'Member' | 'Officer'
+  role_label: 'Member' | 'Parent' | 'Officer' | 'Officer · Parent'
 }
 
 interface TabFamily {
@@ -119,10 +119,14 @@ export default function OfficerCheckinClient({
     }
 
     setCheckedIn(prev => new Set([...prev, memberId]))
-    if (result.counted === false) {
-      const memberName = members.find(m => m.id === memberId)?.full_name ?? 'Member'
+    if (result.awardsPoints === false) {
+      const checkedMember = members.find(m => m.id === memberId)
+      const memberName = checkedMember?.full_name ?? 'Member'
       setNotice(
-        `${memberName} is checked in, but this attendance does not add points under current caps.`,
+        checkedMember?.role_label === 'Parent' ||
+          checkedMember?.role_label === 'Officer · Parent'
+          ? `${memberName} is checked in. Parents do not earn points.`
+          : `${memberName} is checked in, but this attendance does not add points under current caps.`,
       )
     }
     setSaving(null)

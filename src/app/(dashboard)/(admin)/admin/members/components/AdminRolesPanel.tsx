@@ -3,10 +3,10 @@
 import { useRouter } from 'next/navigation'
 import { useState } from 'react'
 import { ChevronDown } from 'lucide-react'
-import { updateMemberRole } from '@/app/actions/members'
+import { updateMemberAccess } from '@/app/actions/members'
 import MemberAvatar from '@/app/components/MemberAvatar'
 import { inputClassName, OFFICER_MEMBERS_PAGE_SIZE } from '@/utils/constants'
-import { MEMBER_ROLES, type MemberRole } from '@/utils/members'
+import { MEMBER_ROLE_LABELS, MEMBER_ROLES, type MemberRole } from '@/utils/members'
 
 export interface RoleMember {
   id: string
@@ -14,6 +14,7 @@ export interface RoleMember {
   email: string
   profile_image_url: string | null
   role: MemberRole
+  is_parent: boolean
   jt_family_name: string | null
 }
 
@@ -24,13 +25,7 @@ interface Props {
   totalPages: number
   totalCount: number
   query: string
-  roleFilter: 'all' | MemberRole
-}
-
-const ROLE_LABELS: Record<MemberRole, string> = {
-  member: 'Member',
-  officer: 'Officer',
-  admin: 'Admin',
+  roleFilter: 'all' | MemberRole | 'parent'
 }
 
 const selectClassName =
@@ -66,6 +61,7 @@ export default function AdminRolesPanel({
   const router = useRouter()
   const [searchInput, setSearchInput] = useState(query)
   const [draftRoles, setDraftRoles] = useState<Record<string, MemberRole>>({})
+  const [draftParents, setDraftParents] = useState<Record<string, boolean>>({})
   const [savingId, setSavingId] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [success, setSuccess] = useState<string | null>(null)
@@ -84,10 +80,12 @@ export default function AdminRolesPanel({
   }
 
   const selectedRole = (m: RoleMember) => draftRoles[m.id] ?? m.role
+  const selectedParent = (m: RoleMember) => draftParents[m.id] ?? m.is_parent
 
   const saveRole = async (m: RoleMember) => {
     const nextRole = selectedRole(m)
-    if (nextRole === m.role) return
+    const nextParent = selectedParent(m)
+    if (nextRole === m.role && nextParent === m.is_parent) return
 
     const isSelf = m.id === currentAdminId
     if (nextRole === 'admin' && m.role !== 'admin') {
@@ -108,7 +106,7 @@ export default function AdminRolesPanel({
     setError(null)
     setSuccess(null)
 
-    const result = await updateMemberRole(m.id, nextRole)
+    const result = await updateMemberAccess(m.id, nextRole, nextParent)
     setSavingId(null)
 
     if (!result.success) {
@@ -121,15 +119,24 @@ export default function AdminRolesPanel({
       delete next[m.id]
       return next
     })
-    setSuccess(`Updated ${m.full_name} to ${ROLE_LABELS[nextRole]}.`)
+    setDraftParents(prev => {
+      const next = { ...prev }
+      delete next[m.id]
+      return next
+    })
+    const parentNote = nextParent ? ' (Parent)' : ''
+    setSuccess(`Updated ${m.full_name} to ${MEMBER_ROLE_LABELS[nextRole]}${parentNote}.`)
     router.refresh()
   }
 
   return (
     <div className="flex flex-col gap-4">
       <p className="text-sm leading-6 text-subtitle">
-        Promote or demote active members. Officers can access officer tools; admins can access
-        admin pages as well. You cannot demote the last remaining admin.
+        Promote or demote active members. Role (Member / Officer / Admin) can be
+        combined with the Parent flag. Parents do not earn points and are hidden
+        from the leaderboard. Parent-only users can create Jiating Event and
+        Jiating Mixer for their own family; officer + parent keeps full officer
+        tools. You cannot demote the last remaining admin.
       </p>
 
       <form
@@ -156,9 +163,10 @@ export default function AdminRolesPanel({
             <option value="all">All roles</option>
             {MEMBER_ROLES.map(role => (
               <option key={role} value={role}>
-                {ROLE_LABELS[role]}
+                {MEMBER_ROLE_LABELS[role]}
               </option>
             ))}
+            <option value="parent">Parent</option>
           </select>
           <SelectChevron />
         </div>
@@ -189,7 +197,8 @@ export default function AdminRolesPanel({
         ) : (
           members.map(m => {
             const draft = selectedRole(m)
-            const dirty = draft !== m.role
+            const draftParent = selectedParent(m)
+            const dirty = draft !== m.role || draftParent !== m.is_parent
             const isYou = m.id === currentAdminId
 
             return (
@@ -207,8 +216,13 @@ export default function AdminRolesPanel({
                       </span>
                     )}
                     <span className="rounded-full bg-bg px-2 py-0.5 text-[11px] font-semibold capitalize text-subtitle">
-                      {ROLE_LABELS[m.role]}
+                      {MEMBER_ROLE_LABELS[m.role]}
                     </span>
+                    {m.is_parent && (
+                      <span className="rounded-full bg-primary/10 px-2 py-0.5 text-[11px] font-semibold text-primary">
+                        Parent
+                      </span>
+                    )}
                   </div>
                   <div className="truncate text-xs text-subtitle">{m.email}</div>
                   {m.jt_family_name && (
@@ -216,7 +230,22 @@ export default function AdminRolesPanel({
                   )}
                 </div>
 
-                <div className="flex items-center gap-2">
+                <div className="flex flex-wrap items-center gap-2">
+                  <label className="flex items-center gap-2 text-sm text-text">
+                    <input
+                      type="checkbox"
+                      checked={draftParent}
+                      onChange={e =>
+                        setDraftParents(prev => ({
+                          ...prev,
+                          [m.id]: e.target.checked,
+                        }))
+                      }
+                      disabled={savingId === m.id}
+                      className="size-4 rounded border-home-border text-primary focus:ring-primary/30"
+                    />
+                    Parent
+                  </label>
                   <div className="relative min-w-[8.5rem]">
                     <select
                       value={draft}
@@ -232,7 +261,7 @@ export default function AdminRolesPanel({
                     >
                       {MEMBER_ROLES.map(role => (
                         <option key={role} value={role}>
-                          {ROLE_LABELS[role]}
+                          {MEMBER_ROLE_LABELS[role]}
                         </option>
                       ))}
                     </select>

@@ -30,7 +30,7 @@ This document explains how the system is structured, how requests flow through t
 ## Data model (high-level)
 
 Core tables (names reflect actual schema):
-- `members`: one row per person (email, role, status, jt family, auth uid, `theme_preference`)
+- `members`: one row per person (email, role, `is_parent`, status, jt family, auth uid, `theme_preference`)
 - `events`: point-earning opportunities; has scope (CSA-wide / JT shared / JT specific)
 - `event_jt_families`: which Jiatings participate in a Mixer (and similar multi-family events)
 - `event_rsvps`: optional RSVP CSV tags per event (`member_id` nullable; `is_guest` for dismissed non-members); used only for check-in badges, not attendance gating
@@ -79,7 +79,7 @@ Public routes (no sign-in required): `/`, `/login` (redirects to `/` when logged
 - redirects `pending_member` (and legacy `pending_jt`) to `/pending`
 - renders the app shell (`Sidebar` + page content)
 
-`pending` page redirects active members to `/leaderboard`. Officer/admin sections have their own layouts that enforce role membership.
+`pending` page redirects active members to `/leaderboard`. Officer/admin sections have their own layouts that enforce role membership. Parents (`is_parent`) can enter `/officer/events` and `/officer/members` like officers. Parent-only users may only **create** Jiating Event and Jiating Mixer for their own family.
 
 ### Theming (light / dark / system)
 
@@ -126,10 +126,11 @@ Performance note:
 
 ## Role model
 
-`members.role` controls access:
-- `member`: normal access
-- `officer`: officer pages + check-in tools
-- `admin`: admin pages + officer pages
+`members.role` controls officer/admin access; `members.is_parent` stacks with any role:
+- `member`: normal access; earns points unless `is_parent`; eligible for rewards only if not a parent
+- `officer`: officer pages + check-in tools; earns points unless `is_parent`; not eligible for rewards
+- `admin`: admin pages + officer pages; earns points unless `is_parent`; not eligible for rewards
+- `is_parent`: attendance is tracked; **no points** and not on the leaderboard; not eligible for rewards. Same officer tools as officers (Members + Officer Events), except parent-only users may **create** only **Jiating Event** and **Jiating Mixer** for their own family. Parents may **delete** those JT events for their family; officers may **delete** every other category. Officer/admin + parent keeps full staff create access. Admins can still delete any event.
 
 ## Operations & ownership transfer checklist
 

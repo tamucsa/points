@@ -5,6 +5,7 @@ import { useState } from 'react'
 import { selfCheckIn } from '@/app/actions/attendance'
 import IconLabel from '@/app/components/IconLabel'
 import { formatEventSchedule } from '@/utils/datetime'
+import { roleEarnsPoints } from '@/utils/members'
 import { CircleCheck, Clock, MapPin, PartyPopper, Star } from 'lucide-react'
 
 interface Event {
@@ -24,6 +25,8 @@ interface Member {
   id: string
   status: string
   full_name: string
+  role?: string
+  is_parent?: boolean
 }
 
 interface Props {
@@ -65,7 +68,10 @@ export default function CheckinClient({ event, code, userEmail, member, alreadyC
   }
 
   const eventSchedule = formatEventSchedule(event.starts_at, event.ends_at)
-  const pointLabel = `${event.point_value} point${event.point_value !== 1 ? 's' : ''}`
+  const earnsPoints = roleEarnsPoints(member?.role ?? 'member', member?.is_parent)
+  const pointLabel = earnsPoints
+    ? `${event.point_value} point${event.point_value !== 1 ? 's' : ''}`
+    : 'Attendance only (no points)'
 
   return (
     <div className="force-light relative min-h-screen overflow-hidden bg-bg px-6 py-10 text-text">
@@ -170,14 +176,15 @@ export default function CheckinClient({ event, code, userEmail, member, alreadyC
                 <div className="rounded-2xl border border-primary/20 bg-primary/5 p-4 text-center">
                   <PartyPopper className="mx-auto size-10 text-primary" aria-hidden />
                   <p className="mt-2 text-base font-semibold text-text">You&apos;re checked in!</p>
-                  {counted ? (
+                  {earnsPoints && counted ? (
                     <p className="mt-1 text-sm text-subtitle">
                       +{event.point_value} point{event.point_value !== 1 ? 's' : ''} added
                     </p>
                   ) : (
                     <p className="mt-1 text-sm text-subtitle">
-                      Attendance recorded, but this check-in doesn&apos;t add points under current
-                      caps.
+                      {earnsPoints
+                        ? "Attendance recorded, but this check-in doesn't add points under current caps."
+                        : 'Attendance recorded. Parents do not earn points.'}
                     </p>
                   )}
                   <button

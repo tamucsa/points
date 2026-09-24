@@ -15,12 +15,14 @@ import BrandMark from '@/app/components/BrandMark'
 import IconLabel from '@/app/components/IconLabel'
 import ThemeToggle from '@/app/components/ThemeToggle'
 import { NAV_ICONS } from '@/utils/icons'
+import { canAccessOfficerEvents, canAccessOfficerMembers, memberRoleLabel } from '@/utils/members'
 import { createBrowserSupabase } from '@/utils/supabase/client'
 
 interface Member {
   id: string
   full_name: string
   role: string
+  is_parent?: boolean
   profile_image_url: string | null
 }
 
@@ -49,7 +51,8 @@ export default function Sidebar({ member }: { member: Member }) {
   const [collapsed, setCollapsed] = useState(false)
   const [mobileOpen, setMobileOpen] = useState(false)
   const [profileImageUrl, setProfileImageUrl] = useState(member.profile_image_url)
-  const isOfficer = ['officer', 'admin'].includes(member.role)
+  const isOfficer = canAccessOfficerMembers(member)
+  const showOfficerEvents = canAccessOfficerEvents(member)
   const isAdmin = member.role === 'admin'
 
   useEffect(() => {
@@ -85,7 +88,11 @@ export default function Sidebar({ member }: { member: Member }) {
   }
 
   const generalNav = NAV_ITEMS.filter(item => !item.officerOnly && !item.adminOnly)
-  const officerNav = NAV_ITEMS.filter(item => item.officerOnly)
+  const officerNav = NAV_ITEMS.filter(item => {
+    if (!item.officerOnly) return false
+    if (item.path === '/officer/members') return isOfficer
+    return showOfficerEvents
+  })
   const adminNav = NAV_ITEMS.filter(item => item.adminOnly)
 
   const displayName = member.full_name
@@ -137,7 +144,7 @@ export default function Sidebar({ member }: { member: Member }) {
                 CSA Points
               </div>
               <div className="mt-0.5 text-xs text-subtitle">
-                {isOfficer ? member.role.charAt(0).toUpperCase() + member.role.slice(1) : 'Member'}
+                {memberRoleLabel(member.role, member.is_parent)}
               </div>
             </div>
           </div>
@@ -155,11 +162,11 @@ export default function Sidebar({ member }: { member: Member }) {
       <nav className="flex-1 overflow-y-auto py-4">
         {generalNav.map(navLink)}
 
-        {isOfficer && (
+        {showOfficerEvents && (
           <>
             {!collapsed && (
               <div className="px-3 pt-5 pb-2 text-[0.7rem] font-semibold uppercase tracking-[0.12em] text-subtitle">
-                Officer
+                {isOfficer ? 'Officer' : 'Jiating'}
               </div>
             )}
             {collapsed && <div className="my-2 border-t border-home-border" />}

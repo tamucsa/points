@@ -4,7 +4,9 @@ This guide is for officers using the officer tools to run events and manage chec
 
 ## Access
 
-Officers must have `members.role` set to `officer`. If you can't see officer pages, ask the Secretary to grant access.
+Officers must have `members.role` set to `officer` (or `admin`). If you can't see officer pages, ask the Secretary to grant access.
+
+**Jiating parents** (`is_parent`) can open **Officer Events** and **Members** like officers. The difference is create and delete: parent-only users can only **create** **Jiating Event** and **Jiating Mixer** for their own family. Officer + Parent keeps full create access. Parent only turns off points and rewards.
 
 ## Quickstart checklist
 
@@ -36,6 +38,10 @@ Officers must have `members.role` set to `officer`. If you can't see officer pag
     - **CSV** (fixed for some categories: CSA-Wide Mixers and Howdy Week)
 
 The app currently allows any officer to create any category. Prefer following the ownership guidance below so the right chair/parents own each event type. The New Event form shows a soft hint for who typically creates each category.
+
+**Parent-only users** (Parent flag, role Member) can only create **Jiating Event** (locked to their family) and **Jiating Mixer** (their family must stay selected). Officer + Parent is not limited this way.
+
+**Delete:** Officers can delete any event except **Jiating Event** / **Jiating Mixer**. Parents can delete those JT events for their own family. Admins can delete any event.
 
 ### Who should create each category
 
@@ -71,6 +77,7 @@ If you need an event outside your usual categories, create it only when the resp
 - Open the event check-in page
 - Search/filter members
 - Check them in as they arrive
+- Parents (label **Parent** or **Officer · Parent**) can be checked in; attendance is recorded but they do not earn points
 - For **Jiating Olympics**, use the Jiating tabs (all families). For **Mixers**, tabs only include the families selected when the event was created.
 
 ### 3) Verify attendance
@@ -99,6 +106,7 @@ Each Members row shows whether the member has **signed in with Google**:
 - **Signed in** — `auth_uid` is linked (normal for self-registered or post-import login)
 - **Not signed in** — on the roster via CSV import but has not completed first Google login yet
 - Members who attended Howdy Week may also show **Attended N Howdy Week event(s)**
+- **Parent**, **Officer**, and **Officer · Parent** labels appear under the name. Parents can be checked in; they do not earn points.
 
 Roster-imported members can still be officer-checked-in before they sign in, but they should sign in once so their account links and profile photo syncs.
 

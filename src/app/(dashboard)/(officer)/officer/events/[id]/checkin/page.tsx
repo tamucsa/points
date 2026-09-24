@@ -1,7 +1,7 @@
 import { notFound, redirect } from 'next/navigation'
 import OfficerCheckinClient from '@/app/(dashboard)/(officer)/officer/events/components/OfficerCheckinClient'
+import { canAccessOfficerEvents, memberRoleLabel } from '@/utils/members'
 import { isImportCheckIn, isMixerCategory } from '@/utils/events'
-import { memberRoleLabel } from '@/utils/members'
 import { fetchAllPages } from '@/utils/supabase/fetchAll'
 import { getCurrentMember } from '@/utils/supabase/auth'
 
@@ -10,7 +10,7 @@ export default async function OfficerCheckinPage({ params }: { params: Promise<{
   const { supabase, user, member: officer } = await getCurrentMember()
   if (!user) redirect('/')
 
-  if (!officer || !['officer', 'admin'].includes(officer.role)) {
+  if (!officer || !canAccessOfficerEvents(officer)) {
     redirect('/leaderboard')
   }
 
@@ -98,6 +98,7 @@ export default async function OfficerCheckinPage({ params }: { params: Promise<{
     email: string
     profile_image_url: string | null
     role: string
+    is_parent?: boolean
     jt_family_id: string | null
     jt_families: { name: string; color: string } | { name: string; color: string }[] | null
   }
@@ -105,7 +106,7 @@ export default async function OfficerCheckinPage({ params }: { params: Promise<{
   const { data: members, error: membersError } = await fetchAllPages<MemberRosterRow>((from, to) => {
     let membersQuery = supabase
       .from('members')
-      .select('id, full_name, email, profile_image_url, role, jt_family_id, jt_families(name, color)')
+      .select('id, full_name, email, profile_image_url, role, is_parent, jt_family_id, jt_families(name, color)')
       .eq('status', 'active')
       .order('full_name')
 
@@ -178,7 +179,7 @@ export default async function OfficerCheckinPage({ params }: { params: Promise<{
       jt_family_id: m.jt_family_id,
       jt_family_name: jtFamily?.name ?? null,
       jt_color: jtFamily?.color ?? null,
-      role_label: memberRoleLabel(m.role),
+      role_label: memberRoleLabel(m.role, m.is_parent),
     }
   })
 

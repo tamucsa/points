@@ -4,9 +4,10 @@ import AccountLinkBadge from '@/app/(dashboard)/(officer)/officer/members/compon
 import BackLink from '@/app/components/BackLink'
 import MemberAvatar from '@/app/components/MemberAvatar'
 import EmptyState from '@/app/components/EmptyState'
-import { CATEGORY_COLORS, CHECKIN_METHOD_LABELS, POINT_BUCKET_LABELS } from '@/utils/constants'
+import { CATEGORY_COLORS, POINT_BUCKET_LABELS } from '@/utils/constants'
 import { formatEventSchedule } from '@/utils/datetime'
 import { isManualPointsCheckIn } from '@/utils/events'
+import { attendanceAwardsPoints, memberRoleLabel, roleEarnsPoints } from '@/utils/members'
 import { Calendar } from 'lucide-react'
 
 interface Member {
@@ -22,6 +23,8 @@ interface Member {
   jt_points: number
   sports_points: number
   gm_points: number
+  role?: string
+  is_parent?: boolean
 }
 
 interface AttendanceRow {
@@ -56,6 +59,9 @@ interface Props {
 export default function MemberDetailClient({ member, attendance, history }: Props) {
   const color = member.jt_color ?? '#4779B8'
   const displayName = member.full_name
+  const role = member.role ?? 'member'
+  const earnsPoints = roleEarnsPoints(role, member.is_parent)
+  const roleLabel = memberRoleLabel(role, member.is_parent)
 
   const breakdown = [
     { label: POINT_BUCKET_LABELS.csa, value: member.csa_points },
@@ -79,6 +85,11 @@ export default function MemberDetailClient({ member, attendance, history }: Prop
         <div className="min-w-0 flex-1">
           <div className="mb-2 flex flex-wrap items-center gap-2">
             <h1 className="text-2xl font-bold text-text">{displayName}</h1>
+            {roleLabel !== 'Member' && (
+              <span className="rounded-full bg-bg px-2 py-0.5 text-[11px] font-semibold text-subtitle">
+                {roleLabel}
+              </span>
+            )}
             <AccountLinkBadge linked={member.account_linked} />
           </div>
           <p className="text-sm text-subtitle">{member.email}</p>
@@ -95,19 +106,29 @@ export default function MemberDetailClient({ member, attendance, history }: Prop
           )}
         </div>
         <div className="text-right">
-          <div className="text-5xl font-extrabold tracking-tight text-text">{member.total_points}</div>
-          <div className="text-sm text-subtitle">total points</div>
+          {earnsPoints ? (
+            <>
+              <div className="text-5xl font-extrabold tracking-tight text-text">{member.total_points}</div>
+              <div className="text-sm text-subtitle">total points</div>
+            </>
+          ) : (
+            <div className="max-w-[12rem] text-sm leading-5 text-subtitle">
+              Parents do not earn points. Attendance is still tracked.
+            </div>
+          )}
         </div>
       </div>
 
-      <div className="mb-6 grid grid-cols-2 gap-3 sm:grid-cols-4">
-        {breakdown.map(cat => (
-          <div key={cat.label} className="rounded-3xl border border-home-border bg-surface p-4 text-center shadow-sm">
-            <div className="text-2xl font-extrabold text-primary">{cat.value}</div>
-            <div className="mt-1 text-xs text-subtitle">{cat.label}</div>
-          </div>
-        ))}
-      </div>
+      {earnsPoints && (
+        <div className="mb-6 grid grid-cols-2 gap-3 sm:grid-cols-4">
+          {breakdown.map(cat => (
+            <div key={cat.label} className="rounded-3xl border border-home-border bg-surface p-4 text-center shadow-sm">
+              <div className="text-2xl font-extrabold text-primary">{cat.value}</div>
+              <div className="mt-1 text-xs text-subtitle">{cat.label}</div>
+            </div>
+          ))}
+        </div>
+      )}
 
       <h2 className="mb-3 text-lg font-bold text-text">This Semester</h2>
       <div className="mb-6 overflow-hidden rounded-4xl border border-home-border bg-surface shadow-sm">
@@ -123,10 +144,14 @@ export default function MemberDetailClient({ member, attendance, history }: Prop
           const catColor = CATEGORY_COLORS[row.events?.category] ?? CATEGORY_COLORS.default
           const earnedPoints =
             row.point_value_override ?? row.events?.point_value ?? 0
+          const awardsPoints = attendanceAwardsPoints(
+            { role, is_parent: member.is_parent },
+            row.counted,
+          )
           return (
             <div key={row.id} className="flex items-center gap-4 border-b border-home-border px-5 py-3 last:border-b-0">
               <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl text-sm font-extrabold" style={{ background: `${catColor}20`, color: catColor }}>
-                {row.counted ? `+${earnedPoints}` : '—'}
+                {awardsPoints ? `+${earnedPoints}` : '—'}
               </div>
               <div className="min-w-0 flex-1">
                 <div className="truncate text-sm font-medium text-text">{row.events?.name}</div>
@@ -139,7 +164,7 @@ export default function MemberDetailClient({ member, attendance, history }: Prop
                       : '—'}
                   </span>
                   <span className="rounded-md px-2 py-0.5" style={{ background: `${catColor}15`, color: catColor }}>{row.events?.category}</span>
-                  {!row.counted && <span className="rounded-md bg-red-50 px-2 py-0.5 text-red-500">Cap reached</span>}
+                  {earnsPoints && !row.counted && <span className="rounded-md bg-red-50 px-2 py-0.5 text-red-500">Cap reached</span>}
                 </div>
               </div>
             </div>

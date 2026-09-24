@@ -37,7 +37,7 @@ import {
   isImportCheckIn,
   isMixerCategory,
 } from "@/utils/events";
-import { memberRoleLabel } from "@/utils/members";
+import { memberRoleLabel, roleEarnsPoints } from "@/utils/members";
 
 interface Event {
   id: string;
@@ -70,6 +70,7 @@ interface AttendanceRow {
     full_name: string;
     profile_image_url: string | null;
     role: string;
+    is_parent?: boolean;
   } | null;
 }
 
@@ -91,6 +92,8 @@ interface Props {
   publishedSnapshot: PublishedSnapshot | null;
   jtFamilies: JTFamily[];
   mixerFamilyIds: string[];
+  parentOnly?: boolean;
+  officerJtFamilyId?: string | null;
   spectatorEvent: {
     id: string;
     name: string;
@@ -121,6 +124,8 @@ export default function EventDetailClient({
   publishedSnapshot,
   jtFamilies,
   mixerFamilyIds,
+  parentOnly = false,
+  officerJtFamilyId = null,
   spectatorEvent,
   rsvpRows,
   rsvpMatchMembers,
@@ -241,6 +246,7 @@ export default function EventDetailClient({
   ]);
 
   const toggleMixerFamily = (id: string) => {
+    if (parentOnly && id === officerJtFamilyId) return;
     setSelectedMixerFamilies((prev) =>
       prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id],
     );
@@ -771,6 +777,9 @@ export default function EventDetailClient({
             <p className="text-xs leading-5 text-subtitle">
               Add families anytime. Removing a family that already has check-ins
               is blocked until those check-ins are cleared.
+              {parentOnly
+                ? " Your Jiating must stay in the Mixer."
+                : ""}
             </p>
             <div className="grid gap-2 sm:grid-cols-2">
               {jtFamilies.map((jt) => {
@@ -788,6 +797,7 @@ export default function EventDetailClient({
                       type="checkbox"
                       checked={checked}
                       onChange={() => toggleMixerFamily(jt.id)}
+                      disabled={parentOnly && jt.id === officerJtFamilyId}
                       className="size-4 rounded border-home-border text-primary focus:ring-primary/30"
                     />
                     <span className="font-medium">{jt.name}</span>
@@ -960,7 +970,14 @@ export default function EventDetailClient({
         {!attendanceLoadError &&
           attendance.map((row) => {
             const displayName = row.members?.full_name ?? "Unknown member";
-            const roleLabel = memberRoleLabel(row.members?.role ?? "member");
+            const roleLabel = memberRoleLabel(
+              row.members?.role ?? "member",
+              row.members?.is_parent,
+            );
+            const earnsPoints = roleEarnsPoints(
+              row.members?.role ?? "member",
+              row.members?.is_parent,
+            );
             return (
               <div
                 key={row.id}
@@ -1001,7 +1018,7 @@ export default function EventDetailClient({
                       Unverified
                     </span>
                   )}
-                  {!row.counted && (
+                  {earnsPoints && !row.counted && (
                     <span className="rounded-md bg-red-50 px-2 py-0.5 text-[11px] text-red-500">
                       Cap reached
                     </span>
@@ -1049,13 +1066,22 @@ export default function EventDetailClient({
             </p>
             <p className="mt-3 text-center text-sm leading-6 text-subtitle">
               This removes their attendance for {event.name}
-              {uncheckTarget.counted
+              {roleEarnsPoints(
+                uncheckTarget.members?.role ?? "member",
+                uncheckTarget.members?.is_parent,
+              ) &&
+              uncheckTarget.counted
                 ? (() => {
                     const pts =
                       uncheckTarget.point_value_override ?? event.point_value;
                     return ` and deducts ${pts} point${pts === 1 ? "" : "s"} from their total.`;
                   })()
-                : ". This check-in was not counting toward points (cap), so totals stay the same."}
+                : roleEarnsPoints(
+                    uncheckTarget.members?.role ?? "member",
+                    uncheckTarget.members?.is_parent,
+                  )
+                  ? ". This check-in was not counting toward points (cap), so totals stay the same."
+                  : ". Parents do not earn points, so totals stay the same."}
             </p>
             {uncheckError && (
               <p className="mt-4 rounded-2xl border border-error-border bg-error-bg px-4 py-3 text-center text-sm text-error">

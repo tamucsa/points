@@ -2,6 +2,7 @@
 
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { isHowdyWeekCategory } from "@/utils/events";
+import { canAccessOfficerEvents } from "@/utils/members";
 import { lookupMembersByEmail, normalizeEmail } from "@/utils/member-lookup";
 import { setSentryUser, withServerAction } from "@/utils/sentry";
 import { createActionSupabase } from "@/utils/supabase/action";
@@ -18,11 +19,11 @@ async function requireOfficer() {
 
   const { data: member } = await supabase
     .from("members")
-    .select("id, role")
+    .select("id, role, is_parent")
     .eq("auth_uid", user.id)
     .maybeSingle();
 
-  if (!member || !["officer", "admin"].includes(member.role)) {
+  if (!member || !canAccessOfficerEvents(member)) {
     return { supabase, error: "Officer access required." as const };
   }
 

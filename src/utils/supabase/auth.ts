@@ -23,7 +23,7 @@ export const getCurrentMember = cache(async () => {
   const { data: member, error } = await supabase
     .from("members")
     .select(
-      "id, full_name, role, status, profile_image_url, graduation_year, jt_family_id, theme_preference",
+      "id, full_name, role, is_parent, status, profile_image_url, graduation_year, jt_family_id, theme_preference",
     )
     .eq("auth_uid", user.id)
     .maybeSingle();
@@ -41,6 +41,7 @@ export const getCurrentMember = cache(async () => {
     const memberWithAvatar = fallbackMember
       ? {
           ...fallbackMember,
+          is_parent: false,
           theme_preference: "system" as const,
           profile_image_url:
             fallbackMember.profile_image_url ?? avatarFromAuth ?? null,
@@ -56,6 +57,7 @@ export const getCurrentMember = cache(async () => {
     ? {
         ...member,
         theme_preference: member.theme_preference ?? "system",
+        is_parent: member.is_parent ?? false,
         profile_image_url: member.profile_image_url ?? avatarFromAuth ?? null,
       }
     : null;

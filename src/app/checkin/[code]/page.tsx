@@ -33,13 +33,14 @@ export default async function CheckinPage({
     status: string;
     full_name: string;
     role: string;
+    is_parent?: boolean;
   } | null = null;
   let alreadyCheckedIn = false;
 
   if (user) {
     const { data: memberRow } = await supabase
       .from("members")
-      .select("id, status, full_name, role")
+      .select("id, status, full_name, role, is_parent")
       .eq("auth_uid", user.id)
       .maybeSingle();
 

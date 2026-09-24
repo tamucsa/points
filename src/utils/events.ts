@@ -128,6 +128,94 @@ export function isMixerCategory(category: string) {
   return value === 'Jiating Mixer' || value === 'Mixer'
 }
 
+/** Categories a parent-only user may create or manage for their own Jiating. */
+export function isParentManagedCategory(category: string) {
+  return category.trim() === 'Jiating Event' || isMixerCategory(category)
+}
+
+export const PARENT_EVENT_CATEGORIES = [
+  'Jiating Event',
+  'Jiating Mixer',
+] as const satisfies readonly EventCategory[]
+
+export function parentCreateEventError(input: {
+  category: string
+  jtFamilyId: string | null
+  jtFamilyIds: string[]
+  memberJtFamilyId: string | null
+}): string | null {
+  if (!input.memberJtFamilyId) {
+    return 'Assign a Jiating before creating events as a parent.'
+  }
+  if (input.category.trim() === 'Jiating Event') {
+    if (input.jtFamilyId !== input.memberJtFamilyId) {
+      return 'Parents can only create Jiating Events for their own Jiating.'
+    }
+    return null
+  }
+  if (isMixerCategory(input.category)) {
+    if (!input.jtFamilyIds.includes(input.memberJtFamilyId)) {
+      return 'Parents must include their own Jiating in a Mixer.'
+    }
+    return null
+  }
+  return 'Parents can only create Jiating Event and Jiating Mixer events.'
+}
+
+export function parentCanManageEvent(input: {
+  category: string
+  jtFamilyId: string | null
+  mixerFamilyIds?: string[] | null
+  memberJtFamilyId: string | null
+}): boolean {
+  if (!input.memberJtFamilyId) return false
+  if (input.category.trim() === 'Jiating Event') {
+    return input.jtFamilyId === input.memberJtFamilyId
+  }
+  if (isMixerCategory(input.category)) {
+    return (input.mixerFamilyIds ?? []).includes(input.memberJtFamilyId)
+  }
+  return false
+}
+
+export type EventDeleteMember = {
+  role: string
+  is_parent?: boolean | null
+  jt_family_id?: string | null
+}
+
+/** Admins can delete any event. Officers can delete non-JT Event/Mixer. Parents can delete JT Event/Mixer for their family. */
+export function canDeleteEvent(input: {
+  member: EventDeleteMember
+  category: string
+  jtFamilyId: string | null
+  mixerFamilyIds?: string[] | null
+}): boolean {
+  if (input.member.role === 'admin') return true
+  if (isParentManagedCategory(input.category)) {
+    return (
+      (input.member.is_parent === true || input.member.role === 'parent') &&
+      parentCanManageEvent({
+        category: input.category,
+        jtFamilyId: input.jtFamilyId,
+        mixerFamilyIds: input.mixerFamilyIds,
+        memberJtFamilyId: input.member.jt_family_id ?? null,
+      })
+    )
+  }
+  return input.member.role === 'officer' || input.member.role === 'admin'
+}
+
+export function eventDeleteDeniedMessage(input: {
+  member: EventDeleteMember
+  category: string
+}): string {
+  if (isParentManagedCategory(input.category)) {
+    return 'Only a parent of this Jiating can delete Jiating Event and Jiating Mixer events.'
+  }
+  return 'Parents can only delete Jiating Event and Jiating Mixer events for their own Jiating. Officers can delete other event types.'
+}
+
 export function isCsaWideMixersCategory(category: string) {
   return category.trim() === 'CSA-Wide Mixers'
 }

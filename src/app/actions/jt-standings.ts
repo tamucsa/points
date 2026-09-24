@@ -1,6 +1,7 @@
 "use server";
 
 import { isGeneralMeetingCategory } from "@/utils/events";
+import { canAccessOfficerEvents } from "@/utils/members";
 import { setSentryUser, withServerAction } from "@/utils/sentry";
 import { createActionSupabase } from "@/utils/supabase/action";
 import { createAdminSupabase } from "@/utils/supabase/admin";
@@ -15,11 +16,11 @@ async function requireOfficer() {
 
   const { data: member } = await supabase
     .from("members")
-    .select("id, role")
+    .select("id, role, is_parent")
     .eq("auth_uid", user.id)
     .maybeSingle();
 
-  if (!member || !["officer", "admin"].includes(member.role)) {
+  if (!member || !canAccessOfficerEvents(member)) {
     return {
       supabase,
       member: null,

@@ -77,13 +77,16 @@ Typical flow: start fall (placeholders) → rename JTs when themes land → fall
 
 Go to **Admin** → **Members** → **Roles** (`/admin/members?tab=roles`).
 
-- Search active members and filter by current role.
-- Set role to **Member**, **Officer**, or **Admin**, then **Save**.
+- Search active members and filter by role or Parent.
+- Set access role to **Member**, **Officer**, or **Admin**. Check **Parent** if they are a Jiating parent (this stacks with officer/admin).
+- **Parent** never earns points, is hidden from the leaderboard, and will not qualify for Battle Pass or reduced-fee rewards. Attendance can still be recorded.
+- Parent-only users (Member + Parent) can create **Jiating Event** and **Jiating Mixer** for their own family, and delete those events for their family. Officer + Parent keeps full officer create access.
+- Officers still earn points unless they are also marked Parent; they also will not qualify for those rewards.
 - Promoting to admin and demoting yourself require confirmation.
 - The last remaining admin cannot be demoted.
 
 Security note:
-- Only admins can change `role` (enforced by RLS + `updateMemberRole` server action). Officers cannot elevate themselves.
+- Only admins can change `role` and `is_parent` (enforced by RLS + `updateMemberAccess` server action). Officers cannot elevate themselves.
 
 ## Data integrity / corrections
 

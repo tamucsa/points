@@ -142,10 +142,86 @@ async function activateMemberImpl(memberId: string, jtFamilyId: string) {
   return assignMemberJt(memberId, jtFamilyId);
 }
 
+export async function updateMemberAccess(
+  memberId: string,
+  role: MemberRole,
+  isParent: boolean,
+) {
+  return withServerAction("updateMemberAccess", () =>
+    updateMemberAccessImpl(memberId, role, isParent),
+  );
+}
+
 export async function updateMemberRole(memberId: string, role: MemberRole) {
   return withServerAction("updateMemberRole", () =>
     updateMemberRoleImpl(memberId, role),
   );
+}
+
+async function updateMemberAccessImpl(
+  memberId: string,
+  role: MemberRole,
+  isParent: boolean,
+) {
+  if (!memberId) {
+    return { success: false, error: "Member is required." };
+  }
+
+  if (!isMemberRole(role)) {
+    return { success: false, error: "Invalid role." };
+  }
+
+  const { supabase, error: authError } = await requireAdmin();
+  if (authError) return { success: false, error: authError };
+
+  const { data: target, error: loadError } = await supabase
+    .from("members")
+    .select("id, role, is_parent, status")
+    .eq("id", memberId)
+    .maybeSingle();
+
+  if (loadError || !target) {
+    return { success: false, error: "Member not found." };
+  }
+
+  if (target.status !== "active") {
+    return {
+      success: false,
+      error: "Only active members can have their role changed.",
+    };
+  }
+
+  const nextParent = Boolean(isParent);
+  if (target.role === role && Boolean(target.is_parent) === nextParent) {
+    return { success: true, error: null };
+  }
+
+  if (target.role === "admin" && role !== "admin") {
+    const { count, error: countError } = await supabase
+      .from("members")
+      .select("id", { count: "exact", head: true })
+      .eq("role", "admin")
+      .neq("id", memberId);
+
+    if (countError) {
+      return { success: false, error: "Failed to verify admin count." };
+    }
+
+    if ((count ?? 0) === 0) {
+      return {
+        success: false,
+        error: "Cannot demote the last admin. Promote another admin first.",
+      };
+    }
+  }
+
+  const { error } = await supabase
+    .from("members")
+    .update({ role, is_parent: nextParent })
+    .eq("id", memberId);
+
+  if (error) return { success: false, error: "Failed to update role." };
+  return { success: true, error: null };
 }
 
 async function updateMemberRoleImpl(memberId: string, role: MemberRole) {

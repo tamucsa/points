@@ -3,7 +3,7 @@
 import { POINT_BUCKET_LABELS, CHECKIN_METHOD_LABELS } from '@/utils/constants'
 import { formatEventSchedule } from '@/utils/datetime'
 import { isManualPointsCheckIn } from '@/utils/events'
-import { formatClassification } from '@/utils/members'
+import { attendanceAwardsPoints, formatClassification, roleEarnsPoints } from '@/utils/members'
 import JtFamilyBadge from '@/app/(dashboard)/leaderboard/components/JtFamilyBadge'
 import MemberAvatar from '@/app/components/MemberAvatar'
 import EmptyState from '@/app/components/EmptyState'
@@ -16,6 +16,8 @@ interface Member {
   full_name: string
   profile_image_url: string | null
   graduation_year: string | number | null
+  role: string
+  is_parent?: boolean
 }
 
 interface Points {
@@ -82,6 +84,7 @@ export default function ProfileClient({
 }: Props) {
   const displayName = member.full_name
   const color = points?.jt_color ?? '#4779B8'
+  const earnsPoints = roleEarnsPoints(member.role, member.is_parent)
 
   const breakdown = [
     { label: `${POINT_BUCKET_LABELS.csa} Points`, value: points?.csa_points ?? 0, color: CATEGORY_COLORS['CSA-Wide'] },
@@ -121,10 +124,18 @@ export default function ProfileClient({
           )}
         </div>
         <div className="text-right">
-          <div className="text-5xl font-extrabold tracking-[-2px] text-text">
-            {pointsLoadError ? '—' : (points?.total_points ?? 0)}
-          </div>
-          <div className="text-sm text-subtitle">total points</div>
+          {earnsPoints ? (
+            <>
+              <div className="text-5xl font-extrabold tracking-[-2px] text-text">
+                {pointsLoadError ? '—' : (points?.total_points ?? 0)}
+              </div>
+              <div className="text-sm text-subtitle">total points</div>
+            </>
+          ) : (
+            <div className="max-w-[12rem] text-sm leading-5 text-subtitle">
+              Parents do not earn points. Attendance is still tracked.
+            </div>
+          )}
         </div>
       </div>
 
@@ -140,7 +151,7 @@ export default function ProfileClient({
       )}
 
       {/* Point Breakdown */}
-      {!pointsLoadError && (
+      {earnsPoints && !pointsLoadError && (
         <div className="mb-8">
           <h2 className="mb-1 text-lg font-bold text-text">
             Point Breakdown
@@ -163,7 +174,7 @@ export default function ProfileClient({
         </div>
       )}
 
-      {!pointsLoadError && (
+      {earnsPoints && !pointsLoadError && (
         <PointsGuide attendance={attendanceLoadError ? [] : attendance} />
       )}
 
@@ -185,20 +196,27 @@ export default function ProfileClient({
             <EmptyState
               icon={Calendar}
               title="No events attended yet this semester"
-              description="Attend CSA events to start earning points."
+              description={
+                earnsPoints
+                  ? 'Attend CSA events to start earning points.'
+                  : 'Check in to CSA events to record attendance.'
+              }
               compact
             />
           )}
           {!attendanceLoadError && attendance.map((row) => {
             const cat = row.events?.category ?? 'default'
-            const catColor = CATEGORY_COLORS[cat] ?? CATEGORY_COLORS.default
             const earnedPoints =
               row.point_value_override ?? row.events?.point_value ?? 0
+            const awardsPoints = attendanceAwardsPoints(
+              { role: member.role, is_parent: member.is_parent },
+              row.counted,
+            )
             return (
               <div key={row.id} className="flex items-center gap-4 border-b border-home-border px-5 py-3 last:border-b-0">
                 {/* Point badge */}
                 <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-sm font-extrabold text-primary">
-                  {row.counted ? `+${earnedPoints}` : '—'}
+                  {awardsPoints ? `+${earnedPoints}` : '—'}
                 </div>
 
                 {/* Event info */}
@@ -217,7 +235,7 @@ export default function ProfileClient({
                     <span className="rounded-md bg-primary/10 px-2 py-0.5 text-[11px] text-primary">
                       {cat}
                     </span>
-                    {!row.counted && (
+                    {earnsPoints && !row.counted && (
                       <span className="rounded-md bg-red-50 px-2 py-0.5 text-[11px] text-red-500">
                         cap reached
                       </span>

@@ -11,7 +11,7 @@ import { fetchAllPages } from '@/utils/supabase/fetchAll'
 import { getActiveSemester, getAuthUser } from '@/utils/supabase/auth'
 
 const MEMBER_COLUMNS =
-  'id, full_name, email, profile_image_url, account_linked, jt_family, jt_color, total_points, csa_points, jt_points, sports_points, gm_points'
+  'id, full_name, email, profile_image_url, account_linked, role, is_parent, jt_family, jt_color, total_points, csa_points, jt_points, sports_points, gm_points'
 
 interface SearchParams {
   tab?: string
