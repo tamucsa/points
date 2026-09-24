@@ -39,7 +39,7 @@ Officers must have `members.role` set to `officer` (or `admin`). If you can't se
 
 The app currently allows any officer to create any category. Prefer following the ownership guidance below so the right chair/parents own each event type. The New Event form shows a soft hint for who typically creates each category.
 
-**Parent-only users** (Parent flag, role Member) can only create **Jiating Event** (locked to their family) and **Jiating Mixer** (their family must stay selected). Officer + Parent is not limited this way.
+**Parent-only users** can only create **Jiating Event** (locked to their family) and **Jiating Mixer** (their family must stay selected). Officer + Parent is not limited this way.
 
 **Delete:** Officers can delete any event except **Jiating Event** / **Jiating Mixer**. Parents can delete those JT events for their own family. Admins can delete any event.
 

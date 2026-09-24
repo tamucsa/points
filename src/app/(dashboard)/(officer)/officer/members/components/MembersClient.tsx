@@ -7,8 +7,8 @@ import AccountLinkBadge from '@/app/(dashboard)/(officer)/officer/members/compon
 import { MembersTabs } from '@/app/(dashboard)/(officer)/officer/members/components/MembersTabs'
 import MemberAvatar from '@/app/components/MemberAvatar'
 import PageHeader from '@/app/components/PageHeader'
+import RoleBadges from '@/app/components/RoleBadges'
 import { inputClassName, OFFICER_MEMBERS_PAGE_SIZE, POINT_BUCKET_LABELS } from '@/utils/constants'
-import { memberRoleLabel } from '@/utils/members'
 
 interface Member {
   id: string
@@ -159,7 +159,6 @@ export default function MembersClient({
 
         {members.map(m => {
           const displayName = m.full_name
-          const roleLabel = memberRoleLabel(m.role ?? 'member', m.is_parent)
           return (
           <Link
             key={m.id}
@@ -175,11 +174,12 @@ export default function MembersClient({
               <div className="min-w-0">
                 <div className="truncate text-sm font-medium text-text">{displayName}</div>
                 <div className="truncate text-xs text-subtitle">{m.email}</div>
-                {roleLabel !== 'Member' && (
-                  <div className="mt-0.5 text-[11px] font-medium text-subtitle">
-                    {roleLabel}
-                  </div>
-                )}
+                <RoleBadges
+                  role={m.role ?? 'member'}
+                  isParent={m.is_parent}
+                  hideMember
+                  className="mt-0.5"
+                />
                 {(m.howdy_week_count ?? 0) > 0 && (
                   <div className="mt-0.5 text-[11px] font-medium text-primary">
                     Attended {m.howdy_week_count} Howdy Week event

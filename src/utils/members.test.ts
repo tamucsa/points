@@ -7,7 +7,10 @@ import {
   earnsRewards,
   isMemberRole,
   isParentOnly,
+  memberRoleBadges,
   memberRoleLabel,
+  accessPresetFromMember,
+  accessPresetToFields,
 } from "@/utils/members";
 import {
   canDeleteEvent,
@@ -16,13 +19,34 @@ import {
 } from "@/utils/events";
 
 describe("parent access helpers", () => {
-  it("treats parent as a flag that stacks with officer", () => {
+  it("treats parent as a role that can stack with officer or admin", () => {
     expect(isMemberRole("parent")).toBe(false);
     expect(memberRoleLabel("parent")).toBe("Parent");
     expect(memberRoleLabel("member", true)).toBe("Parent");
+    expect(memberRoleLabel("officer")).toBe("Officer");
     expect(memberRoleLabel("officer", true)).toBe("Officer · Parent");
+    expect(memberRoleLabel("admin")).toBe("Officer");
+    expect(memberRoleLabel("admin", true)).toBe("Officer · Parent");
+    expect(memberRoleLabel("admin", false, { revealAdmin: true })).toBe("Admin");
+    expect(memberRoleBadges("member", true)).toEqual(["Parent"]);
+    expect(memberRoleBadges("officer", true)).toEqual(["Officer", "Parent"]);
+    expect(memberRoleBadges("admin", true)).toEqual(["Officer", "Parent"]);
+    expect(memberRoleBadges("admin", true, { revealAdmin: true })).toEqual([
+      "Admin",
+      "Parent",
+    ]);
+    expect(memberRoleBadges("member", false)).toEqual(["Member"]);
     expect(isParentOnly({ role: "member", is_parent: true })).toBe(true);
     expect(isParentOnly({ role: "officer", is_parent: true })).toBe(false);
+    expect(accessPresetFromMember("member", true)).toBe("parent");
+    expect(accessPresetToFields("parent")).toEqual({
+      role: "member",
+      is_parent: true,
+    });
+    expect(accessPresetToFields("admin_parent")).toEqual({
+      role: "admin",
+      is_parent: true,
+    });
   });
 
   it("does not award points to anyone marked parent", () => {

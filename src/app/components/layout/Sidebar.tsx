@@ -13,9 +13,10 @@ import { useEffect, useState } from 'react'
 import MemberAvatar from '@/app/components/MemberAvatar'
 import BrandMark from '@/app/components/BrandMark'
 import IconLabel from '@/app/components/IconLabel'
+import RoleBadges from '@/app/components/RoleBadges'
 import ThemeToggle from '@/app/components/ThemeToggle'
 import { NAV_ICONS } from '@/utils/icons'
-import { canAccessOfficerEvents, canAccessOfficerMembers, memberRoleLabel } from '@/utils/members'
+import { canAccessOfficerEvents, canAccessOfficerMembers } from '@/utils/members'
 import { createBrowserSupabase } from '@/utils/supabase/client'
 
 interface Member {
@@ -143,8 +144,8 @@ export default function Sidebar({ member }: { member: Member }) {
               <div className="truncate text-[1.15rem] font-bold tracking-[-0.04em] text-text">
                 CSA Points
               </div>
-              <div className="mt-0.5 text-xs text-subtitle">
-                {memberRoleLabel(member.role, member.is_parent)}
+              <div className="mt-0.5">
+                <RoleBadges role={member.role} isParent={member.is_parent} />
               </div>
             </div>
           </div>

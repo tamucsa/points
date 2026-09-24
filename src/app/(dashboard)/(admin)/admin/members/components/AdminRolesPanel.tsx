@@ -5,8 +5,16 @@ import { useState } from 'react'
 import { ChevronDown } from 'lucide-react'
 import { updateMemberAccess } from '@/app/actions/members'
 import MemberAvatar from '@/app/components/MemberAvatar'
+import RoleBadges from '@/app/components/RoleBadges'
 import { inputClassName, OFFICER_MEMBERS_PAGE_SIZE } from '@/utils/constants'
-import { MEMBER_ROLE_LABELS, MEMBER_ROLES, type MemberRole } from '@/utils/members'
+import {
+  ACCESS_PRESET_LABELS,
+  ACCESS_PRESETS,
+  accessPresetFromMember,
+  accessPresetToFields,
+  type AccessPreset,
+  type MemberRole,
+} from '@/utils/members'
 
 export interface RoleMember {
   id: string
@@ -60,8 +68,7 @@ export default function AdminRolesPanel({
 }: Props) {
   const router = useRouter()
   const [searchInput, setSearchInput] = useState(query)
-  const [draftRoles, setDraftRoles] = useState<Record<string, MemberRole>>({})
-  const [draftParents, setDraftParents] = useState<Record<string, boolean>>({})
+  const [draftPresets, setDraftPresets] = useState<Record<string, AccessPreset>>({})
   const [savingId, setSavingId] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [success, setSuccess] = useState<string | null>(null)
@@ -79,12 +86,12 @@ export default function AdminRolesPanel({
     )
   }
 
-  const selectedRole = (m: RoleMember) => draftRoles[m.id] ?? m.role
-  const selectedParent = (m: RoleMember) => draftParents[m.id] ?? m.is_parent
+  const selectedPreset = (m: RoleMember) =>
+    draftPresets[m.id] ?? accessPresetFromMember(m.role, m.is_parent)
 
   const saveRole = async (m: RoleMember) => {
-    const nextRole = selectedRole(m)
-    const nextParent = selectedParent(m)
+    const nextPreset = selectedPreset(m)
+    const { role: nextRole, is_parent: nextParent } = accessPresetToFields(nextPreset)
     if (nextRole === m.role && nextParent === m.is_parent) return
 
     const isSelf = m.id === currentAdminId
@@ -114,29 +121,24 @@ export default function AdminRolesPanel({
       return
     }
 
-    setDraftRoles(prev => {
+    setDraftPresets(prev => {
       const next = { ...prev }
       delete next[m.id]
       return next
     })
-    setDraftParents(prev => {
-      const next = { ...prev }
-      delete next[m.id]
-      return next
-    })
-    const parentNote = nextParent ? ' (Parent)' : ''
-    setSuccess(`Updated ${m.full_name} to ${MEMBER_ROLE_LABELS[nextRole]}${parentNote}.`)
+    setSuccess(`Updated ${m.full_name} to ${ACCESS_PRESET_LABELS[nextPreset]}.`)
     router.refresh()
   }
 
   return (
     <div className="flex flex-col gap-4">
       <p className="text-sm leading-6 text-subtitle">
-        Promote or demote active members. Role (Member / Officer / Admin) can be
-        combined with the Parent flag. Parents do not earn points and are hidden
-        from the leaderboard. Parent-only users can create Jiating Event and
-        Jiating Mixer for their own family; officer + parent keeps full officer
-        tools. You cannot demote the last remaining admin.
+        Assign Member, Parent, Officer, or Admin. Parent is its own role and
+        can also combine with Officer or Admin. Parents do not earn points and
+        are hidden from the leaderboard. Parent-only users can create Jiating
+        Event and Jiating Mixer for their own family; Officer + Parent and
+        Admin + Parent keep full staff create tools. You cannot demote the last
+        remaining admin.
       </p>
 
       <form
@@ -161,12 +163,10 @@ export default function AdminRolesPanel({
             aria-label="Filter by role"
           >
             <option value="all">All roles</option>
-            {MEMBER_ROLES.map(role => (
-              <option key={role} value={role}>
-                {MEMBER_ROLE_LABELS[role]}
-              </option>
-            ))}
+            <option value="member">Member</option>
             <option value="parent">Parent</option>
+            <option value="officer">Officer</option>
+            <option value="admin">Admin</option>
           </select>
           <SelectChevron />
         </div>
@@ -196,9 +196,9 @@ export default function AdminRolesPanel({
           </div>
         ) : (
           members.map(m => {
-            const draft = selectedRole(m)
-            const draftParent = selectedParent(m)
-            const dirty = draft !== m.role || draftParent !== m.is_parent
+            const draft = selectedPreset(m)
+            const current = accessPresetFromMember(m.role, m.is_parent)
+            const dirty = draft !== current
             const isYou = m.id === currentAdminId
 
             return (
@@ -215,14 +215,7 @@ export default function AdminRolesPanel({
                         You
                       </span>
                     )}
-                    <span className="rounded-full bg-bg px-2 py-0.5 text-[11px] font-semibold capitalize text-subtitle">
-                      {MEMBER_ROLE_LABELS[m.role]}
-                    </span>
-                    {m.is_parent && (
-                      <span className="rounded-full bg-primary/10 px-2 py-0.5 text-[11px] font-semibold text-primary">
-                        Parent
-                      </span>
-                    )}
+                    <RoleBadges role={m.role} isParent={m.is_parent} revealAdmin />
                   </div>
                   <div className="truncate text-xs text-subtitle">{m.email}</div>
                   {m.jt_family_name && (
@@ -231,37 +224,22 @@ export default function AdminRolesPanel({
                 </div>
 
                 <div className="flex flex-wrap items-center gap-2">
-                  <label className="flex items-center gap-2 text-sm text-text">
-                    <input
-                      type="checkbox"
-                      checked={draftParent}
-                      onChange={e =>
-                        setDraftParents(prev => ({
-                          ...prev,
-                          [m.id]: e.target.checked,
-                        }))
-                      }
-                      disabled={savingId === m.id}
-                      className="size-4 rounded border-home-border text-primary focus:ring-primary/30"
-                    />
-                    Parent
-                  </label>
-                  <div className="relative min-w-[8.5rem]">
+                  <div className="relative min-w-[11.5rem]">
                     <select
                       value={draft}
                       onChange={e =>
-                        setDraftRoles(prev => ({
+                        setDraftPresets(prev => ({
                           ...prev,
-                          [m.id]: e.target.value as MemberRole,
+                          [m.id]: e.target.value as AccessPreset,
                         }))
                       }
                       disabled={savingId === m.id}
                       className={selectClassName}
                       aria-label={`Role for ${m.full_name}`}
                     >
-                      {MEMBER_ROLES.map(role => (
-                        <option key={role} value={role}>
-                          {MEMBER_ROLE_LABELS[role]}
+                      {ACCESS_PRESETS.map(preset => (
+                        <option key={preset} value={preset}>
+                          {ACCESS_PRESET_LABELS[preset]}
                         </option>
                       ))}
                     </select>
