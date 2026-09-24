@@ -43,7 +43,7 @@ export const CATEGORY_CONFIG: Record<EventCategory, CategoryConfig> = {
   'Howdy Week': { pointValue: 0, scope: 'org', checkInType: 'csv_import' },
   'Jiating Olympics': { pointValue: 2, scope: 'jt_shared', checkInType: 'officer' },
   'Jiating Event': { pointValue: 1, scope: 'jt_specific' },
-  'Jiating Mixer': { pointValue: 2, scope: 'jt_shared' },
+  'Jiating Mixer': { pointValue: 2, scope: 'jt_shared' }, // 3 when all 6 active Jiatings participate
   'Sports': { pointValue: 1, scope: 'org', checkInType: 'officer', allowSpectators: true },
   'Philanthropy': { pointValue: 3, scope: 'org' },
   'Dance': { pointValue: 1, scope: 'org', checkInType: 'officer' },
@@ -126,6 +126,23 @@ export function isMixerCategory(category: string) {
   const value = category.trim()
   // 'Mixer' kept for any legacy rows created before the rename.
   return value === 'Jiating Mixer' || value === 'Mixer'
+}
+
+export const JIATING_MIXER_FAMILY_COUNT = 6
+export const JIATING_MIXER_POINTS = 2
+export const JIATING_MIXER_SIX_WAY_POINTS = 3
+
+/** 3 points when every active Jiating is in the Mixer and there are exactly 6. */
+export function jiatingMixerPointValue(
+  selectedFamilyIds: readonly string[],
+  activeFamilyIds: readonly string[],
+): typeof JIATING_MIXER_POINTS | typeof JIATING_MIXER_SIX_WAY_POINTS {
+  if (activeFamilyIds.length !== JIATING_MIXER_FAMILY_COUNT) {
+    return JIATING_MIXER_POINTS
+  }
+  const selected = new Set(selectedFamilyIds)
+  const allActiveSelected = activeFamilyIds.every((id) => selected.has(id))
+  return allActiveSelected ? JIATING_MIXER_SIX_WAY_POINTS : JIATING_MIXER_POINTS
 }
 
 /** Categories a parent-only user may create or manage for their own Jiating. */

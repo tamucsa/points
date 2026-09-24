@@ -53,7 +53,7 @@ The app currently allows any officer to create any category. Prefer following th
 | **Howdy Week** | Exec / Event Coordinator | Recruiting / informational; CSV guest list (0 pts); see Guests tab |
 | **Jiating Olympics** | Sports chair | Created by Sports chair but edited by jiating parents |
 | **Jiating Event** | Jiating parents | JT-specific — create only for **your** Jiating |
-| **Jiating Mixer** | Jiating parents | Select participating families at create time (editable later on event detail); check-in tabs only for those families |
+| **Jiating Mixer** | Jiating parents | Select participating families at create time (editable later on event detail); all 6 Jiatings = 3 points, otherwise 2; check-in tabs only for those families |
 | **Sports** | Sports chair | Optional spectator check-in child event |
 | **Philanthropy** | Philanthropy chair | |
 | **Dance** | Dance chair | |

@@ -37,6 +37,7 @@ import {
   isHowdyWeekCategory,
   isImportCheckIn,
   isMixerCategory,
+  jiatingMixerPointValue,
 } from "@/utils/events";
 import { roleEarnsPoints } from "@/utils/members";
 
@@ -192,6 +193,12 @@ export default function EventDetailClient({
   const [uncheckSaving, setUncheckSaving] = useState(false);
   const isGm = isGeneralMeetingCategory(event.category);
   const isMixer = isMixerCategory(event.category);
+  const mixerPointValue = isMixer
+    ? jiatingMixerPointValue(
+        selectedMixerFamilies,
+        jtFamilies.map((jt) => jt.id),
+      )
+    : null;
   const isHowdyWeek = isHowdyWeekCategory(event.category);
   const isRsvpEvent = event.check_in_type === "rsvp_required";
   const isImportEvent = isImportCheckIn(event.check_in_type) && !isHowdyWeek;
@@ -387,7 +394,10 @@ export default function EventDetailClient({
       <div className="mb-6 rounded-4xl border border-home-border bg-surface p-6 shadow-sm">
         <div className="flex gap-4">
           <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-primary/10 text-2xl font-extrabold text-primary">
-            {formatEventPointsLabel(event.point_value, event.check_in_type)}
+            {formatEventPointsLabel(
+              mixerPointValue ?? event.point_value,
+              event.check_in_type,
+            )}
           </div>
           <div className="min-w-0 flex-1">
             <h1 className="text-2xl font-bold text-text">{event.name}</h1>
@@ -773,13 +783,22 @@ export default function EventDetailClient({
         {isMixer && (
           <CollapsibleSettings
             title="Participating Jiatings"
-            summary={`${selectedMixerFamilies.length} famil${selectedMixerFamilies.length === 1 ? "y" : "ies"} selected`}
+            summary={`${selectedMixerFamilies.length} famil${selectedMixerFamilies.length === 1 ? "y" : "ies"} selected · ${mixerPointValue} pts`}
           >
             <p className="text-xs leading-5 text-subtitle">
               Add families anytime. Removing a family that already has check-ins
               is blocked until those check-ins are cleared.
               {parentOnly
                 ? " Your Jiating must stay in the Mixer."
+                : ""}{" "}
+              {mixerPointValue === 3
+                ? "All 6 Jiatings are selected, so this Mixer is 3 points."
+                : jtFamilies.length === 6
+                  ? "This Mixer is 2 points. Selecting all 6 Jiatings makes it 3 points."
+                  : "This Mixer is 2 points."}
+              {mixerPointValue != null &&
+              mixerPointValue !== event.point_value
+                ? " Save to apply the new point value to existing check-ins."
                 : ""}
             </p>
             <div className="grid gap-2 sm:grid-cols-2">

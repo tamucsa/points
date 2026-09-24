@@ -23,6 +23,7 @@ import {
   getCategoryOwnerHint,
   isMixerCategory,
   isPhilanthropyCategory,
+  jiatingMixerPointValue,
   PARENT_EVENT_CATEGORIES,
 } from "@/utils/events";
 import { CHECKIN_TYPE_ICONS } from "@/utils/icons";
@@ -129,6 +130,13 @@ export default function NewEventClient({
   const isSports = categoryConfig?.allowSpectators === true;
   const isJTSpecific = form.scope === "jt_specific";
   const isMixer = isMixerCategory(form.category);
+  const mixerPointValue = isMixer
+    ? jiatingMixerPointValue(
+        mixerFamilyIds,
+        jtFamilies.map((jt) => jt.id),
+      )
+    : null;
+  const displayedPointValue = mixerPointValue ?? categoryConfig?.pointValue;
   const isPhilanthropy = isPhilanthropyCategory(form.category);
   const isRSVP = effectiveCheckIn === "rsvp_required";
   const isSelf = effectiveCheckIn === "self";
@@ -268,9 +276,7 @@ export default function NewEventClient({
               <span className="rounded-md bg-bg px-2 py-1">
                 {isManualPoints
                   ? "Variable pts"
-                  : `${categoryConfig.pointValue} pt${
-                      categoryConfig.pointValue === 1 ? "" : "s"
-                    }`}
+                  : `${displayedPointValue} pt${displayedPointValue === 1 ? "" : "s"}`}
               </span>
               <span className="rounded-md bg-bg px-2 py-1">
                 <ScopeBadge scope={categoryConfig.scope} />
@@ -383,7 +389,13 @@ export default function NewEventClient({
             <label className={labelClassName}>Participating Jiatings *</label>
             <p className="mb-3 text-xs leading-5 text-subtitle">
               Select the families in this Mixer. Check-in will only show tabs
-              for these families.
+              for these families. A 6-way Mixer (all 6 Jiatings) is worth 3
+              points; otherwise it is 2 points.
+              {mixerPointValue === 3
+                ? " All 6 are selected, so this event will be 3 points."
+                : mixerPointValue === 2 && jtFamilies.length === 6
+                  ? " Currently 2 points."
+                  : ""}
             </p>
             <div className="grid gap-2 sm:grid-cols-2">
               {jtFamilies.map((jt) => {
