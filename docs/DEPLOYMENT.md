@@ -39,7 +39,7 @@ Smoke after every production deploy. Cap / season cases live in `docs/OPERATIONS
 
 - Homepage (`/`) loads with app description, sign-in, and links to Privacy Policy and Terms of Service.
 - `/privacy` and `/terms` are publicly accessible without signing in.
-- Sign-in works with a `@tamu.edu` Google account; a non-TAMU account is rejected.
+- Sign-in works with a `@tamu.edu` or `@buc.blinn.edu` Google account; any other account is rejected.
 - Redirects:
   - signed-out users hitting `/leaderboard` (or other gated routes) go to `/`
   - signed-in users with no `members` row go to `/register`

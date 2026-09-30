@@ -1,9 +1,10 @@
 "use server";
 
 import type { SupabaseClient } from "@supabase/supabase-js";
+import { isAllowedSchoolEmail } from "@/utils/email";
 import { isHowdyWeekCategory } from "@/utils/events";
-import { canAccessOfficerEvents } from "@/utils/members";
 import { lookupMembersByEmail, normalizeEmail } from "@/utils/member-lookup";
+import { canAccessOfficerEvents } from "@/utils/members";
 import { setSentryUser, withServerAction } from "@/utils/sentry";
 import { createActionSupabase } from "@/utils/supabase/action";
 import { fetchAllPages } from "@/utils/supabase/fetchAll";
@@ -29,10 +30,6 @@ async function requireOfficer() {
 
   setSentryUser(member);
   return { supabase, member, error: null };
-}
-
-function isTamuEmail(email: string): boolean {
-  return email.endsWith("@tamu.edu");
 }
 
 export interface HowdyWeekCsvRow {
@@ -254,9 +251,9 @@ async function replaceHowdyWeekGuestsCsvImpl(
       skipped++;
       continue;
     }
-    if (!isTamuEmail(email)) {
+    if (!isAllowedSchoolEmail(email)) {
       skipped++;
-      errors.push(`Skipped non-@tamu.edu email: ${email}`);
+      errors.push(`Skipped non-school email: ${email}`);
       continue;
     }
     if (!Number.isInteger(year) || year < 2000 || year > 2100) {

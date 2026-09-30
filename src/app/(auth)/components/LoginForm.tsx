@@ -38,9 +38,9 @@ export default function LoginForm() {
               </h1>
               <p className="mt-4 max-w-xl text-base leading-7 text-subtitle sm:text-lg">
                 The official points and attendance system for the Texas A&amp;M
-                Chinese Student Association. Members sign in with their TAMU
-                Google account to track event participation, view leaderboards,
-                and manage their CSA profile.
+                Chinese Student Association. Members sign in with a @tamu.edu
+                or @buc.blinn.edu Google account to track event participation,
+                view leaderboards, and manage their CSA profile.
               </p>
             </div>
 
@@ -73,18 +73,18 @@ export default function LoginForm() {
                     Member access
                   </div>
                   <div className="text-sm text-subtitle">
-                    Secure TAMU sign-in
+                    Secure school sign-in
                   </div>
                 </div>
               </div>
 
               <div className="mb-5 rounded-2xl border border-accent/35 bg-accent-card p-4">
                 <div className="text-sm font-semibold text-text">
-                  TAMU email required
+                  School email required
                 </div>
                 <div className="mt-1 text-sm leading-6 text-subtitle">
-                  Sign in with the Google account associated with your Texas
-                  A&amp;M email address.
+                  Sign in with the Google account for your @tamu.edu or
+                  @buc.blinn.edu email address.
                 </div>
               </div>
 
@@ -93,7 +93,7 @@ export default function LoginForm() {
                   <div className="mb-4 rounded-2xl border border-error-border bg-error-bg p-3.5">
                     <p className="text-sm leading-6 text-error">
                       {authError === "invalid_domain"
-                        ? "Please sign in with your @tamu.edu Google account."
+                        ? "Please sign in with your @tamu.edu or @buc.blinn.edu Google account."
                         : "Sign-in failed. Please try again."}
                     </p>
                   </div>

@@ -278,7 +278,7 @@ export default function HowdyWeekGuestPanel({
         <p className="mt-1 text-xs leading-5 text-subtitle">
           Upload Google Form responses from the event. Columns:{' '}
           <span className="font-medium text-text">Name</span>,{' '}
-          <span className="font-medium text-text">Email</span> (@tamu.edu),{' '}
+          <span className="font-medium text-text">Email</span> (@tamu.edu or @buc.blinn.edu),{' '}
           <span className="font-medium text-text">Year</span> (graduation year
           number). Email is the match key. Re-upload replaces the guest list.
           Linked members appear under Attendance at 0 points.
@@ -447,7 +447,7 @@ export default function HowdyWeekGuestPanel({
       )}
 
       <p className={`text-[11px] ${labelClassName}`}>
-        Non-@tamu.edu rows are skipped. Matching links the guest and records
+        Emails outside @tamu.edu and @buc.blinn.edu are skipped. Matching links the guest and records
         attendance at 0 points — points can be awarded later.
       </p>
     </div>

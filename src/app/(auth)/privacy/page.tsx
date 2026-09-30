@@ -21,7 +21,7 @@ export default function PrivacyPage() {
             Privacy Policy
           </h1>
           <p className="mt-3 text-sm text-subtitle">
-            Last updated: July 15, 2026
+            Last updated: September 30, 2026
           </p>
           <p className="mt-4 max-w-3xl text-base leading-7 text-subtitle">
             This policy describes how TAMU CSA Points (&quot;the App&quot;), operated by the Texas A&amp;M
@@ -34,9 +34,11 @@ export default function PrivacyPage() {
           <section>
             <h2 className="mb-3 text-lg font-semibold text-text">1. Who can use this app</h2>
             <p>
-              The App is intended for Texas A&amp;M University students participating in CSA. Sign-in is
-              limited to Google accounts with an <strong className="font-semibold text-text">@tamu.edu</strong> email
-              address. We do not offer access to the general public.
+              The App is intended for Texas A&amp;M University and Blinn College students participating in CSA.
+              Sign-in is limited to Google accounts with an{' '}
+              <strong className="font-semibold text-text">@tamu.edu</strong> or{' '}
+              <strong className="font-semibold text-text">@buc.blinn.edu</strong> email address. We do not
+              offer access to the general public.
             </p>
           </section>
 
@@ -46,7 +48,7 @@ export default function PrivacyPage() {
             <ul className="list-disc space-y-2 pl-5">
               <li>
                 <strong className="font-semibold text-text">Google account information (via Sign in with Google):</strong>{' '}
-                your TAMU email address, name, and profile picture. We request only the{' '}
+                your school email address, name, and profile picture. We request only the{' '}
                 <code className="rounded bg-bg px-1.5 py-0.5 text-xs text-text">openid</code>,{' '}
                 <code className="rounded bg-bg px-1.5 py-0.5 text-xs text-text">email</code>, and{' '}
                 <code className="rounded bg-bg px-1.5 py-0.5 text-xs text-text">profile</code> scopes
@@ -75,7 +77,7 @@ export default function PrivacyPage() {
               Google user data obtained through Sign in with Google is used only to:
             </p>
             <ul className="list-disc space-y-2 pl-5">
-              <li>Verify your identity and confirm you are signing in with a @tamu.edu account</li>
+              <li>Verify your identity and confirm you are signing in with a @tamu.edu or @buc.blinn.edu account</li>
               <li>Create and link your App account to your CSA membership record</li>
               <li>Display your name and profile image within the App (profile, leaderboard, check-in lists)</li>
             </ul>

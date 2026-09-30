@@ -104,7 +104,7 @@ export default function CheckinClient({ event, code, userEmail, member, alreadyC
               {!userEmail && (
                 <div className="space-y-4">
                   <p className="text-sm leading-6 text-subtitle">
-                    Sign in with your TAMU Google account to check in.
+                    Sign in with your @tamu.edu or @buc.blinn.edu Google account to check in.
                   </p>
                   <button
                     onClick={signIn}

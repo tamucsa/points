@@ -2,6 +2,7 @@ import { createServerClient } from "@supabase/ssr";
 import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
 import { canAccessOfficerEvents } from "@/utils/members";
+import { fetchWithAuthTimeout } from "@/utils/supabase/auth-request";
 
 /** Texas A&M / College Station — bias Places results toward campus. */
 export const TAMU_LOCATION_BIAS = {
@@ -32,6 +33,7 @@ export async function requireOfficerApi() {
         },
         setAll() {},
       },
+      global: { fetch: fetchWithAuthTimeout },
     },
   );
 

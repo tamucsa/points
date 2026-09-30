@@ -1,6 +1,7 @@
 import { createServerClient } from "@supabase/ssr";
 import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
+import { fetchWithAuthTimeout } from "@/utils/supabase/auth-request";
 
 function safeNextPath(next: string | null, origin: string): string | null {
   if (!next || !next.startsWith("/") || next.startsWith("//")) return null;
@@ -43,6 +44,7 @@ export async function GET(request: Request) {
           }
         },
       },
+      global: { fetch: fetchWithAuthTimeout },
     },
   );
 
@@ -50,7 +52,9 @@ export async function GET(request: Request) {
     provider: "google",
     options: {
       redirectTo: callbackUrl,
-      queryParams: { hd: "tamu.edu" },
+      // Google's `hd` hint accepts one hosted domain. Omitting it lets both
+      // @tamu.edu and @buc.blinn.edu accounts appear. The callback enforces
+      // the allowlist.
       skipBrowserRedirect: true,
     },
   });

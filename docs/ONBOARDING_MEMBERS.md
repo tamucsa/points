@@ -5,7 +5,7 @@ This guide is for CSA members using the points system.
 ## Quickstart
 
 1. Go to the site and click **Sign in with Google**.
-2. Use your **`@tamu.edu`** email.
+2. Use your **`@tamu.edu`** or **`@buc.blinn.edu`** email.
 3. If you were **already on the CSA roster** (CSV import), you skip the registration form — Google sign-in links your account and you go straight into the app (usually the leaderboard), even if your Jiating is not assigned yet.
 4. If you were **not** on the roster, complete the registration form when prompted.
 5. If you land on a “pending membership” page, wait for an admin to approve your account (self-registered members only).
@@ -54,7 +54,7 @@ On **Events** (`/events`):
 
 ## Troubleshooting
 
-- **Can’t sign in**: You must use `@tamu.edu`.
+- **Can’t sign in**: You must use `@tamu.edu` or `@buc.blinn.edu`.
 - **Stuck on pending**: An admin must approve your membership (self-registration). Roster-imported members should not see this page.
 - **Missing points**: Confirm you checked in; if still missing, contact an officer with the event name/date.
 

@@ -1,6 +1,6 @@
 # TAMU CSA Points
 
-Points tracking system for the Texas A&M Chinese Student Association (CSA). Members sign in with TAMU Google, view points/leaderboards, and check in to events. Officers/admins manage events and onboarding.
+Points tracking system for the Texas A&M Chinese Student Association (CSA). Members sign in with a `@tamu.edu` or `@buc.blinn.edu` Google account, view points/leaderboards, and check in to events. Officers/admins manage events and onboarding.
 
 ## Quickstart (developers)
 
