@@ -26,7 +26,12 @@ import CollapsibleSettings from "@/app/components/CollapsibleSettings";
 import MemberAvatar from "@/app/components/MemberAvatar";
 import RoleBadges from "@/app/components/RoleBadges";
 import { inputClassName, labelClassName } from "@/utils/constants";
-import { EVENT_TIMEZONE, formatEventSchedule } from "@/utils/datetime";
+import {
+  EVENT_TIMEZONE,
+  formatEventDate,
+  formatEventSchedule,
+  formatEventTime,
+} from "@/utils/datetime";
 import {
   eventTimestampToFormDate,
   eventTimestampToFormTime,
@@ -475,6 +480,15 @@ export default function EventDetailClient({
               Check In Members
             </button>
           )}
+          {publishStatus === "published" && event.check_in_type === "self" && (
+            <button
+              type="button"
+              onClick={() => router.push(`/officer/events/${event.id}/checkin`)}
+              className={btnPrimaryClassName}
+            >
+              Officer Check In
+            </button>
+          )}
           {event.check_in_type === "self" && event.check_in_code && (
             <button
               type="button"
@@ -503,6 +517,15 @@ export default function EventDetailClient({
           )}
           {publishStatus === "published" && spectatorEvent?.check_in_code && (
             <>
+              <button
+                type="button"
+                onClick={() =>
+                  router.push(`/officer/events/${spectatorEvent.id}/checkin`)
+                }
+                className={btnPrimaryOutlineClassName}
+              >
+                Check In Spectators
+              </button>
               <button
                 type="button"
                 onClick={() =>
@@ -776,7 +799,8 @@ export default function EventDetailClient({
             <p className="mt-1 text-xs leading-5 text-subtitle">
               Linked QR event worth {spectatorEvent.point_value} pt
               {spectatorEvent.point_value === 1 ? "" : "s"} (capped at
-              10/semester). Use the Spectator QR buttons above at the event.
+              10/semester). Use the Spectator QR buttons above, or Check In
+              Spectators if someone cannot scan.
             </p>
           </div>
         )}
@@ -1008,10 +1032,7 @@ export default function EventDetailClient({
                     {displayName}
                   </div>
                   <div className="text-xs text-subtitle">
-                    {new Date(row.recorded_at).toLocaleTimeString("en-US", {
-                      hour: "numeric",
-                      minute: "2-digit",
-                    })}
+                    {formatEventDate(row.recorded_at)} · {formatEventTime(row.recorded_at)}
                   </div>
                 </div>
                 <div className="flex shrink-0 flex-wrap items-center justify-end gap-1">

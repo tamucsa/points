@@ -74,13 +74,13 @@ interface Props {
 }
 
 const actionPrimaryClassName =
-  'min-h-11 flex-1 rounded-xl border border-primary/30 bg-primary/10 px-4 py-2.5 text-sm font-semibold text-primary transition hover:border-primary/50 hover:bg-primary/20 sm:min-h-0 sm:flex-none sm:px-3 sm:py-2 sm:text-xs'
+  'min-h-11 max-w-full flex-1 rounded-xl border border-primary/30 bg-primary/10 px-4 py-2.5 text-center text-sm font-semibold text-primary transition hover:border-primary/50 hover:bg-primary/20 sm:min-h-0 sm:flex-none sm:px-3 sm:py-2 sm:text-xs'
 
 const actionSecondaryClassName =
-  'min-h-11 flex-1 rounded-xl border border-home-border bg-surface px-4 py-2.5 text-sm text-subtitle transition hover:border-primary/30 hover:bg-bg hover:text-text sm:min-h-0 sm:flex-none sm:px-3 sm:py-2 sm:text-xs'
+  'min-h-11 max-w-full flex-1 rounded-xl border border-home-border bg-surface px-4 py-2.5 text-center text-sm text-subtitle transition hover:border-primary/30 hover:bg-bg hover:text-text sm:min-h-0 sm:flex-none sm:px-3 sm:py-2 sm:text-xs'
 
 const actionDangerClassName =
-  'inline-flex min-h-11 items-center justify-center gap-1.5 rounded-xl border border-error-border bg-error-bg px-4 py-2.5 text-sm font-semibold leading-none text-error transition hover:border-error hover:bg-error-bg sm:min-h-0 sm:px-3 sm:py-2 sm:text-xs'
+  'inline-flex min-h-11 max-w-full items-center justify-center gap-1.5 rounded-xl border border-error-border bg-error-bg px-4 py-2.5 text-sm font-semibold leading-none text-error transition hover:border-error hover:bg-error-bg sm:min-h-0 sm:px-3 sm:py-2 sm:text-xs'
 
 export default function OfficerEventsClient({
   events,
@@ -346,7 +346,7 @@ export default function OfficerEventsClient({
         </div>
 
         <div
-          className="flex w-full shrink-0 flex-wrap items-center gap-2 sm:w-auto sm:justify-end"
+          className="flex w-full flex-wrap items-center gap-2 sm:max-w-xs sm:shrink-0 sm:justify-end"
           onClick={e => e.stopPropagation()}
           onKeyDown={e => e.stopPropagation()}
         >
@@ -399,6 +399,13 @@ export default function OfficerEventsClient({
               </button>
               <button
                 type="button"
+                onClick={() => router.push(`/officer/events/${event.id}/checkin`)}
+                className={actionSecondaryClassName}
+              >
+                Officer Check In
+              </button>
+              <button
+                type="button"
                 onClick={() => window.open(`/officer/events/${event.id}/qr`, '_blank')}
                 className={actionSecondaryClassName}
               >
@@ -425,6 +432,13 @@ export default function OfficerEventsClient({
           )}
           {spectator?.check_in_code && publishStatus === 'published' && (
             <>
+              <button
+                type="button"
+                onClick={() => router.push(`/officer/events/${spectator.id}/checkin`)}
+                className={actionSecondaryClassName}
+              >
+                Check In Spectators
+              </button>
               <button
                 type="button"
                 onClick={() => setQrEvent(spectator)}
@@ -676,13 +690,20 @@ export default function OfficerEventsClient({
                 iconClassName="text-primary"
               />
             </p>
-            <div className="mt-5 flex justify-center gap-3">
+            <div className="mt-5 flex flex-wrap justify-center gap-3">
               <button
                 type="button"
                 onClick={() => window.open(`/officer/events/${qrEvent.id}/qr`, '_blank')}
                 className="rounded-xl bg-primary px-4 py-2 text-sm font-semibold text-on-primary transition hover:bg-primary-hover"
               >
                 Full Screen
+              </button>
+              <button
+                type="button"
+                onClick={() => router.push(`/officer/events/${qrEvent.id}/checkin`)}
+                className="rounded-xl border border-home-border bg-surface px-4 py-2 text-sm font-semibold text-text transition hover:border-primary/30 hover:text-primary"
+              >
+                Officer Check In
               </button>
               <button
                 type="button"
