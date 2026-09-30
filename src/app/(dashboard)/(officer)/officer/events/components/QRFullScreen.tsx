@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect } from 'react'
+import Link from 'next/link'
 import { QRCodeSVG } from 'qrcode.react'
 import IconLabel from '@/app/components/IconLabel'
 import { formatEventSchedule } from '@/utils/datetime'
@@ -56,14 +57,22 @@ export default function QRFullScreen({
           />
         </div>
         <p className="text-sm text-subtitle">Scan to check in</p>
-        <button
-          type="button"
-          onClick={() => window.print()}
-          className="inline-flex items-center gap-2 rounded-xl bg-primary px-5 py-2.5 text-sm font-semibold text-on-primary shadow-sm transition hover:bg-primary-hover"
-        >
-          <Printer className="size-4" aria-hidden />
-          Print QR Code
-        </button>
+        <div className="flex flex-wrap items-center justify-center gap-3">
+          <Link
+            href={`/officer/events/${event.id}/checkin`}
+            className="inline-flex items-center rounded-xl border border-home-border bg-surface px-5 py-2.5 text-sm font-semibold text-text shadow-sm transition hover:border-primary/30 hover:text-primary"
+          >
+            Officer Check In
+          </Link>
+          <button
+            type="button"
+            onClick={() => window.print()}
+            className="inline-flex items-center gap-2 rounded-xl bg-primary px-5 py-2.5 text-sm font-semibold text-on-primary shadow-sm transition hover:bg-primary-hover"
+          >
+            <Printer className="size-4" aria-hidden />
+            Print QR Code
+          </button>
+        </div>
       </div>
 
       <div className="qr-print-sheet" aria-hidden>

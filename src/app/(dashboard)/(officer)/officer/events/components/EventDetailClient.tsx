@@ -475,6 +475,15 @@ export default function EventDetailClient({
               Check In Members
             </button>
           )}
+          {publishStatus === "published" && event.check_in_type === "self" && (
+            <button
+              type="button"
+              onClick={() => router.push(`/officer/events/${event.id}/checkin`)}
+              className={btnPrimaryClassName}
+            >
+              Officer Check In
+            </button>
+          )}
           {event.check_in_type === "self" && event.check_in_code && (
             <button
               type="button"
@@ -503,6 +512,15 @@ export default function EventDetailClient({
           )}
           {publishStatus === "published" && spectatorEvent?.check_in_code && (
             <>
+              <button
+                type="button"
+                onClick={() =>
+                  router.push(`/officer/events/${spectatorEvent.id}/checkin`)
+                }
+                className={btnPrimaryOutlineClassName}
+              >
+                Check In Spectators
+              </button>
               <button
                 type="button"
                 onClick={() =>
@@ -776,7 +794,8 @@ export default function EventDetailClient({
             <p className="mt-1 text-xs leading-5 text-subtitle">
               Linked QR event worth {spectatorEvent.point_value} pt
               {spectatorEvent.point_value === 1 ? "" : "s"} (capped at
-              10/semester). Use the Spectator QR buttons above at the event.
+              10/semester). Use the Spectator QR buttons above, or Check In
+              Spectators if someone cannot scan.
             </p>
           </div>
         )}

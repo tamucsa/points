@@ -72,6 +72,7 @@ If you need an event outside your usual categories, create it only when the resp
 - Open the event QR page (officer tools)
 - Display QR code at the event
 - Members scan and submit check-in
+- If someone cannot scan, use **Officer Check In** on the event or QR screen. That is a manual override; the QR stays active.
 
 #### Option B: Officer check-in
 - Open the event check-in page

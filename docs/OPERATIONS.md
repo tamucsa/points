@@ -218,7 +218,7 @@ Member **Events** (`/events`) is narrower: only the member’s JT-specific event
     - *JT Specific* — select a Jiating; only that family sees the event
   - **Check-in type**:
     - *Officer* — manual check-in at the event
-    - *Self (QR)* — members scan a QR code
+    - *Self (QR)* — members scan a QR code; officers can also check members in manually
     - *RSVP Required* — provide RSVP URL and deadline; after the form closes, upload a Name/Email CSV on the event page to tag members as **RSVPed** / **Not RSVPed** on check-in (optional tags; does not filter or block check-in). Re-upload replaces the list. Unmatched emails can be matched manually or marked as guests.
   - **Date**, **location**, **description** (as needed)
 4. For **Sports** events, optionally enable **Spectator check-in** (creates a child spectator event).
@@ -274,6 +274,7 @@ Member **Events** (`/events`) is narrower: only the member’s JT-specific event
 1. Create the event with check-in type **Self (QR)**.
 2. Open the event detail page → **Show QR** → `/officer/events/[id]/qr`.
 3. Display the QR code at the event venue.
+4. If someone cannot scan, use **Officer Check In** on the event, the QR screen, or `/officer/events/[id]/checkin`. That records `check_in_method = officer` and does not turn off the QR.
 
 **Member check-in:**
 

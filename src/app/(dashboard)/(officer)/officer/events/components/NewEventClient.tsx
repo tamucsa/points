@@ -462,7 +462,8 @@ export default function NewEventClient({
             </div>
             {isSelf && (
               <p className="mt-2 text-xs text-subtitle">
-                A QR code is generated automatically when the event is created.
+                A QR code is generated automatically. Officers can also check
+                members in manually after the event is published.
               </p>
             )}
             {isManualPoints && (
@@ -476,7 +477,8 @@ export default function NewEventClient({
 
         {fixedCheckIn === "self" && (
           <p className="text-xs text-subtitle">
-            Members scan a QR code to check themselves in.
+            Members scan a QR code to check themselves in. Officers can also
+            check members in manually after the event is published.
           </p>
         )}
 

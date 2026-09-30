@@ -179,6 +179,12 @@ export default function OfficerCheckinClient({
 
       <PageHeader title="Check In Members" subtitle={subtitle} />
 
+      {event.check_in_type === 'self' && (
+        <p className="mb-4 text-sm leading-6 text-subtitle">
+          Manual override for this QR event. Members can still scan the code.
+        </p>
+      )}
+
       {showTabs && (
         <div
           className="mb-4 flex gap-2 overflow-x-auto pb-1"
