@@ -108,7 +108,7 @@ Performance note:
 ### OAuth callback
 `src/app/api/auth/callback/route.ts`:
 - Exchanges OAuth code for a Supabase session (sets cookies).
-- Rejects non-`@tamu.edu` accounts.
+- Rejects accounts that are not `@tamu.edu` or `@buc.blinn.edu`.
 - Uses `SUPABASE_SERVICE_ROLE_KEY` to find/link a matching `members` row:
   - first by `auth_uid`
   - then by email

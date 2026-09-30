@@ -36,7 +36,7 @@ Bulk import is the primary way to load the CSA roster after dues (Jiating can wa
 | Column | Required | Notes |
 |--------|----------|-------|
 | `Full Name` | Yes | Complete name as shown in the app |
-| `TAMU Email` | Yes | Must be `@tamu.edu` |
+| `TAMU Email` | Yes | Must be `@tamu.edu` or `@buc.blinn.edu` |
 | `Jiating` | No | Optional; must match an active Jiating when provided. Leave blank until sorting — member is still created as `active` and can use the portal |
 | `Phone` | Yes | Contact phone number |
 | `Class` | Yes | Graduation year, e.g. `2027` (stored as `graduation_year`) |

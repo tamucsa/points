@@ -2,6 +2,8 @@ import { createServerClient } from '@supabase/ssr'
 import { createClient } from '@supabase/supabase-js'
 import { cookies } from 'next/headers'
 import { NextResponse } from 'next/server'
+import { isAllowedSchoolEmail } from '@/utils/email'
+import { fetchWithAuthTimeout } from '@/utils/supabase/auth-request'
 
 function safeNextPath(next: string | null, origin: string): string | null {
   if (!next || !next.startsWith('/') || next.startsWith('//')) return null
@@ -33,6 +35,7 @@ export async function GET(request: Request) {
             )
           },
         },
+        global: { fetch: fetchWithAuthTimeout },
       }
     )
 
@@ -42,7 +45,7 @@ export async function GET(request: Request) {
       return NextResponse.redirect(`${origin}/?error=auth_failed`)
     }
 
-    if (!user.email?.endsWith('@tamu.edu')) {
+    if (!isAllowedSchoolEmail(user.email)) {
       await supabase.auth.signOut()
       return NextResponse.redirect(`${origin}/?error=invalid_domain`)
     }

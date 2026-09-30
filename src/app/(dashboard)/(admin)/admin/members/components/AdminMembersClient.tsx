@@ -435,7 +435,7 @@ export default function AdminMembersClient({
             <ul className="divide-y divide-home-border">
               {[
                 { name: 'Full Name', required: true, note: 'Complete name as shown in the app' },
-                { name: 'TAMU Email', required: true, note: 'Must be a @tamu.edu address' },
+                { name: 'TAMU Email', required: true, note: 'Must be a @tamu.edu or @buc.blinn.edu address' },
                 { name: 'Jiating', required: false, note: 'Optional — match an active Jiating name, or leave blank until sorting' },
                 { name: 'Phone', required: true, note: 'Contact phone number' },
                 { name: 'Class', required: true, note: 'Graduation year, e.g. 2027, or Graduate Student' },

@@ -21,7 +21,7 @@ export default function TermsPage() {
             Terms of Service
           </h1>
           <p className="mt-3 text-sm text-subtitle">
-            Last updated: July 8, 2026
+            Last updated: September 30, 2026
           </p>
           <p className="mt-4 max-w-3xl text-base leading-7 text-subtitle">
             These Terms of Service (&quot;Terms&quot;) govern your use of TAMU CSA Points (&quot;the App&quot;),
@@ -37,10 +37,12 @@ export default function TermsPage() {
           <section>
             <h2 className="mb-3 text-lg font-semibold text-text">1. Eligibility</h2>
             <p>
-              The App is intended for Texas A&amp;M University students participating in CSA programs.
-              You must sign in with a valid <strong className="font-semibold text-text">@tamu.edu</strong> Google
-              account. CSA may restrict or revoke access if you are not an eligible member or if your
-              account does not meet membership requirements.
+              The App is intended for Texas A&amp;M University and Blinn College students participating in CSA
+              programs. You must sign in with a valid{' '}
+              <strong className="font-semibold text-text">@tamu.edu</strong> or{' '}
+              <strong className="font-semibold text-text">@buc.blinn.edu</strong> Google account. CSA may
+              restrict or revoke access if you are not an eligible member or if your account does not meet
+              membership requirements.
             </p>
           </section>
 
@@ -59,7 +61,7 @@ export default function TermsPage() {
             <p className="mb-3">When using the App, you agree to:</p>
             <ul className="list-disc space-y-2 pl-5">
               <li>Provide accurate membership information during registration</li>
-              <li>Use only your own @tamu.edu Google account to sign in</li>
+              <li>Use only your own @tamu.edu or @buc.blinn.edu Google account to sign in</li>
               <li>Check in to events only when you are actually present and eligible</li>
               <li>Not attempt to manipulate points, attendance, or leaderboard data</li>
               <li>Not misuse, disrupt, or attempt unauthorized access to the App or its data</li>

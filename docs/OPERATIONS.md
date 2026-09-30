@@ -41,7 +41,7 @@ Related docs:
 
 ### Overview
 
-New members authenticate with TAMU Google (`@tamu.edu`). The auth callback links their Supabase auth account to a `members` row (by `auth_uid` or email).
+New members authenticate with a school Google account (`@tamu.edu` or `@buc.blinn.edu`). The auth callback links their Supabase auth account to a `members` row (by `auth_uid` or email).
 
 **Access vs Jiating are separate:**
 - **CSV import** → always `active` (full site access), with or without a Jiating
@@ -53,7 +53,7 @@ New members authenticate with TAMU Google (`@tamu.edu`). The auth callback links
 ### Step-by-step: Member self-registers
 
 1. Member opens the site and clicks **Sign in with Google**.
-2. Member signs in with a `@tamu.edu` account.
+2. Member signs in with a `@tamu.edu` or `@buc.blinn.edu` account.
 3. If no `members` row exists, they are redirected to `/register`.
 4. Member fills in:
   - First name and last name (required) — stored together as `full_name`
@@ -74,7 +74,7 @@ Use this at the start of a semester to pre-load the roster before members sign i
   | Column       | Required | Notes                                           |
   | ------------ | -------- | ----------------------------------------------- |
   | `Full Name`  | Yes      | Complete name as shown in the app               |
-  | `TAMU Email` | Yes      | Must be `@tamu.edu`                             |
+  | `TAMU Email` | Yes      | Must be `@tamu.edu` or `@buc.blinn.edu`         |
   | `Jiating`    | No       | Optional; must match an active Jiating when set. Blank = no JT yet (still `active`, portal access). On update, blank keeps the existing JT |
   | `Phone`      | Yes      | Contact phone number                            |
   | `Class`      | Yes      | Graduation year, e.g. `2027`                    |
@@ -125,7 +125,7 @@ After fall semester close and Jiating re-sorting, upload only rows that changed.
 | Member stuck on `/pending`             | Still `pending_member` (self-reg)            | Admin approves in `/admin/members` → **Pending signup**        |
 | Member sent to `/register` after login | No member row and not imported               | Member completes registration, or admin imports them           |
 | Imported member shows "Not signed in"  | CSV row exists but `auth_uid` not linked yet | Member signs in once with Google; auth callback links by email |
-| Non-TAMU email rejected                | Domain enforcement in auth callback          | Member must use `@tamu.edu`                                    |
+| Email outside allowed domains rejected | Domain enforcement in auth callback          | Member must use `@tamu.edu` or `@buc.blinn.edu`                |
 
 
 ---
@@ -230,9 +230,9 @@ Member **Events** (`/events`) is narrower: only the member’s JT-specific event
 ### Step-by-step: Upload Howdy Week guest CSV
 
 1. Create a **Howdy Week** event and **publish** it (members see it on `/events` at 0 points; it also syncs to the **CSA Member Calendar**).
-2. Collect responses with a Google Form (**Name**, **Email** `@tamu.edu` required, **Year** as graduation year number only). Suggested disclaimer: CSA may store name, email, and year to record attendance, contact about joining, and link attendance if they register.
+2. Collect responses with a Google Form (**Name**, **Email** `@tamu.edu` or `@buc.blinn.edu` required, **Year** as graduation year number only). Suggested disclaimer: CSA may store name, email, and year to record attendance, contact about joining, and link attendance if they register.
 3. Open the event detail page → **Howdy Week guest CSV**.
-4. Upload the CSV. Re-upload **replaces** the guest list for that event. Non-`@tamu.edu` rows are skipped.
+4. Upload the CSV. Re-upload **replaces** the guest list for that event. Emails outside `@tamu.edu` and `@buc.blinn.edu` are skipped.
 5. Rows matching an existing member email are linked automatically and get an **attendance** row at **0 points**; others stay unmatched until registration or officer rematch.
 6. Linked guests do **not** receive leaderboard points yet (event stays 0 pts until a future deferred award). Officers see an **Attended N Howdy Week events** badge on member lists / pending signups; pending members see it on `/pending`.
 
@@ -466,7 +466,7 @@ Post-deploy smoke is also in `docs/DEPLOYMENT.md`. Use this section for rarer, d
 
 - Homepage (`/`) loads with app description, sign-in, and links to Privacy Policy and Terms of Service.
 - `/privacy` and `/terms` are publicly accessible without signing in.
-- Sign-in works with a `@tamu.edu` Google account; a non-TAMU account is rejected.
+- Sign-in works with a `@tamu.edu` or `@buc.blinn.edu` Google account; any other account is rejected.
 - Redirects: signed-out → `/`; no member row → `/register`; `pending_member` → `/pending`; `active` → `/leaderboard`.
 - Member cannot open `/officer/*` or `/admin/*`; officer cannot open `/admin/*`; admin can open both.
 - `/leaderboard` renders for an active member.

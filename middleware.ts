@@ -1,6 +1,10 @@
 import { createServerClient } from '@supabase/ssr'
 import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
+import {
+  fetchWithAuthTimeout,
+  isTransientAuthError,
+} from '@/utils/supabase/auth-request'
 
 const publicRoutes = [
   '/register',
@@ -43,15 +47,26 @@ export async function middleware(request: NextRequest) {
           )
         },
       },
+      global: { fetch: fetchWithAuthTimeout },
     }
   )
 
   // Required for @supabase/ssr cookie refresh; do not query members here (layouts load status).
-  const { data: { user }, error } = await supabase.auth.getUser()
+  let user: { id: string } | null = null
+  let error: { name?: string; status?: number } | null = null
+  try {
+    const result = await supabase.auth.getUser()
+    user = result.data.user
+    error = result.error
+  } catch (caught) {
+    console.error(caught)
+    error = { name: 'AuthRetryableFetchError', status: 0 }
+  }
 
-  // Stale cookies after revoked/deleted sessions throw refresh_token_not_found.
-  // Clear them so the user can sign in again instead of looping on a dead session.
-  if (error && !user) {
+  // Only wipe cookies for a revoked session. A 504 or timeout must leave them
+  // in place so the member is signed in again once Auth recovers.
+  const sessionIsDead = Boolean(error) && !user && !isTransientAuthError(error)
+  if (sessionIsDead) {
     clearAuthCookies(supabaseResponse, request)
   }
 
@@ -65,7 +80,7 @@ export async function middleware(request: NextRequest) {
 
   if (!user && !isPublicRoute) {
     const redirect = NextResponse.redirect(new URL('/', request.url))
-    if (error) clearAuthCookies(redirect, request)
+    if (sessionIsDead) clearAuthCookies(redirect, request)
     return redirect
   }
 

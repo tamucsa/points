@@ -1,5 +1,6 @@
 import { createServerClient } from '@supabase/ssr'
 import { cookies } from 'next/headers'
+import { fetchWithAuthTimeout } from '@/utils/supabase/auth-request'
 
 export async function createServerSupabase() {
   const cookieStore = await cookies()
@@ -12,6 +13,7 @@ export async function createServerSupabase() {
         getAll() { return cookieStore.getAll() },
         setAll() {},
       },
+      global: { fetch: fetchWithAuthTimeout },
     }
   )
 }

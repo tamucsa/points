@@ -2,6 +2,7 @@ import { createServerClient } from "@supabase/ssr";
 import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
 import { setSentryUser } from "@/utils/sentry";
+import { fetchWithAuthTimeout } from "@/utils/supabase/auth-request";
 
 export async function GET(request: Request) {
   const cookieStore = await cookies();
@@ -19,6 +20,7 @@ export async function GET(request: Request) {
           });
         },
       },
+      global: { fetch: fetchWithAuthTimeout },
     },
   );
 

@@ -2,6 +2,10 @@
 
 import { linkEventGuestsByEmail } from "@/app/actions/guests";
 import {
+  ALLOWED_SCHOOL_EMAIL_LABEL,
+  isAllowedSchoolEmail,
+} from "@/utils/email";
+import {
   isMemberRole,
   type MemberRole,
   validateClassification,
@@ -359,8 +363,10 @@ async function importMembersImpl(
       continue;
     }
 
-    if (!email?.endsWith("@tamu.edu")) {
-      summary.errors.push(`${email || "(blank)"} — not a @tamu.edu address`);
+    if (!isAllowedSchoolEmail(email)) {
+      summary.errors.push(
+        `${email || "(blank)"} — not a ${ALLOWED_SCHOOL_EMAIL_LABEL} address`,
+      );
       continue;
     }
 
