@@ -60,7 +60,7 @@ Derived views / RPCs (used by UI):
 - `v_current_leaderboard`: active members + points breakdown for the active semester from `member_semester_points` (not a live re-sum of all attendance); includes `account_linked` (`auth_uid IS NOT NULL`) for officer sign-in status (not shown on public leaderboard UI)
 - `v_jt_leaderboard`: per-jiating aggregation for the active semester (source for GM snapshot publish)
 - `attendance_counts_for_semester(semester_id)`: per-event attendance counts for Officer Events (SQL `GROUP BY`, not a full attendance row fetch)
-- `top_leaderboard_members_per_jt(limit)`: top N members per Jiating for `/leaderboard/jiatings` without loading the full leaderboard
+- `top_leaderboard_members_per_jt(limit)`: top N members per Jiating for `/leaderboard/jiatings`, excluding officers and admins, without loading the full leaderboard
 - `close_semester(semester_id)`: archives `member_semester_points` into `semester_summaries` and deactivates the semester; for Spring (start month before August) also clears `members.jt_family_id` while leaving `status = active` (service role)
 
 ## Request flow
@@ -129,8 +129,8 @@ Performance note:
 `members.role` controls officer/admin access; `members.is_parent` marks the Parent role and can stack with officer/admin:
 - `member` without `is_parent`: normal access; earns points; eligible for rewards
 - Parent (`is_parent`, displayed as **Parent**, not Member): attendance is tracked; **no points** and not on the leaderboard; not eligible for rewards. Same officer tools as officers (Members + Officer Events), except parent-only users may **create** only **Jiating Event** and **Jiating Mixer** for their own family. Parents may **delete** those JT events for their family; officers may **delete** every other category. Officer/admin + parent keeps full staff create access. Admins can still delete any event.
-- `officer`: officer pages + check-in tools; earns points unless also Parent; not eligible for rewards. Displayed as **Officer**, or **Officer** and **Parent**.
-- `admin`: admin pages + officer pages; earns points unless also Parent; not eligible for rewards. Displayed as **Officer** (or **Officer** and **Parent**) everywhere except Admin → Roles, where the hidden Admin assignment is shown.
+- `officer`: officer pages + check-in tools; earns points unless also Parent; hidden from the Overall and Jiatings leaderboards; not eligible for rewards. Displayed as **Officer**, or **Officer** and **Parent**.
+- `admin`: admin pages + officer pages; earns points unless also Parent; hidden from the Overall and Jiatings leaderboards; not eligible for rewards. Displayed as **Officer** (or **Officer** and **Parent**) everywhere except Admin → Roles, where the hidden Admin assignment is shown.
 
 ## Operations & ownership transfer checklist
 

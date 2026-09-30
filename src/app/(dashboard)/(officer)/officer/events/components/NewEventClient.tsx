@@ -1,7 +1,8 @@
 "use client";
 
+import { CircleCheck } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { createEvent, type EventPublishMode } from "@/app/actions/events";
 import BackLink from "@/app/components/BackLink";
 import IconLabel, {
@@ -75,6 +76,36 @@ const checkInTypeBtn = (active: boolean) =>
       : "border-home-border bg-surface text-subtitle hover:border-primary/30"
   }`;
 
+/** Format an `<input type="date">` value without shifting the calendar day. */
+function formatFormDate(value: string) {
+  const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(value);
+  if (!match) return value;
+  const date = new Date(
+    Date.UTC(Number(match[1]), Number(match[2]) - 1, Number(match[3])),
+  );
+  return new Intl.DateTimeFormat("en-US", {
+    weekday: "short",
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+    timeZone: "UTC",
+  }).format(date);
+}
+
+/** Format an `<input type="time">` value as a clock time. */
+function formatFormTime(value: string) {
+  const match = /^(\d{2}):(\d{2})/.exec(value);
+  if (!match) return value;
+  const date = new Date(
+    Date.UTC(2000, 0, 1, Number(match[1]), Number(match[2])),
+  );
+  return new Intl.DateTimeFormat("en-US", {
+    hour: "numeric",
+    minute: "2-digit",
+    timeZone: "UTC",
+  }).format(date);
+}
+
 export default function NewEventClient({
   semesterId,
   semesterName,
@@ -90,6 +121,8 @@ export default function NewEventClient({
     : DEFAULT_CATEGORY;
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [posted, setPosted] = useState(false);
+  const doneButtonRef = useRef<HTMLButtonElement>(null);
   const [mixerFamilyIds, setMixerFamilyIds] = useState<string[]>(
     officerJtFamilyId ? [officerJtFamilyId] : [],
   );
@@ -174,35 +207,54 @@ export default function NewEventClient({
     });
   };
 
+  const validateForSubmit = (publishMode: EventPublishMode) => {
+    if (parentOnly && !officerJtFamilyId) {
+      return "Ask an admin to assign your Jiating before creating events.";
+    }
+    if (!form.name.trim()) return "Event name is required.";
+    if (!form.event_date) return "Event date is required.";
+    if (!isManualPoints && !form.start_time) return "Start time is required.";
+    if (!isManualPoints && !form.location.trim()) {
+      return "Location is required.";
+    }
+    if (
+      !isManualPoints &&
+      form.end_time &&
+      form.start_time &&
+      form.end_time <= form.start_time
+    ) {
+      return "End time must be after start time.";
+    }
+    if (isJTSpecific && !form.jt_family_id) {
+      return "JT family is required for JT-specific events.";
+    }
+    if (isMixer && mixerFamilyIds.length < 2) {
+      return "Select at least two Jiatings for a Mixer.";
+    }
+    if (
+      publishMode === "schedule" &&
+      (!form.schedule_date || !form.schedule_time)
+    ) {
+      return "Enter a publish date and time (Central Time) to schedule.";
+    }
+    return null;
+  };
+
   const handleSubmit = async (publishMode: EventPublishMode) => {
+    const message = validateForSubmit(publishMode);
+    if (message) {
+      setError(message);
+      return;
+    }
+
     setSubmitting(true);
     setError(null);
-
-    if (parentOnly && !officerJtFamilyId) {
-      setError("Ask an admin to assign your Jiating before creating events.");
-      setSubmitting(false);
-      return;
-    }
-
-    if (isMixer && mixerFamilyIds.length < 2) {
-      setError("Select at least two Jiatings for a Mixer.");
-      setSubmitting(false);
-      return;
-    }
-
-    if (publishMode === "schedule") {
-      if (!form.schedule_date || !form.schedule_time) {
-        setError("Enter a publish date and time (Central Time) to schedule.");
-        setSubmitting(false);
-        return;
-      }
-    }
 
     const result = await createEvent({
       semesterId,
       name: form.name,
       category: form.category,
-      pointValue: parseInt(form.point_value),
+      pointValue: parseInt(form.point_value, 10),
       scope: form.scope,
       jtFamilyId: isJTSpecific ? form.jt_family_id : null,
       jtFamilyIds: isMixer ? mixerFamilyIds : [],
@@ -227,8 +279,40 @@ export default function NewEventClient({
       setError(result.error ?? "Failed to create event.");
       return;
     }
+    if (publishMode === "publish") {
+      setPosted(true);
+      return;
+    }
     router.replace("/officer/events");
   };
+
+  const leaveAfterPost = () => {
+    router.replace("/officer/events");
+  };
+
+  useEffect(() => {
+    if (!posted) return;
+    doneButtonRef.current?.focus();
+    const onKey = (event: KeyboardEvent) => {
+      if (event.key === "Escape") router.replace("/officer/events");
+    };
+    document.addEventListener("keydown", onKey);
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.removeEventListener("keydown", onKey);
+      document.body.style.overflow = previousOverflow;
+    };
+  }, [posted, router]);
+
+  const postedWhen = isManualPoints
+    ? formatFormDate(form.event_date)
+    : `${formatFormDate(form.event_date)} · ${formatFormTime(form.start_time)}${
+        form.end_time ? ` – ${formatFormTime(form.end_time)}` : ""
+      } CT`;
+  const postedPoints = isManualPoints
+    ? "Variable points"
+    : `${displayedPointValue ?? 0} pt${(displayedPointValue ?? 0) === 1 ? "" : "s"}`;
 
   return (
     <div className="mx-auto max-w-2xl px-6 py-8 lg:px-8">
@@ -635,6 +719,81 @@ export default function NewEventClient({
           </button>
         </div>
       </div>
+
+      {posted && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <button
+            type="button"
+            aria-label="Back to events"
+            className="absolute inset-0 bg-black/70"
+            onClick={leaveAfterPost}
+          />
+          <div
+            className="relative z-10 w-full max-w-md rounded-4xl border border-home-border bg-surface p-6 shadow-xl sm:p-8"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="posted-title"
+            aria-describedby="posted-detail"
+          >
+            <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-2xl bg-green-50">
+              <CircleCheck className="size-6 text-green-700" aria-hidden />
+            </div>
+            <h2
+              id="posted-title"
+              className="text-center text-lg font-bold text-text"
+            >
+              Event published
+            </h2>
+            <p className="mt-2 text-center text-sm font-semibold text-text">
+              {form.name.trim()}
+            </p>
+            <p
+              id="posted-detail"
+              className="mt-2 text-center text-sm leading-6 text-subtitle"
+            >
+              Members can see it on the events list.
+            </p>
+            <dl className="mt-5 divide-y divide-home-border overflow-hidden rounded-2xl border border-home-border bg-bg text-sm">
+              <div className="flex items-start justify-between gap-4 px-4 py-2.5">
+                <dt className="shrink-0 text-subtitle">When</dt>
+                <dd className="min-w-0 text-right font-medium text-text">
+                  {postedWhen}
+                </dd>
+              </div>
+              {!isManualPoints && form.location.trim() && (
+                <div className="flex items-start justify-between gap-4 px-4 py-2.5">
+                  <dt className="shrink-0 text-subtitle">Location</dt>
+                  <dd className="min-w-0 text-right font-medium text-text">
+                    {form.location.trim()}
+                  </dd>
+                </div>
+              )}
+              <div className="flex items-start justify-between gap-4 px-4 py-2.5">
+                <dt className="shrink-0 text-subtitle">Points</dt>
+                <dd className="min-w-0 text-right font-medium text-text">
+                  {postedPoints}
+                </dd>
+              </div>
+              {isSports && form.has_spectators && (
+                <div className="flex items-start justify-between gap-4 px-4 py-2.5">
+                  <dt className="shrink-0 text-subtitle">Spectators</dt>
+                  <dd className="min-w-0 text-right font-medium text-text">
+                    Separate 1 pt QR event
+                  </dd>
+                </div>
+              )}
+            </dl>
+            <button
+              ref={doneButtonRef}
+              type="button"
+              onClick={leaveAfterPost}
+              className="mt-6 w-full rounded-xl bg-primary px-4 py-2.5 text-sm font-semibold text-on-primary"
+            >
+              Back to Events
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

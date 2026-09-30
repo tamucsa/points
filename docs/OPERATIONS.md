@@ -344,6 +344,8 @@ Attendance with `counted = false` still appears in history (profile / event deta
 
 **Parent:** `members.is_parent` never earns points (`recompute_member_semester_points` writes zeros), including when the person is also an officer or admin. Attendance is still stored. Parents are omitted from `/leaderboard`, `top_leaderboard_members_per_jt`, and `v_jt_leaderboard` totals/counts. Changing Parent (or converting a leftover `role=parent` row) recomputes the active semester.
 
+**Officer and admin:** `members.role` of `officer` or `admin` still earns points unless also Parent. Both are omitted from `/leaderboard` (Overall top 10) and `top_leaderboard_members_per_jt` (Jiatings top 3). Their points still count in `v_jt_leaderboard` and published Standings totals.
+
 #### Timezone
 
 Event start/end and weekly windows use **America/Chicago**.
@@ -358,8 +360,8 @@ Event start/end and weekly windows use **America/Chicago**.
 ### Step-by-step: Anyone views the leaderboard
 
 1. Go to **Leaderboard** → `/leaderboard`.
-2. **Overall** tab shows top 10 members (rank, name, avatar, Jiating badge, total points).
-3. **Jiatings** tab → `/leaderboard/jiatings` shows top 3 per Jiating card.
+2. **Overall** tab shows the top 10 members who are not officers or admins (rank, name, avatar, Jiating badge, total points).
+3. **Jiatings** tab → `/leaderboard/jiatings` shows the top 3 members per Jiating card, excluding officers and admins.
 4. **Standings** tab → `/leaderboard/standings` shows Jiating-vs-Jiating rankings from snapshots published after each GM (not live).
 
 ### Step-by-step: Officer publishes Jiating standings after GM
@@ -406,7 +408,7 @@ Use remove only when they were **not** at the event. If they attended but points
 
 Roles (`member`, `officer`, `admin`) control access to officer and admin pages. The **Parent** flag (`members.is_parent`) stacks with those roles. RLS policies prevent officers from elevating roles. Admins manage roles in the app.
 
-**Parent** never earns points (`recompute_member_semester_points` stores 0). Parents are excluded from the public leaderboard, Jiating standings totals, and (when built) Battle Pass / reduced-fee rewards. Officer/admin without Parent still earn leaderboard points but are also excluded from those rewards.
+**Parent** never earns points (`recompute_member_semester_points` stores 0). Parents are excluded from the public leaderboard, Jiating standings totals, and (when built) Battle Pass / reduced-fee rewards. Officers and admins without Parent still earn points, including toward Jiating standings totals, but they are omitted from the Overall and Jiatings name lists. They are also excluded from those rewards.
 
 Parent-only users have the same Members roster and Officer Events tools as officers, except they can only **create** **Jiating Event** and **Jiating Mixer** for their own Jiating. Officers can **delete** events except those two categories; parents can **delete** JT Event/Mixer for their family. Officer + Parent and Admin + Parent keep full create access and both delete rules. Admins can delete any event.
 

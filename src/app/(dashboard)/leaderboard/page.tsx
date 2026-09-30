@@ -9,6 +9,7 @@ export default async function LeaderboardPage() {
       .from('v_current_leaderboard')
       .select('id, full_name, profile_image_url, jt_family, jt_color, total_points')
       .eq('is_parent', false)
+      .not('role', 'in', '(officer,admin)')
       .order('total_points', { ascending: false })
       .limit(10),
     getActiveSemester(),
