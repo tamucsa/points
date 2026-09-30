@@ -135,10 +135,11 @@ export default function AdminRolesPanel({
       <p className="text-sm leading-6 text-subtitle">
         Assign Member, Parent, Officer, or Admin. Parent is its own role and
         can also combine with Officer or Admin. Parents do not earn points and
-        are hidden from the leaderboard. Parent-only users can create Jiating
-        Event and Jiating Mixer for their own family; Officer + Parent and
-        Admin + Parent keep full staff create tools. You cannot demote the last
-        remaining admin.
+        are hidden from the leaderboard. Officers and admins still earn points
+        and are hidden from the Overall and Jiatings leaderboards. Parent-only users
+        can create Jiating Event and Jiating Mixer for their own family;
+        Officer + Parent and Admin + Parent keep full staff create tools. You
+        cannot demote the last remaining admin.
       </p>
 
       <form

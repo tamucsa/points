@@ -81,7 +81,7 @@ Go to **Admin** → **Members** → **Roles** (`/admin/members?tab=roles`).
 - Set access to **Member**, **Parent**, **Officer**, **Officer + Parent**, **Admin**, or **Admin + Parent**. Parent is a role, not a tag on Member.
 - **Parent** never earns points, is hidden from the leaderboard, and will not qualify for Battle Pass or reduced-fee rewards. Attendance can still be recorded.
 - Parent-only users can create **Jiating Event** and **Jiating Mixer** for their own family, and delete those events for their family. Officer + Parent and Admin + Parent keep full staff create access.
-- Officers still earn points unless they are also marked Parent; they also will not qualify for those rewards.
+- Officers and admins still earn points unless they are also marked Parent. They are hidden from the Overall and Jiatings leaderboards and will not qualify for those rewards.
 - Promoting to admin and demoting yourself require confirmation.
 - The last remaining admin cannot be demoted.
 
