@@ -26,7 +26,12 @@ import CollapsibleSettings from "@/app/components/CollapsibleSettings";
 import MemberAvatar from "@/app/components/MemberAvatar";
 import RoleBadges from "@/app/components/RoleBadges";
 import { inputClassName, labelClassName } from "@/utils/constants";
-import { EVENT_TIMEZONE, formatEventSchedule } from "@/utils/datetime";
+import {
+  EVENT_TIMEZONE,
+  formatEventDate,
+  formatEventSchedule,
+  formatEventTime,
+} from "@/utils/datetime";
 import {
   eventTimestampToFormDate,
   eventTimestampToFormTime,
@@ -1027,10 +1032,7 @@ export default function EventDetailClient({
                     {displayName}
                   </div>
                   <div className="text-xs text-subtitle">
-                    {new Date(row.recorded_at).toLocaleTimeString("en-US", {
-                      hour: "numeric",
-                      minute: "2-digit",
-                    })}
+                    {formatEventDate(row.recorded_at)} · {formatEventTime(row.recorded_at)}
                   </div>
                 </div>
                 <div className="flex shrink-0 flex-wrap items-center justify-end gap-1">
