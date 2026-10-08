@@ -2,29 +2,23 @@ import { createServerClient } from '@supabase/ssr'
 import { createClient } from '@supabase/supabase-js'
 import { cookies } from 'next/headers'
 import { NextResponse } from 'next/server'
+import { AUTH_NEXT_COOKIE, safeNextPath } from '@/utils/auth-next'
 import { isAllowedSchoolEmail } from '@/utils/email'
 import { publicOriginFromRequest } from '@/utils/public-origin'
 import { fetchWithAuthTimeout } from '@/utils/supabase/auth-request'
-
-function safeNextPath(next: string | null, origin: string): string | null {
-  if (!next || !next.startsWith('/') || next.startsWith('//')) return null
-  try {
-    const url = new URL(next, origin)
-    if (url.origin !== origin) return null
-    return `${url.pathname}${url.search}`
-  } catch {
-    return null
-  }
-}
 
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url)
   const origin = publicOriginFromRequest(request)
   const code = searchParams.get('code')
-  const next = safeNextPath(searchParams.get('next'), origin)
 
   if (code) {
     const cookieStore = await cookies()
+    const next = safeNextPath(
+      cookieStore.get(AUTH_NEXT_COOKIE)?.value ?? searchParams.get('next'),
+      origin,
+    )
+    cookieStore.set(AUTH_NEXT_COOKIE, '', { path: '/', maxAge: 0 })
     const supabase = createServerClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
       process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,

@@ -1,19 +1,13 @@
 import { createServerClient } from "@supabase/ssr";
 import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
+import {
+  AUTH_NEXT_COOKIE,
+  AUTH_NEXT_MAX_AGE_SECONDS,
+  safeNextPath,
+} from "@/utils/auth-next";
 import { publicOriginFromRequest } from "@/utils/public-origin";
 import { fetchWithAuthTimeout } from "@/utils/supabase/auth-request";
-
-function safeNextPath(next: string | null, origin: string): string | null {
-  if (!next || !next.startsWith("/") || next.startsWith("//")) return null;
-  try {
-    const url = new URL(next, origin);
-    if (url.origin !== origin) return null;
-    return `${url.pathname}${url.search}`;
-  } catch {
-    return null;
-  }
-}
 
 /**
  * Starts Google OAuth via a same-tab HTTP redirect chain:
@@ -27,9 +21,9 @@ export async function GET(request: Request) {
   const origin = publicOriginFromRequest(request);
   const next = safeNextPath(searchParams.get("next"), origin);
 
-  const callbackUrl = next
-    ? `${origin}/api/auth/callback?next=${encodeURIComponent(next)}`
-    : `${origin}/api/auth/callback`;
+  // Keep this URL exact. Supabase only allows the bare callback; a ?next=
+  // query is ignored and the login code is sent to the project Site URL.
+  const callbackUrl = `${origin}/api/auth/callback`;
 
   const cookieStore = await cookies();
   const supabase = createServerClient(
@@ -63,6 +57,18 @@ export async function GET(request: Request) {
 
   if (error || !data.url) {
     return NextResponse.redirect(`${origin}/?error=auth_failed`);
+  }
+
+  if (next) {
+    cookieStore.set(AUTH_NEXT_COOKIE, next, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "lax",
+      path: "/",
+      maxAge: AUTH_NEXT_MAX_AGE_SECONDS,
+    });
+  } else {
+    cookieStore.set(AUTH_NEXT_COOKIE, "", { path: "/", maxAge: 0 });
   }
 
   return NextResponse.redirect(data.url);
