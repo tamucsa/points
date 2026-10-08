@@ -3,6 +3,7 @@ import { createClient } from '@supabase/supabase-js'
 import { cookies } from 'next/headers'
 import { NextResponse } from 'next/server'
 import { isAllowedSchoolEmail } from '@/utils/email'
+import { publicOriginFromRequest } from '@/utils/public-origin'
 import { fetchWithAuthTimeout } from '@/utils/supabase/auth-request'
 
 function safeNextPath(next: string | null, origin: string): string | null {
@@ -17,7 +18,8 @@ function safeNextPath(next: string | null, origin: string): string | null {
 }
 
 export async function GET(request: Request) {
-  const { searchParams, origin } = new URL(request.url)
+  const { searchParams } = new URL(request.url)
+  const origin = publicOriginFromRequest(request)
   const code = searchParams.get('code')
   const next = safeNextPath(searchParams.get('next'), origin)
 
