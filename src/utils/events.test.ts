@@ -1,6 +1,8 @@
 import { describe, expect, it } from "vitest";
 import {
   checkInOptionLabel,
+  eventMatchesFilter,
+  eventMatchesJiatingFamily,
   flexibleCheckInTypes,
   JIATING_MIXER_POINTS,
   JIATING_MIXER_SIX_WAY_POINTS,
@@ -76,5 +78,35 @@ describe("jiatingMixerPointValue", () => {
     expect(jiatingMixerPointValue([...six, "jt-7"], [...six, "jt-7"])).toBe(
       JIATING_MIXER_POINTS,
     );
+  });
+});
+
+describe("event list filters", () => {
+  const olympics = { category: "Jiating Olympics", scope: "jt_shared" };
+  const mixer = { category: "Jiating Mixer", scope: "jt_shared" };
+  const familyEvent = { category: "Jiating Event", scope: "jt_specific" };
+
+  it("lists Jiating Olympics on their own tab", () => {
+    expect(eventMatchesFilter(olympics, "olympics")).toBe(true);
+    expect(eventMatchesFilter(olympics, "jiating")).toBe(false);
+    expect(eventMatchesFilter(olympics, "csa")).toBe(false);
+    expect(eventMatchesFilter(olympics, "all")).toBe(true);
+  });
+
+  it("keeps family events and mixers on the Jiating tab", () => {
+    expect(eventMatchesFilter(familyEvent, "jiating")).toBe(true);
+    expect(eventMatchesFilter(mixer, "jiating")).toBe(true);
+    expect(eventMatchesFilter(familyEvent, "olympics")).toBe(false);
+  });
+
+  it("does not count Jiating Olympics toward a Jiating family", () => {
+    const event = {
+      id: "olympics-1",
+      category: "Jiating Olympics",
+      scope: "jt_shared",
+      jt_family_id: null,
+    };
+    expect(eventMatchesJiatingFamily(event, "jt-1", {})).toBe(false);
+    expect(eventMatchesJiatingFamily(event, null, {})).toBe(true);
   });
 });

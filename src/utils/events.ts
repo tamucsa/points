@@ -324,6 +324,7 @@ export const EVENT_FILTER_TABS = [
   { id: 'all', label: 'All' },
   { id: 'csa', label: 'CSA' },
   { id: 'jiating', label: 'Jiating' },
+  { id: 'olympics', label: 'Jiating Olympics' },
   { id: 'sports', label: 'Sports' },
   { id: 'dance', label: 'Dance' },
 ] as const
@@ -350,12 +351,12 @@ export function eventMatchesFilter(
     return category === 'Sports' || category === SPECTATOR_EVENT_CATEGORY
   }
 
+  if (filter === 'olympics') {
+    return isJiatingOlympicsCategory(category)
+  }
+
   if (filter === 'jiating') {
-    return (
-      event.scope === 'jt_specific' ||
-      isJiatingOlympicsCategory(category) ||
-      isMixerCategory(category)
-    )
+    return event.scope === 'jt_specific' || isMixerCategory(category)
   }
 
   // CSA: org-wide programming excluding sports/dance
@@ -369,10 +370,10 @@ export function eventMatchesFilter(
 
 /**
  * Officer Jiating family filter: which family an event counts toward.
- * - Olympics: every selected family
  * - Mixer: only participating families (legacy mixers with no links → all)
  * - JT-specific: that event's family only
  * `familyId === null` means All families.
+ * Jiating Olympics live on their own tab and are not counted here.
  */
 export function eventMatchesJiatingFamily(
   event: {
@@ -385,8 +386,6 @@ export function eventMatchesJiatingFamily(
   mixerFamiliesByEventId: Record<string, string[]>,
 ): boolean {
   if (!familyId) return true
-
-  if (isJiatingOlympicsCategory(event.category)) return true
 
   if (isMixerCategory(event.category)) {
     const ids = mixerFamiliesByEventId[event.id]
