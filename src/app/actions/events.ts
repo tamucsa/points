@@ -1,11 +1,12 @@
 "use server";
 
+import { randomUUID } from "node:crypto";
 import {
+  eventTimestampToFormDate,
   resolveCentralEventTimestamp,
   validateEventEndAfterStart,
 } from "@/utils/event-times";
 import {
-  type CheckInType,
   canDeleteEvent,
   eventDeleteDeniedMessage,
   getCategoryConfig,
@@ -15,7 +16,9 @@ import {
   jiatingMixerPointValue,
   MANUAL_POINTS_DEFAULT_END_TIME,
   MANUAL_POINTS_DEFAULT_START_TIME,
+  parentCanManageEvent,
   parentCreateEventError,
+  resolveEventCheckInType,
   SPECTATOR_EVENT_CATEGORY,
 } from "@/utils/events";
 import {
@@ -482,15 +485,8 @@ async function createEventImpl(input: CreateEventInput) {
   if (!config) return { success: false, error: "Invalid event category." };
 
   const scope = config.scope;
-  const allowedFlexible: CheckInType[] = ["officer", "self", "rsvp_required"];
-  if (input.category === "Philanthropy") {
-    allowedFlexible.push("manual_points");
-  }
-  const checkInType: CheckInType =
-    config.checkInType ??
-    (allowedFlexible.includes(input.checkInType as CheckInType)
-      ? (input.checkInType as CheckInType)
-      : "officer");
+  const checkInType = resolveEventCheckInType(input.category, input.checkInType);
+  if (!checkInType) return { success: false, error: "Invalid event category." };
 
   const dateOnly = isManualPointsCheckIn(checkInType);
   const startTime = dateOnly
@@ -708,6 +704,311 @@ async function createEventImpl(input: CreateEventInput) {
       parent_event_id: null,
       check_in_type: checkInType,
     });
+  }
+
+  return { success: true, error: null };
+}
+
+export async function updateEventClassification(
+  eventId: string,
+  input: {
+    category: string;
+    checkInType: string;
+    jtFamilyId: string | null;
+    jtFamilyIds: string[];
+    location?: string | null;
+    locationMapsUrl?: string | null;
+    startTime?: string | null;
+    endTime?: string | null;
+  },
+) {
+  return withServerAction("updateEventClassification", () =>
+    updateEventClassificationImpl(eventId, input),
+  );
+}
+
+async function updateEventClassificationImpl(
+  eventId: string,
+  input: {
+    category: string;
+    checkInType: string;
+    jtFamilyId: string | null;
+    jtFamilyIds: string[];
+    location?: string | null;
+    locationMapsUrl?: string | null;
+    startTime?: string | null;
+    endTime?: string | null;
+  },
+) {
+  if (!eventId) return { success: false, error: "Event not found." };
+
+  const config = getCategoryConfig(input.category);
+  if (!config) return { success: false, error: "Invalid event category." };
+
+  const checkInType = resolveEventCheckInType(input.category, input.checkInType);
+  if (!checkInType) return { success: false, error: "Invalid check-in type." };
+
+  const { supabase, member, error: authError } = await requireEventStaff();
+  if (authError || !member) return { success: false, error: authError };
+
+  const { data: event } = await supabase
+    .from("events")
+    .select(
+      "id, category, check_in_type, check_in_code, point_value, scope, jt_family_id, parent_event_id, publish_status, name, description, location, location_maps_url, starts_at, ends_at, rsvp_url, google_event_id",
+    )
+    .eq("id", eventId)
+    .maybeSingle();
+
+  if (!event) return { success: false, error: "Event not found." };
+  if (event.parent_event_id) {
+    return {
+      success: false,
+      error: "Change the parent event. Spectator check-in stays a QR event.",
+    };
+  }
+
+  const currentMixerFamilies = isMixerCategory(event.category)
+    ? await mixerFamilyIdsForEvent(supabase, eventId)
+    : [];
+
+  if (
+    isParentOnly(member) &&
+    !parentCanManageEvent({
+      category: event.category,
+      jtFamilyId: event.jt_family_id,
+      mixerFamilyIds: currentMixerFamilies,
+      memberJtFamilyId: member.jt_family_id,
+    })
+  ) {
+    return {
+      success: false,
+      error: "You can only change Jiating events for your own family.",
+    };
+  }
+
+  const mixerFamilyIds = [...new Set(input.jtFamilyIds.filter(Boolean))];
+  const jtFamilyId = input.jtFamilyId;
+
+  if (isParentOnly(member)) {
+    const parentError = parentCreateEventError({
+      category: input.category,
+      jtFamilyId: config.scope === "jt_specific" ? jtFamilyId : null,
+      jtFamilyIds: mixerFamilyIds,
+      memberJtFamilyId: member.jt_family_id,
+    });
+    if (parentError) return { success: false, error: parentError };
+  }
+
+  if (config.scope === "jt_specific" && !jtFamilyId) {
+    return {
+      success: false,
+      error: "JT family is required for JT-specific events.",
+    };
+  }
+  if (isMixerCategory(input.category) && mixerFamilyIds.length < 2) {
+    return {
+      success: false,
+      error: "Select at least two Jiatings for a Mixer.",
+    };
+  }
+
+  const dateOnly = isManualPointsCheckIn(checkInType);
+  const wasDateOnly = isManualPointsCheckIn(event.check_in_type);
+  let startsAt = event.starts_at;
+  let endsAt = event.ends_at;
+  let location = event.location ?? "";
+  let locationMapsUrl = event.location_maps_url;
+
+  if (dateOnly && !wasDateOnly) {
+    const eventDate = eventTimestampToFormDate(event.starts_at);
+    const start = await resolveCentralEventTimestamp(
+      supabase,
+      eventDate,
+      MANUAL_POINTS_DEFAULT_START_TIME,
+    );
+    const end = await resolveCentralEventTimestamp(
+      supabase,
+      eventDate,
+      MANUAL_POINTS_DEFAULT_END_TIME,
+    );
+    if (!start.value || !end.value) {
+      return { success: false, error: "Could not set the manual-points date." };
+    }
+    startsAt = start.value;
+    endsAt = end.value;
+    location = "";
+    locationMapsUrl = null;
+  } else if (!dateOnly && wasDateOnly) {
+    const nextLocation = input.location?.trim() ?? "";
+    const nextStart = input.startTime?.trim() ?? "";
+    if (!nextLocation) {
+      return {
+        success: false,
+        error: "Location is required when leaving Manual Points.",
+      };
+    }
+    if (!nextStart) {
+      return {
+        success: false,
+        error: "Start time is required when leaving Manual Points.",
+      };
+    }
+    const eventDate = eventTimestampToFormDate(event.starts_at);
+    const start = await resolveCentralEventTimestamp(
+      supabase,
+      eventDate,
+      nextStart,
+    );
+    if (!start.value) {
+      return { success: false, error: start.error ?? "Invalid start time." };
+    }
+    let nextEnd: string | null = null;
+    if (input.endTime?.trim()) {
+      const end = await resolveCentralEventTimestamp(
+        supabase,
+        eventDate,
+        input.endTime.trim(),
+      );
+      if (!end.value) {
+        return { success: false, error: end.error ?? "Invalid end time." };
+      }
+      if (!validateEventEndAfterStart(start.value, end.value)) {
+        return { success: false, error: "End time must be after start time." };
+      }
+      nextEnd = end.value;
+    }
+    startsAt = start.value;
+    endsAt = nextEnd;
+    location = nextLocation;
+    locationMapsUrl = input.locationMapsUrl?.trim() || null;
+  }
+
+  const { data: spectator } = await supabase
+    .from("events")
+    .select("id, google_event_id")
+    .eq("parent_event_id", eventId)
+    .maybeSingle();
+
+  if (spectator && !isSportsCategory(input.category)) {
+    const { count, error: attendanceError } = await supabase
+      .from("attendance")
+      .select("id", { count: "exact", head: true })
+      .eq("event_id", spectator.id);
+    if (attendanceError) {
+      return { success: false, error: "Failed to check spectator attendance." };
+    }
+    if ((count ?? 0) > 0) {
+      return {
+        success: false,
+        error:
+          "This Sports event has spectator check-ins. Remove those before changing the category.",
+      };
+    }
+  }
+
+  let pointValue = dateOnly ? 0 : config.pointValue;
+  if (!dateOnly && isMixerCategory(input.category)) {
+    const { data: activeFamilies } = await supabase
+      .from("jt_families")
+      .select("id")
+      .eq("is_active", true);
+    pointValue = jiatingMixerPointValue(
+      mixerFamilyIds,
+      (activeFamilies ?? []).map((row) => row.id),
+    );
+  }
+
+  const checkInCode =
+    checkInType === "self" && !event.check_in_code
+      ? randomUUID()
+      : event.check_in_code;
+
+  const { error: updateError } = await supabase
+    .from("events")
+    .update({
+      category: input.category,
+      scope: config.scope,
+      jt_family_id: config.scope === "jt_specific" ? jtFamilyId : null,
+      check_in_type: checkInType,
+      check_in_code: checkInCode,
+      point_value: pointValue,
+      starts_at: startsAt,
+      ends_at: endsAt,
+      location,
+      location_maps_url: locationMapsUrl,
+    })
+    .eq("id", eventId);
+
+  if (updateError) {
+    return { success: false, error: "Failed to update category and check-in." };
+  }
+
+  if (isMixerCategory(input.category)) {
+    const { error: deleteLinksError } = await supabase
+      .from("event_jt_families")
+      .delete()
+      .eq("event_id", eventId);
+    if (deleteLinksError) {
+      return { success: false, error: "Failed to update Mixer families." };
+    }
+    const { error: insertLinksError } = await supabase
+      .from("event_jt_families")
+      .insert(
+        mixerFamilyIds.map((familyId) => ({
+          event_id: eventId,
+          jt_family_id: familyId,
+        })),
+      );
+    if (insertLinksError) {
+      return { success: false, error: "Failed to save Mixer families." };
+    }
+  } else if (currentMixerFamilies.length > 0) {
+    await supabase.from("event_jt_families").delete().eq("event_id", eventId);
+  }
+
+  if (spectator && !isSportsCategory(input.category)) {
+    await deleteCalendarEvent(spectator.google_event_id);
+    const { error: spectatorError } = await supabase
+      .from("events")
+      .delete()
+      .eq("id", spectator.id);
+    if (spectatorError) {
+      return {
+        success: false,
+        error: "Category saved, but the spectator event could not be removed.",
+      };
+    }
+  }
+
+  if (event.publish_status === "published") {
+    const nextEvent = {
+      id: event.id,
+      category: input.category,
+      name: event.name,
+      description: event.description,
+      location,
+      starts_at: startsAt,
+      ends_at: endsAt,
+      rsvp_url: checkInType === "rsvp_required" ? event.rsvp_url : null,
+      google_event_id: event.google_event_id,
+      parent_event_id: null,
+      check_in_type: checkInType,
+    };
+    if (
+      shouldSyncEventToGoogleCalendar(
+        input.category,
+        null,
+        checkInType,
+      )
+    ) {
+      await syncCalendarAfterPublish(supabase, nextEvent);
+    } else if (event.google_event_id) {
+      await deleteCalendarEvent(event.google_event_id);
+      await supabase
+        .from("events")
+        .update({ google_event_id: null, google_sync_error: null })
+        .eq("id", eventId);
+    }
   }
 
   return { success: true, error: null };

@@ -39,7 +39,7 @@ export interface CategoryConfig {
 export const CATEGORY_CONFIG: Record<EventCategory, CategoryConfig> = {
   'General Meeting': { pointValue: 2, scope: 'org', checkInType: 'self' },
   'CSA-Wide': { pointValue: 3, scope: 'org' },
-  'CSA-Wide Mixers': { pointValue: 3, scope: 'org', checkInType: 'csv_import' },
+  'CSA-Wide Mixers': { pointValue: 3, scope: 'org' },
   'Howdy Week': { pointValue: 0, scope: 'org', checkInType: 'csv_import' },
   'Jiating Olympics': { pointValue: 2, scope: 'jt_shared', checkInType: 'officer' },
   'Jiating Event': { pointValue: 1, scope: 'jt_specific' },
@@ -235,6 +235,48 @@ export function eventDeleteDeniedMessage(input: {
 
 export function isCsaWideMixersCategory(category: string) {
   return category.trim() === 'CSA-Wide Mixers'
+}
+
+const FLEXIBLE_CHECK_IN_TYPES: CheckInType[] = ['officer', 'self', 'rsvp_required']
+
+/**
+ * Check-in types an officer can choose when the category does not fix one.
+ * CSA-Wide Mixers also offer CSV import. Philanthropy also offers manual points.
+ */
+export function flexibleCheckInTypes(category: string): CheckInType[] {
+  if (isCsaWideMixersCategory(category)) {
+    return ['csv_import', 'officer', 'self', 'rsvp_required']
+  }
+  if (category.trim() === 'Philanthropy') {
+    return [...FLEXIBLE_CHECK_IN_TYPES, 'manual_points']
+  }
+  return [...FLEXIBLE_CHECK_IN_TYPES]
+}
+
+/** Button label for a check-in type. Mixers call QR check-in and CSV import by those names. */
+export function checkInOptionLabel(category: string, checkInType: string): string {
+  if (isCsaWideMixersCategory(category)) {
+    if (checkInType === 'csv_import') return 'CSV Import'
+    if (checkInType === 'self') return 'QR Check-in'
+  }
+  return CHECKIN_LABELS[checkInType as CheckInType] ?? checkInType
+}
+
+/**
+ * Check-in type stored for a category. Fixed categories ignore the request.
+ * An unknown request falls back to CSV import for mixers and officer otherwise.
+ */
+export function resolveEventCheckInType(
+  category: string,
+  requested: string,
+): CheckInType | null {
+  const config = getCategoryConfig(category)
+  if (!config) return null
+  if (config.checkInType) return config.checkInType
+  const allowed = flexibleCheckInTypes(category)
+  if ((allowed as string[]).includes(requested)) return requested as CheckInType
+  if (isCsaWideMixersCategory(category)) return 'csv_import'
+  return 'officer'
 }
 
 export function isHowdyWeekCategory(category: string) {
