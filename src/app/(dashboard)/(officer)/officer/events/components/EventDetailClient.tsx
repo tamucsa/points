@@ -9,10 +9,11 @@ import HowdyWeekGuestPanel from "@/app/(dashboard)/(officer)/officer/events/comp
 import { officerRemoveCheckIn } from "@/app/actions/attendance";
 import {
   publishEvent,
-  updateScheduledPublish,
+  updateEventClassification,
   updateEventMixerFamilies,
   updateEventRsvp,
   updateEventSchedule,
+  updateScheduledPublish,
 } from "@/app/actions/events";
 import type { EventGuestRow } from "@/app/actions/guests";
 import type { EventImportRow } from "@/app/actions/imports";
@@ -20,7 +21,10 @@ import { publishJiatingStandings } from "@/app/actions/jt-standings";
 import type { EventRsvpRow } from "@/app/actions/rsvp";
 import BackLink from "@/app/components/BackLink";
 import EmptyState from "@/app/components/EmptyState";
-import IconLabel, { CheckInMethodBadge } from "@/app/components/IconLabel";
+import IconLabel, {
+  CheckInMethodBadge,
+  CheckInTypeBadge,
+} from "@/app/components/IconLabel";
 import LocationAutocomplete from "@/app/components/LocationAutocomplete";
 import CollapsibleSettings from "@/app/components/CollapsibleSettings";
 import MemberAvatar from "@/app/components/MemberAvatar";
@@ -37,13 +41,22 @@ import {
   eventTimestampToFormTime,
 } from "@/utils/event-times";
 import {
+  checkInOptionLabel,
+  EVENT_CATEGORIES,
+  flexibleCheckInTypes,
   formatEventPointsLabel,
+  getCategoryConfig,
+  isCalendarOnlyCheckIn,
   isGeneralMeetingCategory,
   isHowdyWeekCategory,
   isImportCheckIn,
+  isManualPointsCheckIn,
   isMixerCategory,
   jiatingMixerPointValue,
+  PARENT_EVENT_CATEGORIES,
+  resolveEventCheckInType,
 } from "@/utils/events";
+import { CHECKIN_TYPE_ICONS } from "@/utils/icons";
 import { roleEarnsPoints } from "@/utils/members";
 
 interface Event {
@@ -62,6 +75,9 @@ interface Event {
   rsvp_deadline: string | null;
   publish_status?: "draft" | "scheduled" | "published" | null;
   publish_at?: string | null;
+  scope?: string;
+  jt_family_id?: string | null;
+  parent_event_id?: string | null;
 }
 
 interface AttendanceRow {
@@ -101,6 +117,7 @@ interface Props {
   mixerFamilyIds: string[];
   parentOnly?: boolean;
   officerJtFamilyId?: string | null;
+  canEditClassification?: boolean;
   spectatorEvent: {
     id: string;
     name: string;
@@ -133,6 +150,7 @@ export default function EventDetailClient({
   mixerFamilyIds,
   parentOnly = false,
   officerJtFamilyId = null,
+  canEditClassification = false,
   spectatorEvent,
   rsvpRows,
   rsvpMatchMembers,
@@ -205,10 +223,43 @@ export default function EventDetailClient({
       )
     : null;
   const isHowdyWeek = isHowdyWeekCategory(event.category);
+  const isCalendarOnly = isCalendarOnlyCheckIn(event.check_in_type);
   const isRsvpEvent = event.check_in_type === "rsvp_required";
   const isImportEvent = isImportCheckIn(event.check_in_type) && !isHowdyWeek;
   const isCsvImportEvent = event.check_in_type === "csv_import";
   const isManualPointsEvent = event.check_in_type === "manual_points";
+  const categoryOptions = parentOnly
+    ? PARENT_EVENT_CATEGORIES
+    : EVENT_CATEGORIES;
+  const [draftCategory, setDraftCategory] = useState(event.category);
+  const [draftCheckIn, setDraftCheckIn] = useState(event.check_in_type);
+  const [draftJtFamilyId, setDraftJtFamilyId] = useState(
+    event.jt_family_id ?? officerJtFamilyId ?? "",
+  );
+  const [classificationSaving, setClassificationSaving] = useState(false);
+  const [classificationError, setClassificationError] = useState<string | null>(
+    null,
+  );
+  const [classificationSaved, setClassificationSaved] = useState(false);
+  const draftConfig = getCategoryConfig(draftCategory);
+  const resolvedCheckIn =
+    resolveEventCheckInType(draftCategory, draftCheckIn) ?? draftCheckIn;
+  const checkInChoices = draftConfig?.checkInType
+    ? []
+    : flexibleCheckInTypes(draftCategory);
+  const draftIsMixer = isMixerCategory(draftCategory);
+  const draftIsJtSpecific = draftConfig?.scope === "jt_specific";
+  const leavingManualPoints =
+    isManualPointsEvent && !isManualPointsCheckIn(resolvedCheckIn);
+  const draftMixerPoints = draftIsMixer
+    ? jiatingMixerPointValue(
+        selectedMixerFamilies,
+        jtFamilies.map((jt) => jt.id),
+      )
+    : null;
+  const draftPointLabel = isManualPointsCheckIn(resolvedCheckIn)
+    ? "Var"
+    : String(draftMixerPoints ?? draftConfig?.pointValue ?? event.point_value);
 
   const closeUncheckModal = () => {
     if (uncheckSaving) return;
@@ -327,6 +378,76 @@ export default function EventDetailClient({
       return;
     }
     setScheduleSaved(true);
+    router.refresh();
+  };
+
+  const handleCategoryDraft = (category: string) => {
+    setDraftCategory(category);
+    const next = resolveEventCheckInType(category, draftCheckIn);
+    if (next) setDraftCheckIn(next);
+    if (
+      parentOnly &&
+      officerJtFamilyId &&
+      getCategoryConfig(category)?.scope === "jt_specific"
+    ) {
+      setDraftJtFamilyId(officerJtFamilyId);
+    }
+    if (parentOnly && officerJtFamilyId && isMixerCategory(category)) {
+      setSelectedMixerFamilies((prev) =>
+        prev.includes(officerJtFamilyId) ? prev : [...prev, officerJtFamilyId],
+      );
+    }
+    setClassificationSaved(false);
+    setClassificationError(null);
+  };
+
+  const handleSaveClassification = async () => {
+    if (draftIsJtSpecific && !draftJtFamilyId) {
+      setClassificationError("JT family is required for JT-specific events.");
+      return;
+    }
+    if (draftIsMixer && selectedMixerFamilies.length < 2) {
+      setClassificationError("Select at least two Jiatings for a Mixer.");
+      return;
+    }
+    if (leavingManualPoints && !location.trim()) {
+      setClassificationError("Location is required when leaving Manual Points.");
+      return;
+    }
+    if (leavingManualPoints && !startTime) {
+      setClassificationError(
+        "Start time is required when leaving Manual Points.",
+      );
+      return;
+    }
+
+    setClassificationSaving(true);
+    setClassificationError(null);
+    setClassificationSaved(false);
+
+    const result = await updateEventClassification(event.id, {
+      category: draftCategory,
+      checkInType: resolvedCheckIn,
+      jtFamilyId: draftIsJtSpecific
+        ? parentOnly
+          ? officerJtFamilyId
+          : draftJtFamilyId
+        : null,
+      jtFamilyIds: draftIsMixer ? selectedMixerFamilies : [],
+      location: leavingManualPoints ? location : null,
+      locationMapsUrl: leavingManualPoints ? locationMapsUrl : null,
+      startTime: leavingManualPoints ? startTime : null,
+      endTime: leavingManualPoints ? endTime.trim() || null : null,
+    });
+
+    setClassificationSaving(false);
+    if (!result.success) {
+      setClassificationError(
+        result.error ?? "Failed to update category and check-in.",
+      );
+      return;
+    }
+    setClassificationSaved(true);
     router.refresh();
   };
 
@@ -449,6 +570,7 @@ export default function EventDetailClient({
               <span className="rounded-md bg-bg px-2 py-0.5 text-xs">
                 {event.category}
               </span>
+              <CheckInTypeBadge checkInType={event.check_in_type} />
             </div>
             {event.description && (
               <p className="mt-3 text-sm leading-6 text-subtitle">
@@ -791,6 +913,243 @@ export default function EventDetailClient({
             {scheduleSaving ? "Saving…" : "Save event details"}
           </button>
         </CollapsibleSettings>
+        {canEditClassification && (
+          <CollapsibleSettings
+            title="Category and check-in"
+            summary={`${event.category} · ${checkInOptionLabel(event.category, event.check_in_type)} · ${formatEventPointsLabel(mixerPointValue ?? event.point_value, event.check_in_type)} pt`}
+          >
+            <p className="text-xs leading-5 text-subtitle">
+              {isCalendarOnlyCheckIn(resolvedCheckIn)
+                ? "This category is on the calendar only. There is no attendance."
+                : "Existing check-ins stay on this event. Points are recalculated for the new category."}
+            </p>
+            <div>
+              <label className={labelClassName} htmlFor="event-edit-category">
+                Category
+              </label>
+              <select
+                id="event-edit-category"
+                className={`${inputClassName} cursor-pointer`}
+                value={draftCategory}
+                onChange={(e) => handleCategoryDraft(e.target.value)}
+              >
+                {categoryOptions.map((category) => (
+                  <option key={category} value={category}>
+                    {category}
+                  </option>
+                ))}
+              </select>
+            </div>
+            {draftConfig?.checkInType ? (
+              <p className="text-sm text-subtitle">
+                Check-in is{" "}
+                <span className="font-medium text-text">
+                  {checkInOptionLabel(draftCategory, draftConfig.checkInType)}
+                </span>{" "}
+                for this category. This event will be worth {draftPointLabel}{" "}
+                {draftPointLabel === "1" || draftPointLabel === "Var"
+                  ? "point"
+                  : "points"}
+                .
+              </p>
+            ) : (
+              <div>
+                <label className={labelClassName}>Check-in type</label>
+                <div className="grid grid-cols-2 gap-2">
+                  {checkInChoices.map((value) => {
+                    const active = resolvedCheckIn === value;
+                    const Icon = CHECKIN_TYPE_ICONS[value];
+                    return (
+                      <button
+                        key={value}
+                        type="button"
+                        onClick={() => {
+                          setDraftCheckIn(value);
+                          setClassificationSaved(false);
+                        }}
+                        className={`inline-flex min-h-11 items-center justify-center rounded-xl border px-3 py-2.5 text-sm font-medium transition ${
+                          active
+                            ? "border-primary bg-primary/10 text-primary"
+                            : "border-home-border bg-surface text-subtitle hover:border-primary/30"
+                        }`}
+                      >
+                        <IconLabel
+                          icon={Icon}
+                          label={checkInOptionLabel(draftCategory, value)}
+                          size="sm"
+                          className="justify-center"
+                          iconClassName={active ? "text-primary" : "text-subtitle"}
+                          labelClassName={
+                            active
+                              ? "whitespace-nowrap text-primary"
+                              : "whitespace-nowrap"
+                          }
+                        />
+                      </button>
+                    );
+                  })}
+                </div>
+                <p className="mt-2 text-xs text-subtitle">
+                  This event will be worth {draftPointLabel}{" "}
+                  {draftPointLabel === "1" || draftPointLabel === "Var"
+                    ? "point"
+                    : "points"}
+                  .
+                </p>
+              </div>
+            )}
+            {draftIsJtSpecific && (
+              <div>
+                <label className={labelClassName} htmlFor="event-edit-jt">
+                  JT family
+                </label>
+                {parentOnly ? (
+                  <p className="rounded-xl border border-home-border bg-bg px-4 py-3 text-sm text-text">
+                    {jtFamilies.find((jt) => jt.id === officerJtFamilyId)
+                      ?.name ?? "Your Jiating"}
+                  </p>
+                ) : (
+                  <select
+                    id="event-edit-jt"
+                    className={`${inputClassName} cursor-pointer`}
+                    value={draftJtFamilyId}
+                    onChange={(e) => {
+                      setDraftJtFamilyId(e.target.value);
+                      setClassificationSaved(false);
+                    }}
+                  >
+                    <option value="">Select JT family…</option>
+                    {jtFamilies.map((jt) => (
+                      <option key={jt.id} value={jt.id}>
+                        {jt.name}
+                      </option>
+                    ))}
+                  </select>
+                )}
+              </div>
+            )}
+            {draftIsMixer && !isMixer && (
+              <div>
+                <label className={labelClassName}>Participating Jiatings</label>
+                <p className="mb-3 text-xs leading-5 text-subtitle">
+                  Select at least two families. A 6-way Mixer is 3 points;
+                  otherwise it is 2 points.
+                </p>
+                <div className="grid gap-2 sm:grid-cols-2">
+                  {jtFamilies.map((jt) => {
+                    const checked = selectedMixerFamilies.includes(jt.id);
+                    return (
+                      <label
+                        key={jt.id}
+                        className={`flex cursor-pointer items-center gap-3 rounded-xl border px-3 py-2.5 text-sm transition ${
+                          checked
+                            ? "border-primary/40 bg-primary/10 text-primary"
+                            : "border-home-border bg-surface text-text hover:border-primary/30"
+                        }`}
+                      >
+                        <input
+                          type="checkbox"
+                          checked={checked}
+                          onChange={() => {
+                            setSelectedMixerFamilies((prev) =>
+                              prev.includes(jt.id)
+                                ? prev.filter((id) => id !== jt.id)
+                                : [...prev, jt.id],
+                            );
+                            setClassificationSaved(false);
+                          }}
+                          disabled={parentOnly && jt.id === officerJtFamilyId}
+                          className="size-4 rounded border-home-border text-primary focus:ring-primary/30"
+                        />
+                        <span className="font-medium">{jt.name}</span>
+                      </label>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+            {draftIsMixer && isMixer && (
+              <p className="text-xs leading-5 text-subtitle">
+                Participating Jiatings are edited in the section below. Saving
+                here keeps the families currently selected there.
+              </p>
+            )}
+            {leavingManualPoints && (
+              <div className="grid gap-3 sm:grid-cols-2">
+                <div className="sm:col-span-2">
+                  <label className={labelClassName} htmlFor="event-class-location">
+                    Location
+                  </label>
+                  <LocationAutocomplete
+                    id="event-class-location"
+                    value={location}
+                    onChange={(value, meta) => {
+                      setLocation(value);
+                      setLocationMapsUrl(meta?.mapsUrl ?? null);
+                      setClassificationSaved(false);
+                    }}
+                    placeholder="e.g. MSC 2406"
+                  />
+                </div>
+                <div>
+                  <label className={labelClassName} htmlFor="event-class-start">
+                    Start time
+                  </label>
+                  <input
+                    id="event-class-start"
+                    type="time"
+                    className={inputClassName}
+                    value={startTime}
+                    onChange={(e) => {
+                      setStartTime(e.target.value);
+                      setClassificationSaved(false);
+                    }}
+                  />
+                </div>
+                <div>
+                  <label className={labelClassName} htmlFor="event-class-end">
+                    End time{" "}
+                    <span className="font-normal normal-case text-subtitle">
+                      (optional)
+                    </span>
+                  </label>
+                  <input
+                    id="event-class-end"
+                    type="time"
+                    className={inputClassName}
+                    value={endTime}
+                    onChange={(e) => {
+                      setEndTime(e.target.value);
+                      setClassificationSaved(false);
+                    }}
+                  />
+                </div>
+              </div>
+            )}
+            {spectatorEvent && draftCategory !== "Sports" && (
+              <p className="text-xs leading-5 text-subtitle">
+                Changing away from Sports removes the spectator QR event when
+                nobody has checked in as a spectator.
+              </p>
+            )}
+            {classificationError && (
+              <p className="text-sm text-red-600">{classificationError}</p>
+            )}
+            {classificationSaved && (
+              <p className="text-sm text-green-700">
+                Category and check-in saved.
+              </p>
+            )}
+            <button
+              type="button"
+              onClick={() => void handleSaveClassification()}
+              disabled={classificationSaving}
+              className={btnPrimaryClassName}
+            >
+              {classificationSaving ? "Saving…" : "Save category and check-in"}
+            </button>
+          </CollapsibleSettings>
+        )}
         {spectatorEvent && (
           <div className="mt-5 rounded-2xl border border-home-border bg-bg p-4">
             <div className="text-sm font-semibold text-text">
@@ -986,6 +1345,8 @@ export default function EventDetailClient({
         )}
       </div>
 
+      {!isCalendarOnly && (
+      <>
       <div className="mb-3 flex items-center justify-between">
         <h2 className="text-lg font-bold text-text">Attendance</h2>
         <span className="text-sm text-subtitle">
@@ -1078,6 +1439,8 @@ export default function EventDetailClient({
             );
           })}
       </div>
+      </>
+      )}
 
       {uncheckTarget && (
         <div

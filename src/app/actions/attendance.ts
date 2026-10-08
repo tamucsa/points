@@ -154,7 +154,7 @@ async function officerCheckInImpl(
 
   const { data: event } = await supabase
     .from("events")
-    .select("scope, jt_family_id, semester_id, publish_status, category")
+    .select("scope, jt_family_id, semester_id, publish_status, category, check_in_type")
     .eq("id", eventId)
     .maybeSingle();
 
@@ -165,6 +165,13 @@ async function officerCheckInImpl(
     return {
       success: false,
       error: "Publish this event before checking members in.",
+      counted: false,
+    };
+  }
+  if (event.check_in_type === "none") {
+    return {
+      success: false,
+      error: "This event does not track attendance.",
       counted: false,
     };
   }

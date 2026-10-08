@@ -36,6 +36,7 @@ export const CHECKIN_TYPE_LABELS: Record<string, string> = {
   rsvp_required: 'RSVP',
   csv_import: 'CSV Check-in',
   manual_points: 'Manual Points',
+  none: 'Calendar only',
 }
 
 export const CHECKIN_METHOD_LABELS: Record<string, string> = {
@@ -60,6 +61,7 @@ export const JT_EVENT_MIXER_WEEKLY_ATTENDANCE_CAP = 4
 export const CATEGORY_COLORS: Record<string, string> = {
   'CSA-Wide': '#4779B8',
   'CSA-Wide Mixers': '#5a8fd4',
+  'Profit Share': '#1f8a5b',
   'Howdy Week': '#4779B8',
   'Jiating Olympics': '#f7934f',
   'Jiating Event': '#6b7fd7',

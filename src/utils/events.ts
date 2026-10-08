@@ -3,6 +3,7 @@ export const EVENT_CATEGORIES = [
   'General Meeting',
   'CSA-Wide',
   'CSA-Wide Mixers',
+  'Profit Share',
   'Howdy Week',
   'Jiating Olympics',
   'Jiating Event',
@@ -22,6 +23,7 @@ export type CheckInType =
   | 'rsvp_required'
   | 'csv_import'
   | 'manual_points'
+  | 'none'
 
 export interface CategoryConfig {
   pointValue: 0 | 1 | 2 | 3
@@ -39,7 +41,8 @@ export interface CategoryConfig {
 export const CATEGORY_CONFIG: Record<EventCategory, CategoryConfig> = {
   'General Meeting': { pointValue: 2, scope: 'org', checkInType: 'self' },
   'CSA-Wide': { pointValue: 3, scope: 'org' },
-  'CSA-Wide Mixers': { pointValue: 3, scope: 'org', checkInType: 'csv_import' },
+  'CSA-Wide Mixers': { pointValue: 3, scope: 'org' },
+  'Profit Share': { pointValue: 0, scope: 'org', checkInType: 'none' },
   'Howdy Week': { pointValue: 0, scope: 'org', checkInType: 'csv_import' },
   'Jiating Olympics': { pointValue: 2, scope: 'jt_shared', checkInType: 'officer' },
   'Jiating Event': { pointValue: 1, scope: 'jt_specific' },
@@ -58,6 +61,7 @@ export const CATEGORY_OWNER_HINTS: Record<EventCategory, string> = {
   'General Meeting': 'Typically created by Executives, mainly the Secretary',
   'CSA-Wide': 'Typically created by the Event Coordinator',
   'CSA-Wide Mixers': 'Typically created by the Event Coordinator',
+  'Profit Share': 'Typically created by the Fundraising chair',
   'Howdy Week': 'Typically created by Executives / Event Coordinator during recruiting',
   'Jiating Olympics': 'Typically created by the Sports chair',
   'Jiating Event': 'Typically created by Jiating parents for their own family',
@@ -90,6 +94,7 @@ const CHECKIN_LABELS: Record<CheckInType, string> = {
   rsvp_required: 'RSVP',
   csv_import: 'CSV Check-in',
   manual_points: 'Manual Points',
+  none: 'Calendar only',
 }
 
 export function getCategoryConfig(category: string): CategoryConfig | null {
@@ -148,6 +153,44 @@ export function jiatingMixerPointValue(
 /** Categories a parent-only user may create or manage for their own Jiating. */
 export function isParentManagedCategory(category: string) {
   return category.trim() === 'Jiating Event' || isMixerCategory(category)
+}
+
+export interface EventJiatingFamily {
+  id: string
+  name: string
+  color: string | null
+}
+
+/** Jiatings shown on a Jiating Event (one family) or Jiating Mixer (linked families). */
+export function eventParticipatingJiatings(
+  event: { id: string; category: string; jt_family_id?: string | null },
+  families: readonly EventJiatingFamily[],
+  mixerFamiliesByEventId: Record<string, readonly string[]>,
+): EventJiatingFamily[] {
+  const category = event.category.trim()
+  if (category === 'Jiating Event') {
+    const family = families.find(f => f.id === event.jt_family_id)
+    return family ? [family] : []
+  }
+  if (!isMixerCategory(category)) return []
+  const ids = new Set(mixerFamiliesByEventId[event.id] ?? [])
+  return families.filter(f => ids.has(f.id))
+}
+
+/** Past published events that still have no attendance and no CSV or RSVP upload. */
+export function showAddPointsPill(input: {
+  category: string
+  publishStatus?: string | null
+  attendanceCount: number
+  hasImportUpload: boolean
+  hasRsvpUpload: boolean
+}) {
+  if ((input.publishStatus ?? 'published') !== 'published') return false
+  if (input.category.trim() === 'Howdy Week') return false
+  if (isProfitShareCategory(input.category)) return false
+  if (input.attendanceCount > 0) return false
+  if (input.hasImportUpload || input.hasRsvpUpload) return false
+  return true
 }
 
 export const PARENT_EVENT_CATEGORIES = [
@@ -237,8 +280,59 @@ export function isCsaWideMixersCategory(category: string) {
   return category.trim() === 'CSA-Wide Mixers'
 }
 
+const FLEXIBLE_CHECK_IN_TYPES: CheckInType[] = ['officer', 'self', 'rsvp_required']
+
+/**
+ * Check-in types an officer can choose when the category does not fix one.
+ * CSA-Wide Mixers also offer CSV import. Philanthropy also offers manual points.
+ */
+export function flexibleCheckInTypes(category: string): CheckInType[] {
+  if (isCsaWideMixersCategory(category)) {
+    return ['csv_import', 'officer', 'self', 'rsvp_required']
+  }
+  if (category.trim() === 'Philanthropy') {
+    return [...FLEXIBLE_CHECK_IN_TYPES, 'manual_points']
+  }
+  return [...FLEXIBLE_CHECK_IN_TYPES]
+}
+
+/** Button label for a check-in type. Mixers call QR check-in and CSV import by those names. */
+export function checkInOptionLabel(category: string, checkInType: string): string {
+  if (isCsaWideMixersCategory(category)) {
+    if (checkInType === 'csv_import') return 'CSV Import'
+    if (checkInType === 'self') return 'QR Check-in'
+  }
+  return CHECKIN_LABELS[checkInType as CheckInType] ?? checkInType
+}
+
+/**
+ * Check-in type stored for a category. Fixed categories ignore the request.
+ * An unknown request falls back to CSV import for mixers and officer otherwise.
+ */
+export function resolveEventCheckInType(
+  category: string,
+  requested: string,
+): CheckInType | null {
+  const config = getCategoryConfig(category)
+  if (!config) return null
+  if (config.checkInType) return config.checkInType
+  const allowed = flexibleCheckInTypes(category)
+  if ((allowed as string[]).includes(requested)) return requested as CheckInType
+  if (isCsaWideMixersCategory(category)) return 'csv_import'
+  return 'officer'
+}
+
 export function isHowdyWeekCategory(category: string) {
   return category.trim() === 'Howdy Week'
+}
+
+export function isProfitShareCategory(category: string) {
+  return category.trim() === 'Profit Share'
+}
+
+/** Calendar-only events have no attendance. */
+export function isCalendarOnlyCheckIn(checkInType: string) {
+  return checkInType === 'none'
 }
 
 export function isCsvImportCheckIn(checkInType: string) {
@@ -282,6 +376,7 @@ export const EVENT_FILTER_TABS = [
   { id: 'all', label: 'All' },
   { id: 'csa', label: 'CSA' },
   { id: 'jiating', label: 'Jiating' },
+  { id: 'olympics', label: 'Jiating Olympics' },
   { id: 'sports', label: 'Sports' },
   { id: 'dance', label: 'Dance' },
 ] as const
@@ -308,12 +403,12 @@ export function eventMatchesFilter(
     return category === 'Sports' || category === SPECTATOR_EVENT_CATEGORY
   }
 
+  if (filter === 'olympics') {
+    return isJiatingOlympicsCategory(category)
+  }
+
   if (filter === 'jiating') {
-    return (
-      event.scope === 'jt_specific' ||
-      isJiatingOlympicsCategory(category) ||
-      isMixerCategory(category)
-    )
+    return event.scope === 'jt_specific' || isMixerCategory(category)
   }
 
   // CSA: org-wide programming excluding sports/dance
@@ -327,10 +422,10 @@ export function eventMatchesFilter(
 
 /**
  * Officer Jiating family filter: which family an event counts toward.
- * - Olympics: every selected family
  * - Mixer: only participating families (legacy mixers with no links → all)
  * - JT-specific: that event's family only
  * `familyId === null` means All families.
+ * Jiating Olympics live on their own tab and are not counted here.
  */
 export function eventMatchesJiatingFamily(
   event: {
@@ -343,8 +438,6 @@ export function eventMatchesJiatingFamily(
   mixerFamiliesByEventId: Record<string, string[]>,
 ): boolean {
   if (!familyId) return true
-
-  if (isJiatingOlympicsCategory(event.category)) return true
 
   if (isMixerCategory(event.category)) {
     const ids = mixerFamiliesByEventId[event.id]

@@ -5,9 +5,10 @@ import { listEventImportRows } from '@/app/actions/imports'
 import { getSnapshotForEvent } from '@/app/actions/jt-standings'
 import { listEventRsvps } from '@/app/actions/rsvp'
 import {
+  getCategoryConfig,
   isHowdyWeekCategory,
   isImportCheckIn,
-  isMixerCategory,
+  parentCanManageEvent,
 } from '@/utils/events'
 import { canAccessOfficerEvents, isParentOnly } from '@/utils/members'
 import { fetchAllPages } from '@/utils/supabase/fetchAll'
@@ -88,22 +89,31 @@ export default async function EventDetailPage({ params }: { params: Promise<{ id
     point_value: number
   } | null = null
 
-  if (isMixerCategory(event.category)) {
-    const [{ data: families }, { data: links }] = await Promise.all([
-      supabase
-        .from('jt_families')
-        .select('id, name')
-        .eq('is_active', true)
-        .order('name'),
-      supabase
-        .from('event_jt_families')
-        .select('jt_family_id')
-        .eq('event_id', id),
-    ])
+  const [{ data: families }, { data: links }] = await Promise.all([
+    supabase
+      .from('jt_families')
+      .select('id, name')
+      .eq('is_active', true)
+      .order('name'),
+    supabase
+      .from('event_jt_families')
+      .select('jt_family_id')
+      .eq('event_id', id),
+  ])
 
-    jtFamilies = families ?? []
-    mixerFamilyIds = (links ?? []).map(row => row.jt_family_id)
-  }
+  jtFamilies = families ?? []
+  mixerFamilyIds = (links ?? []).map(row => row.jt_family_id)
+
+  const canEditClassification =
+    !event.parent_event_id &&
+    getCategoryConfig(event.category) != null &&
+    (!isParentOnly(member) ||
+      parentCanManageEvent({
+        category: event.category,
+        jtFamilyId: event.jt_family_id,
+        mixerFamilyIds,
+        memberJtFamilyId: member.jt_family_id,
+      }))
 
   const { data: spectator } = await supabase
     .from('events')
@@ -178,6 +188,7 @@ export default async function EventDetailPage({ params }: { params: Promise<{ id
       mixerFamilyIds={mixerFamilyIds}
       parentOnly={isParentOnly(member)}
       officerJtFamilyId={member.jt_family_id}
+      canEditClassification={canEditClassification}
       spectatorEvent={spectatorEvent}
       rsvpRows={rsvpRows}
       rsvpMatchMembers={rsvpMatchMembers}

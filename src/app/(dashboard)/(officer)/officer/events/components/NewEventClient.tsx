@@ -11,19 +11,17 @@ import IconLabel, {
 } from "@/app/components/IconLabel";
 import LocationAutocomplete from "@/app/components/LocationAutocomplete";
 import PageHeader from "@/app/components/PageHeader";
-import {
-  CHECKIN_TYPE_LABELS,
-  inputClassName,
-  labelClassName,
-} from "@/utils/constants";
+import { inputClassName, labelClassName } from "@/utils/constants";
 import {
   applyCategoryDefaults,
+  checkInOptionLabel,
   EVENT_CATEGORIES,
   type EventCategory,
+  flexibleCheckInTypes,
   getCategoryConfig,
   getCategoryOwnerHint,
+  isCsaWideMixersCategory,
   isMixerCategory,
-  isPhilanthropyCategory,
   jiatingMixerPointValue,
   PARENT_EVENT_CATEGORIES,
 } from "@/utils/events";
@@ -44,30 +42,6 @@ interface Props {
 }
 
 const DEFAULT_CATEGORY: EventCategory = "General Meeting";
-
-const BASE_CHECK_IN_OPTIONS = [
-  {
-    value: "officer" as const,
-    label: CHECKIN_TYPE_LABELS.officer,
-    icon: CHECKIN_TYPE_ICONS.officer,
-  },
-  {
-    value: "self" as const,
-    label: CHECKIN_TYPE_LABELS.self,
-    icon: CHECKIN_TYPE_ICONS.self,
-  },
-  {
-    value: "rsvp_required" as const,
-    label: CHECKIN_TYPE_LABELS.rsvp_required,
-    icon: CHECKIN_TYPE_ICONS.rsvp_required,
-  },
-];
-
-const MANUAL_POINTS_OPTION = {
-  value: "manual_points" as const,
-  label: CHECKIN_TYPE_LABELS.manual_points,
-  icon: CHECKIN_TYPE_ICONS.manual_points,
-};
 
 const checkInTypeBtn = (active: boolean) =>
   `inline-flex min-h-11 w-full items-center justify-center rounded-xl border px-3 py-2.5 text-sm font-medium leading-none transition ${
@@ -170,14 +144,15 @@ export default function NewEventClient({
       )
     : null;
   const displayedPointValue = mixerPointValue ?? categoryConfig?.pointValue;
-  const isPhilanthropy = isPhilanthropyCategory(form.category);
   const isRSVP = effectiveCheckIn === "rsvp_required";
   const isSelf = effectiveCheckIn === "self";
   const isCsvImport = effectiveCheckIn === "csv_import";
   const isManualPoints = effectiveCheckIn === "manual_points";
-  const checkInOptions = isPhilanthropy
-    ? [...BASE_CHECK_IN_OPTIONS, MANUAL_POINTS_OPTION]
-    : BASE_CHECK_IN_OPTIONS;
+  const checkInOptions = flexibleCheckInTypes(form.category).map((value) => ({
+    value,
+    label: checkInOptionLabel(form.category, value),
+    icon: CHECKIN_TYPE_ICONS[value],
+  }));
 
   const toggleMixerFamily = (id: string) => {
     if (parentOnly && id === officerJtFamilyId) return;
@@ -193,15 +168,14 @@ export default function NewEventClient({
         check_in_type: f.check_in_type,
         has_spectators: f.has_spectators,
       });
-      // manual_points is Philanthropy-only; drop it when leaving that category
-      // unless the new category fixes check-in type.
       const config = getCategoryConfig(category);
-      if (
-        !config?.checkInType &&
-        next.check_in_type === "manual_points" &&
-        category !== "Philanthropy"
-      ) {
-        next.check_in_type = "officer";
+      if (!config?.checkInType) {
+        const allowed = flexibleCheckInTypes(category);
+        if (isCsaWideMixersCategory(category)) {
+          next.check_in_type = "csv_import";
+        } else if (!allowed.includes(next.check_in_type as typeof allowed[number])) {
+          next.check_in_type = "officer";
+        }
       }
       return { ...f, ...next };
     });
@@ -563,6 +537,13 @@ export default function NewEventClient({
           <p className="text-xs text-subtitle">
             Members scan a QR code to check themselves in. Officers can also
             check members in manually after the event is published.
+          </p>
+        )}
+
+        {fixedCheckIn === "none" && (
+          <p className="text-xs text-subtitle">
+            This event is for the member calendar only. It is worth 0 points
+            and has no attendance.
           </p>
         )}
 
