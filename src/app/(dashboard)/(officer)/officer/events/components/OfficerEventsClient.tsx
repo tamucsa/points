@@ -8,11 +8,16 @@ import EventJiatingPills from '@/app/components/EventJiatingPills'
 import IconLabel, { CheckInTypeBadge, ScopeBadge } from '@/app/components/IconLabel'
 import EmptyState from '@/app/components/EmptyState'
 import EventFilterTabs from '@/app/components/EventFilterTabs'
+import EventTimeframeSwitch, {
+  LogAttendancePanel,
+  type EventTimeframe,
+} from '@/app/components/EventTimeframeSwitch'
 import EventListPager, { paginateItems } from '@/app/components/EventListPager'
 import JiatingFamilyFilter from '@/app/components/JiatingFamilyFilter'
 import { EventMetaChip, EventMetaItem, EventMetaRow } from '@/app/components/EventMeta'
 import PageHeader from '@/app/components/PageHeader'
 import { EVENT_TIMEZONE, formatEventDate, isEventPast, sortEventsByStartsAt } from '@/utils/datetime'
+import { dismissAttendancePin, useDismissedAttendanceEventIds } from '@/utils/dismissed-attendance'
 import {
   EVENT_FILTER_TABS,
   canDeleteEvent,
@@ -22,6 +27,7 @@ import {
   type EventFilterTabId,
   formatEventPointsLabel,
   isImportCheckIn,
+  showAddPointsPill,
 } from '@/utils/events'
 import { Calendar, MapPin, Plus, Star, Trash2, Users } from 'lucide-react'
 
@@ -105,7 +111,7 @@ export default function OfficerEventsClient({
   const [publishError, setPublishError] = useState<string | null>(null)
   const [filter, setFilter] = useState<EventFilterTabId>('all')
   const [search, setSearch] = useState('')
-  const [showPast, setShowPast] = useState(false)
+  const [timeframe, setTimeframe] = useState<EventTimeframe>('upcoming')
   const [upcomingPage, setUpcomingPage] = useState(1)
   const [pastPage, setPastPage] = useState(1)
   const [jiatingFamilyId, setJiatingFamilyId] = useState<string | null>(() => {
@@ -138,32 +144,33 @@ export default function OfficerEventsClient({
     const searched = events.filter(e => matchesSearch(e, q))
     const counts: Partial<Record<EventFilterTabId, number>> = {}
     for (const tab of EVENT_FILTER_TABS) {
-      counts[tab.id] = searched.filter(
-        e => !isEventPast(e.starts_at, e.ends_at) && eventMatchesFilter(e, tab.id),
-      ).length
+      counts[tab.id] = searched.filter(e => {
+        const past = isEventPast(e.starts_at, e.ends_at)
+        if (timeframe === 'past' ? !past : past) return false
+        return eventMatchesFilter(e, tab.id)
+      }).length
     }
     return counts
-  }, [events, search])
+  }, [events, search, timeframe])
 
   const jiatingFamilyCounts = useMemo(() => {
     const q = search.trim().toLowerCase()
-    const jiatingUpcoming = events.filter(
-      e =>
-        !isEventPast(e.starts_at, e.ends_at) &&
-        eventMatchesFilter(e, 'jiating') &&
-        matchesSearch(e, q),
-    )
+    const jiatingInView = events.filter(e => {
+      const past = isEventPast(e.starts_at, e.ends_at)
+      if (timeframe === 'past' ? !past : past) return false
+      return eventMatchesFilter(e, 'jiating') && matchesSearch(e, q)
+    })
     const counts: Record<string, number> = {}
     for (const family of jtFamilies) {
-      counts[family.id] = jiatingUpcoming.filter(e =>
+      counts[family.id] = jiatingInView.filter(e =>
         eventMatchesJiatingFamily(e, family.id, mixerFamiliesByEventId),
       ).length
     }
     return {
-      all: jiatingUpcoming.length,
+      all: jiatingInView.length,
       byFamily: counts,
     }
-  }, [events, search, jtFamilies, mixerFamiliesByEventId])
+  }, [events, search, jtFamilies, mixerFamiliesByEventId, timeframe])
 
   const upcomingEvents = useMemo(
     () =>
@@ -182,13 +189,35 @@ export default function OfficerEventsClient({
     [filteredByTabAndSearch],
   )
 
+  const dismissedAttendanceIds = useDismissedAttendanceEventIds()
+  const dismissedAttendance = useMemo(
+    () => new Set(dismissedAttendanceIds),
+    [dismissedAttendanceIds],
+  )
+
+  const pinnedPastEvents = useMemo(
+    () =>
+      pastEvents.filter(
+        e => (attendanceCounts[e.id] ?? 0) === 0 && !dismissedAttendance.has(e.id),
+      ),
+    [pastEvents, attendanceCounts, dismissedAttendance],
+  )
+
+  const unpinnedPastEvents = useMemo(
+    () =>
+      pastEvents.filter(
+        e => (attendanceCounts[e.id] ?? 0) > 0 || dismissedAttendance.has(e.id),
+      ),
+    [pastEvents, attendanceCounts, dismissedAttendance],
+  )
+
   useEffect(() => {
     setUpcomingPage(1)
     setPastPage(1)
-  }, [filter, search, jiatingFamilyId])
+  }, [filter, search, jiatingFamilyId, timeframe])
 
   const upcomingPageData = paginateItems(upcomingEvents, upcomingPage)
-  const pastPageData = paginateItems(pastEvents, pastPage)
+  const pastPageData = paginateItems(unpinnedPastEvents, pastPage)
 
   const closeDeleteModal = () => {
     if (deleting) return
@@ -231,13 +260,23 @@ export default function OfficerEventsClient({
       ? `${window.location.origin}/checkin/${code}`
       : `/checkin/${code}`
 
-  const renderEventCard = (event: Event, isPast: boolean) => {
+  const renderEventCard = (event: Event, isPast: boolean, onDismiss?: () => void) => {
     const count = attendanceCounts[event.id] ?? 0
     const spectator = spectatorByParentId[event.id]
     const spectatorCount = spectator ? (attendanceCounts[spectator.id] ?? 0) : 0
     const publishStatus = event.publish_status ?? 'published'
     const canPublishNow = publishStatus === 'draft' || publishStatus === 'scheduled'
     const jiatings = eventParticipatingJiatings(event, jtFamilies, mixerFamiliesByEventId)
+    const addPoints = isPast && showAddPointsPill({
+      category: event.category,
+      publishStatus: publishStatus,
+      attendanceCount: count,
+      hasImportUpload: Boolean(eventsWithImportUpload[event.id]),
+      hasRsvpUpload: Boolean(eventsWithRsvpUpload[event.id]),
+    })
+    const addPointsHref = isImportCheckIn(event.check_in_type)
+      ? `/officer/events/${event.id}`
+      : `/officer/events/${event.id}/checkin`
 
     return (
       <div
@@ -254,7 +293,7 @@ export default function OfficerEventsClient({
         }}
         className={`flex cursor-pointer flex-col gap-4 rounded-3xl border border-home-border bg-surface p-5 shadow-sm transition hover:border-primary/25 hover:shadow-theme-sm sm:flex-row ${
           jiatings.length > 0 ? 'sm:items-start' : 'sm:items-center'
-        } ${isPast ? 'opacity-75' : ''}`}
+        }`}
       >
         <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-primary/10 text-lg font-extrabold text-primary">
           {formatEventPointsLabel(event.point_value, event.check_in_type)}
@@ -283,6 +322,19 @@ export default function OfficerEventsClient({
               <span className="inline-flex items-center rounded-full bg-bg px-2 py-0.5 text-[11px] font-semibold leading-none text-subtitle">
                 Spectator QR
               </span>
+            )}
+            {addPoints && (
+              <button
+                type="button"
+                onClick={e => {
+                  e.stopPropagation()
+                  router.push(addPointsHref)
+                }}
+                onKeyDown={e => e.stopPropagation()}
+                className="inline-flex items-center rounded-full bg-amber-100 px-2.5 py-0.5 text-[11px] font-semibold leading-none text-amber-950"
+              >
+                Add Points
+              </button>
             )}
           </div>
             <div className="sm:hidden">
@@ -364,6 +416,19 @@ export default function OfficerEventsClient({
             <EventJiatingPills families={jiatings} />
           </div>
           <div className="flex w-full flex-wrap items-center gap-2 sm:justify-end">
+          {onDismiss && (
+            <button
+              type="button"
+              onClick={e => {
+                e.stopPropagation()
+                onDismiss()
+              }}
+              onKeyDown={e => e.stopPropagation()}
+              className={actionSecondaryClassName}
+            >
+              Dismiss
+            </button>
+          )}
           {canPublishNow && (
             <button
               type="button"
@@ -538,6 +603,14 @@ export default function OfficerEventsClient({
             onChange={setFilter}
             counts={filterCounts}
             className={filter === 'jiating' ? 'mb-3' : 'mb-5'}
+            trailing={
+              <EventTimeframeSwitch
+                value={timeframe}
+                onChange={setTimeframe}
+                upcomingCount={upcomingEvents.length}
+                pastCount={pastEvents.length}
+              />
+            }
           />
           {filter === 'jiating' && (
             <JiatingFamilyFilter
@@ -571,8 +644,24 @@ export default function OfficerEventsClient({
         />
       )}
 
-      {upcomingEvents.length > 0 && (
-        <div className="mb-8">
+      {timeframe === 'upcoming' && upcomingEvents.length === 0 && pastEvents.length > 0 && (
+        <EmptyState
+          icon={Calendar}
+          title={search.trim() ? 'No matching upcoming events' : 'No upcoming events'}
+          description="Switch to Past to record attendance and add points for events that have ended."
+        />
+      )}
+
+      {timeframe === 'past' && pastEvents.length === 0 && upcomingEvents.length > 0 && (
+        <EmptyState
+          icon={Calendar}
+          title={search.trim() ? 'No matching past events' : 'No past events'}
+          description="Upcoming events are still on the Upcoming view."
+        />
+      )}
+
+      {timeframe === 'upcoming' && upcomingEvents.length > 0 && (
+        <div>
           <EventListPager
             page={upcomingPageData.page}
             totalCount={upcomingPageData.totalCount}
@@ -590,39 +679,32 @@ export default function OfficerEventsClient({
         </div>
       )}
 
-      {pastEvents.length > 0 && (
-        <div>
-          <button
-            type="button"
-            onClick={() => {
-              setShowPast(p => {
-                if (!p) setPastPage(1)
-                return !p
-              })
-            }}
-            className="mb-4 rounded-xl border border-home-border bg-surface px-4 py-2 text-sm text-subtitle shadow-sm transition hover:border-primary/30 hover:text-primary"
-          >
-            {showPast ? '▲ Hide' : '▼ Show'} Past Events ({pastEvents.length})
-          </button>
+      {timeframe === 'past' && pinnedPastEvents.length > 0 && (
+        <LogAttendancePanel>
+          <div className="flex flex-col gap-3">
+            {pinnedPastEvents.map(event =>
+              renderEventCard(event, true, () => dismissAttendancePin(event.id)),
+            )}
+          </div>
+        </LogAttendancePanel>
+      )}
 
-          {showPast && (
-            <div>
-              <EventListPager
-                page={pastPageData.page}
-                totalCount={pastPageData.totalCount}
-                onPageChange={setPastPage}
-                className="mb-4"
-              />
-              <div className="flex flex-col gap-3">
-                {pastPageData.items.map(event => renderEventCard(event, true))}
-              </div>
-              <EventListPager
-                page={pastPageData.page}
-                totalCount={pastPageData.totalCount}
-                onPageChange={setPastPage}
-              />
-            </div>
-          )}
+      {timeframe === 'past' && unpinnedPastEvents.length > 0 && (
+        <div>
+          <EventListPager
+            page={pastPageData.page}
+            totalCount={pastPageData.totalCount}
+            onPageChange={setPastPage}
+            className="mb-4"
+          />
+          <div className="flex flex-col gap-3">
+            {pastPageData.items.map(event => renderEventCard(event, true))}
+          </div>
+          <EventListPager
+            page={pastPageData.page}
+            totalCount={pastPageData.totalCount}
+            onPageChange={setPastPage}
+          />
         </div>
       )}
 

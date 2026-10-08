@@ -5,6 +5,7 @@ import EventJiatingPills from '@/app/components/EventJiatingPills'
 import IconLabel, { CategoryBadge, CheckInTypeBadge } from '@/app/components/IconLabel'
 import EmptyState from '@/app/components/EmptyState'
 import EventFilterTabs from '@/app/components/EventFilterTabs'
+import EventTimeframeSwitch, { type EventTimeframe } from '@/app/components/EventTimeframeSwitch'
 import EventListPager, { paginateItems } from '@/app/components/EventListPager'
 import { EventMetaChip, EventMetaItem, EventMetaRow } from '@/app/components/EventMeta'
 import PageHeader from '@/app/components/PageHeader'
@@ -69,7 +70,6 @@ function EventCard({
   jiatings: EventJiatingFamily[]
   onOpen: () => void
 }) {
-  const isPast = isEventPast(event.starts_at, event.ends_at)
   const dateOnly = isManualPointsCheckIn(event.check_in_type)
   const rsvpOpen = event.rsvp_url && event.rsvp_deadline && new Date(event.rsvp_deadline) > new Date()
   const rsvpClosed = event.rsvp_url && event.rsvp_deadline && new Date(event.rsvp_deadline) <= new Date()
@@ -88,7 +88,7 @@ function EventCard({
       }}
       className={`flex w-full cursor-pointer gap-4 rounded-3xl border border-home-border bg-surface px-5 py-4 text-left shadow-sm transition hover:border-primary/25 hover:shadow-theme-sm ${
         jiatings.length > 0 ? 'items-start' : 'items-center'
-      } ${isPast && !attended ? 'opacity-[0.65]' : ''}`}
+      }`}
     >
       <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-primary/10 text-lg font-extrabold text-primary">
         {points}
@@ -314,7 +314,7 @@ export default function MemberEventsClient({
   jtFamilies,
   mixerFamiliesByEventId,
 }: Props) {
-  const [showPast, setShowPast] = useState(false)
+  const [timeframe, setTimeframe] = useState<EventTimeframe>('upcoming')
   const [filter, setFilter] = useState<EventFilterTabId>('all')
   const [search, setSearch] = useState('')
   const [upcomingPage, setUpcomingPage] = useState(1)
@@ -337,12 +337,14 @@ export default function MemberEventsClient({
       : events
     const counts: Partial<Record<EventFilterTabId, number>> = {}
     for (const tab of EVENT_FILTER_TABS) {
-      counts[tab.id] = searched.filter(
-        e => !isEventPast(e.starts_at, e.ends_at) && eventMatchesFilter(e, tab.id),
-      ).length
+      counts[tab.id] = searched.filter(e => {
+        const past = isEventPast(e.starts_at, e.ends_at)
+        if (timeframe === 'past' ? !past : past) return false
+        return eventMatchesFilter(e, tab.id)
+      }).length
     }
     return counts
-  }, [events, search])
+  }, [events, search, timeframe])
 
   const upcoming = useMemo(
     () => sortEventsByStartsAt(filteredEvents.filter(e => !isEventPast(e.starts_at, e.ends_at))),
@@ -355,11 +357,10 @@ export default function MemberEventsClient({
     ),
     [filteredEvents],
   )
-
   useEffect(() => {
     setUpcomingPage(1)
     setPastPage(1)
-  }, [filter, search])
+  }, [filter, search, timeframe])
 
   const upcomingPageData = paginateItems(upcoming, upcomingPage)
   const pastPageData = paginateItems(past, pastPage)
@@ -381,7 +382,19 @@ export default function MemberEventsClient({
             onChange={e => setSearch(e.target.value)}
             className="mb-3 w-full rounded-xl border border-home-border bg-surface px-4 py-3 text-sm text-text outline-none focus:border-primary focus:ring-2 focus:ring-primary/15"
           />
-          <EventFilterTabs value={filter} onChange={setFilter} counts={filterCounts} />
+          <EventFilterTabs
+            value={filter}
+            onChange={setFilter}
+            counts={filterCounts}
+            trailing={
+              <EventTimeframeSwitch
+                value={timeframe}
+                onChange={setTimeframe}
+                upcomingCount={upcoming.length}
+                pastCount={past.length}
+              />
+            }
+          />
         </>
       )}
 
@@ -405,8 +418,24 @@ export default function MemberEventsClient({
         />
       )}
 
-      {upcoming.length > 0 && (
-        <div className="mb-8">
+      {timeframe === 'upcoming' && upcoming.length === 0 && past.length > 0 && (
+        <EmptyState
+          icon={Calendar}
+          title={search.trim() ? 'No matching upcoming events' : 'No upcoming events'}
+          description="Past events are on the Past view."
+        />
+      )}
+
+      {timeframe === 'past' && past.length === 0 && upcoming.length > 0 && (
+        <EmptyState
+          icon={Calendar}
+          title={search.trim() ? 'No matching past events' : 'No past events'}
+          description="Upcoming events are still on the Upcoming view."
+        />
+      )}
+
+      {timeframe === 'upcoming' && upcoming.length > 0 && (
+        <div>
           <EventListPager
             page={upcomingPageData.page}
             totalCount={upcomingPageData.totalCount}
@@ -434,49 +463,32 @@ export default function MemberEventsClient({
         </div>
       )}
 
-      {past.length > 0 && (
+      {timeframe === 'past' && past.length > 0 && (
         <div>
-          <button
-            type="button"
-            onClick={() => {
-              setShowPast(p => {
-                if (!p) setPastPage(1)
-                return !p
-              })
-            }}
-            className="mb-4 rounded-xl border border-home-border bg-surface px-4 py-2 text-sm text-subtitle shadow-sm transition hover:border-primary/30 hover:text-primary"
-          >
-            {showPast ? '▲ Hide' : '▼ Show'} Past Events ({past.length})
-          </button>
-
-          {showPast && (
-            <div>
-              <EventListPager
-                page={pastPageData.page}
-                totalCount={pastPageData.totalCount}
-                onPageChange={setPastPage}
-                className="mb-4"
+          <EventListPager
+            page={pastPageData.page}
+            totalCount={pastPageData.totalCount}
+            onPageChange={setPastPage}
+            className="mb-4"
+          />
+          <div className="flex flex-col gap-3">
+            {pastPageData.items.map(event => (
+              <EventCard
+                key={event.id}
+                event={event}
+                attended={attendedIds.has(event.id)}
+                rsvped={rsvpedIds.has(event.id)}
+                points={displayPoints(event, earnedPointsByEventId)}
+                jiatings={eventParticipatingJiatings(event, jtFamilies, mixerFamiliesByEventId)}
+                onOpen={() => setDetailEvent(event)}
               />
-              <div className="flex flex-col gap-3">
-                {pastPageData.items.map(event => (
-                  <EventCard
-                    key={event.id}
-                    event={event}
-                    attended={attendedIds.has(event.id)}
-                    rsvped={rsvpedIds.has(event.id)}
-                    points={displayPoints(event, earnedPointsByEventId)}
-                    jiatings={eventParticipatingJiatings(event, jtFamilies, mixerFamiliesByEventId)}
-                    onOpen={() => setDetailEvent(event)}
-                  />
-                ))}
-              </div>
-              <EventListPager
-                page={pastPageData.page}
-                totalCount={pastPageData.totalCount}
-                onPageChange={setPastPage}
-              />
-            </div>
-          )}
+            ))}
+          </div>
+          <EventListPager
+            page={pastPageData.page}
+            totalCount={pastPageData.totalCount}
+            onPageChange={setPastPage}
+          />
         </div>
       )}
 

@@ -4,6 +4,7 @@ import {
   eventMatchesFilter,
   eventMatchesJiatingFamily,
   eventParticipatingJiatings,
+  showAddPointsPill,
   flexibleCheckInTypes,
   JIATING_MIXER_POINTS,
   JIATING_MIXER_SIX_WAY_POINTS,
@@ -126,6 +127,21 @@ describe("event list filters", () => {
         {},
       ),
     ).toEqual([]);
+  });
+
+  it("shows Add Points only when a published event still has no attendance or upload", () => {
+    const base = {
+      category: "Jiating Event",
+      publishStatus: "published",
+      attendanceCount: 0,
+      hasImportUpload: false,
+      hasRsvpUpload: false,
+    };
+    expect(showAddPointsPill(base)).toBe(true);
+    expect(showAddPointsPill({ ...base, attendanceCount: 2 })).toBe(false);
+    expect(showAddPointsPill({ ...base, hasImportUpload: true })).toBe(false);
+    expect(showAddPointsPill({ ...base, category: "Howdy Week" })).toBe(false);
+    expect(showAddPointsPill({ ...base, publishStatus: "draft" })).toBe(false);
   });
 
   it("does not count Jiating Olympics toward a Jiating family", () => {

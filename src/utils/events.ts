@@ -172,6 +172,21 @@ export function eventParticipatingJiatings(
   return families.filter(f => ids.has(f.id))
 }
 
+/** Past published events that still have no attendance and no CSV or RSVP upload. */
+export function showAddPointsPill(input: {
+  category: string
+  publishStatus?: string | null
+  attendanceCount: number
+  hasImportUpload: boolean
+  hasRsvpUpload: boolean
+}) {
+  if ((input.publishStatus ?? 'published') !== 'published') return false
+  if (input.category.trim() === 'Howdy Week') return false
+  if (input.attendanceCount > 0) return false
+  if (input.hasImportUpload || input.hasRsvpUpload) return false
+  return true
+}
+
 export const PARENT_EVENT_CATEGORIES = [
   'Jiating Event',
   'Jiating Mixer',
