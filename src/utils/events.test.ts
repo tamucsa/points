@@ -3,6 +3,7 @@ import {
   checkInOptionLabel,
   eventMatchesFilter,
   eventMatchesJiatingFamily,
+  eventParticipatingJiatings,
   flexibleCheckInTypes,
   JIATING_MIXER_POINTS,
   JIATING_MIXER_SIX_WAY_POINTS,
@@ -97,6 +98,34 @@ describe("event list filters", () => {
     expect(eventMatchesFilter(familyEvent, "jiating")).toBe(true);
     expect(eventMatchesFilter(mixer, "jiating")).toBe(true);
     expect(eventMatchesFilter(familyEvent, "olympics")).toBe(false);
+  });
+
+  it("lists the one family on a Jiating Event and linked families on a Mixer", () => {
+    const families = [
+      { id: "jt-1", name: "Dimoo", color: "#111" },
+      { id: "jt-2", name: "Smiski", color: "#222" },
+    ];
+    expect(
+      eventParticipatingJiatings(
+        { id: "e1", category: "Jiating Event", jt_family_id: "jt-2" },
+        families,
+        {},
+      ).map((f) => f.name),
+    ).toEqual(["Smiski"]);
+    expect(
+      eventParticipatingJiatings(
+        { id: "e2", category: "Jiating Mixer", jt_family_id: null },
+        families,
+        { e2: ["jt-2", "jt-1"] },
+      ).map((f) => f.name),
+    ).toEqual(["Dimoo", "Smiski"]);
+    expect(
+      eventParticipatingJiatings(
+        { id: "e3", category: "Jiating Olympics", jt_family_id: null },
+        families,
+        {},
+      ),
+    ).toEqual([]);
   });
 
   it("does not count Jiating Olympics toward a Jiating family", () => {

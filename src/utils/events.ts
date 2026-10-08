@@ -150,6 +150,28 @@ export function isParentManagedCategory(category: string) {
   return category.trim() === 'Jiating Event' || isMixerCategory(category)
 }
 
+export interface EventJiatingFamily {
+  id: string
+  name: string
+  color: string | null
+}
+
+/** Jiatings shown on a Jiating Event (one family) or Jiating Mixer (linked families). */
+export function eventParticipatingJiatings(
+  event: { id: string; category: string; jt_family_id?: string | null },
+  families: readonly EventJiatingFamily[],
+  mixerFamiliesByEventId: Record<string, readonly string[]>,
+): EventJiatingFamily[] {
+  const category = event.category.trim()
+  if (category === 'Jiating Event') {
+    const family = families.find(f => f.id === event.jt_family_id)
+    return family ? [family] : []
+  }
+  if (!isMixerCategory(category)) return []
+  const ids = new Set(mixerFamiliesByEventId[event.id] ?? [])
+  return families.filter(f => ids.has(f.id))
+}
+
 export const PARENT_EVENT_CATEGORIES = [
   'Jiating Event',
   'Jiating Mixer',

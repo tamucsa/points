@@ -4,6 +4,7 @@ import { QRCodeSVG } from 'qrcode.react'
 import { useRouter } from 'next/navigation'
 import { useEffect, useMemo, useState } from 'react'
 import { deleteEvent, publishEvent } from '@/app/actions/events'
+import EventJiatingPills from '@/app/components/EventJiatingPills'
 import IconLabel, { CheckInTypeBadge, ScopeBadge } from '@/app/components/IconLabel'
 import EmptyState from '@/app/components/EmptyState'
 import EventFilterTabs from '@/app/components/EventFilterTabs'
@@ -17,6 +18,7 @@ import {
   canDeleteEvent,
   eventMatchesFilter,
   eventMatchesJiatingFamily,
+  eventParticipatingJiatings,
   type EventFilterTabId,
   formatEventPointsLabel,
   isImportCheckIn,
@@ -235,6 +237,7 @@ export default function OfficerEventsClient({
     const spectatorCount = spectator ? (attendanceCounts[spectator.id] ?? 0) : 0
     const publishStatus = event.publish_status ?? 'published'
     const canPublishNow = publishStatus === 'draft' || publishStatus === 'scheduled'
+    const jiatings = eventParticipatingJiatings(event, jtFamilies, mixerFamiliesByEventId)
 
     return (
       <div
@@ -249,14 +252,17 @@ export default function OfficerEventsClient({
             router.push(`/officer/events/${event.id}`)
           }
         }}
-        className={`flex cursor-pointer flex-col gap-4 rounded-3xl border border-home-border bg-surface p-5 shadow-sm transition hover:border-primary/25 hover:shadow-theme-sm sm:flex-row sm:items-center ${isPast ? 'opacity-75' : ''}`}
+        className={`flex cursor-pointer flex-col gap-4 rounded-3xl border border-home-border bg-surface p-5 shadow-sm transition hover:border-primary/25 hover:shadow-theme-sm sm:flex-row ${
+          jiatings.length > 0 ? 'sm:items-start' : 'sm:items-center'
+        } ${isPast ? 'opacity-75' : ''}`}
       >
         <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-primary/10 text-lg font-extrabold text-primary">
           {formatEventPointsLabel(event.point_value, event.check_in_type)}
         </div>
 
         <div className="min-w-0 flex-1">
-          <div className="flex flex-wrap items-center gap-2">
+          <div className="flex items-start justify-between gap-3">
+          <div className="flex min-w-0 flex-1 flex-wrap items-center gap-2">
             <span className="text-sm font-semibold text-text">{event.name}</span>
             {publishStatus === 'draft' && (
               <span className="inline-flex items-center rounded-full bg-stone-100 px-2 py-0.5 text-[11px] font-semibold leading-none text-stone-700">
@@ -278,6 +284,10 @@ export default function OfficerEventsClient({
                 Spectator QR
               </span>
             )}
+          </div>
+            <div className="sm:hidden">
+              <EventJiatingPills families={jiatings} />
+            </div>
           </div>
           {publishStatus === 'scheduled' && event.publish_at && (
             <p className="mt-1.5 text-xs text-amber-900">
@@ -346,10 +356,14 @@ export default function OfficerEventsClient({
         </div>
 
         <div
-          className="flex w-full flex-wrap items-center gap-2 sm:max-w-xs sm:shrink-0 sm:justify-end"
+          className="flex w-full flex-col items-end gap-2 sm:max-w-xs sm:shrink-0"
           onClick={e => e.stopPropagation()}
           onKeyDown={e => e.stopPropagation()}
         >
+          <div className="hidden sm:flex">
+            <EventJiatingPills families={jiatings} />
+          </div>
+          <div className="flex w-full flex-wrap items-center gap-2 sm:justify-end">
           {canPublishNow && (
             <button
               type="button"
@@ -482,6 +496,7 @@ export default function OfficerEventsClient({
               Delete
             </button>
           )}
+          </div>
         </div>
       </div>
     )

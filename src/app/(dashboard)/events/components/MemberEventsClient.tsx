@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useMemo, useState } from 'react'
+import EventJiatingPills from '@/app/components/EventJiatingPills'
 import IconLabel, { CategoryBadge, CheckInTypeBadge } from '@/app/components/IconLabel'
 import EmptyState from '@/app/components/EmptyState'
 import EventFilterTabs from '@/app/components/EventFilterTabs'
@@ -11,8 +12,10 @@ import { formatEventSchedule, isEventPast, sortEventsByStartsAt } from '@/utils/
 import {
   EVENT_FILTER_TABS,
   eventMatchesFilter,
+  eventParticipatingJiatings,
   isManualPointsCheckIn,
   type EventFilterTabId,
+  type EventJiatingFamily,
 } from '@/utils/events'
 import { Calendar, Clock, MapPin, X } from 'lucide-react'
 
@@ -30,6 +33,7 @@ interface Event {
   description: string | null
   rsvp_url: string | null
   rsvp_deadline: string | null
+  jt_family_id?: string | null
 }
 
 interface Props {
@@ -39,6 +43,8 @@ interface Props {
   /** Per-member earned points when attendance.point_value_override is set. */
   earnedPointsByEventId: Record<string, number>
   semester: { name: string } | null
+  jtFamilies: EventJiatingFamily[]
+  mixerFamiliesByEventId: Record<string, string[]>
 }
 
 function displayPoints(
@@ -53,12 +59,14 @@ function EventCard({
   attended,
   rsvped,
   points,
+  jiatings,
   onOpen,
 }: {
   event: Event
   attended: boolean
   rsvped: boolean
   points: number
+  jiatings: EventJiatingFamily[]
   onOpen: () => void
 }) {
   const isPast = isEventPast(event.starts_at, event.ends_at)
@@ -78,9 +86,9 @@ function EventCard({
           onOpen()
         }
       }}
-      className={`flex w-full cursor-pointer items-center gap-4 rounded-3xl border border-home-border bg-surface px-5 py-4 text-left shadow-sm transition hover:border-primary/25 hover:shadow-theme-sm ${
-        isPast && !attended ? 'opacity-[0.65]' : ''
-      }`}
+      className={`flex w-full cursor-pointer gap-4 rounded-3xl border border-home-border bg-surface px-5 py-4 text-left shadow-sm transition hover:border-primary/25 hover:shadow-theme-sm ${
+        jiatings.length > 0 ? 'items-start' : 'items-center'
+      } ${isPast && !attended ? 'opacity-[0.65]' : ''}`}
     >
       <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-primary/10 text-lg font-extrabold text-primary">
         {points}
@@ -125,21 +133,26 @@ function EventCard({
         </EventMetaRow>
       </div>
 
-      {rsvpOpen && (
-        <a
-          href={event.rsvp_url!}
-          target="_blank"
-          rel="noopener noreferrer"
-          onClick={e => e.stopPropagation()}
-          className="shrink-0 rounded-xl bg-primary px-4 py-2 text-sm font-semibold text-on-primary shadow-sm transition hover:bg-primary-hover"
-        >
-          Sign Up
-        </a>
-      )}
-      {rsvpClosed && (
-        <span className="shrink-0 rounded-xl border border-home-border bg-bg px-4 py-2 text-sm font-medium text-subtitle">
-          RSVP Closed
-        </span>
+      {(jiatings.length > 0 || rsvpOpen || rsvpClosed) && (
+        <div className="flex shrink-0 flex-col items-end gap-2">
+          <EventJiatingPills families={jiatings} />
+          {rsvpOpen && (
+            <a
+              href={event.rsvp_url!}
+              target="_blank"
+              rel="noopener noreferrer"
+              onClick={e => e.stopPropagation()}
+              className="shrink-0 rounded-xl bg-primary px-4 py-2 text-sm font-semibold text-on-primary shadow-sm transition hover:bg-primary-hover"
+            >
+              Sign Up
+            </a>
+          )}
+          {rsvpClosed && (
+            <span className="shrink-0 rounded-xl border border-home-border bg-bg px-4 py-2 text-sm font-medium text-subtitle">
+              RSVP Closed
+            </span>
+          )}
+        </div>
       )}
     </div>
   )
@@ -298,6 +311,8 @@ export default function MemberEventsClient({
   rsvpedIds,
   earnedPointsByEventId,
   semester,
+  jtFamilies,
+  mixerFamiliesByEventId,
 }: Props) {
   const [showPast, setShowPast] = useState(false)
   const [filter, setFilter] = useState<EventFilterTabId>('all')
@@ -406,6 +421,7 @@ export default function MemberEventsClient({
                 attended={attendedIds.has(event.id)}
                 rsvped={rsvpedIds.has(event.id)}
                 points={displayPoints(event, earnedPointsByEventId)}
+                jiatings={eventParticipatingJiatings(event, jtFamilies, mixerFamiliesByEventId)}
                 onOpen={() => setDetailEvent(event)}
               />
             ))}
@@ -449,6 +465,7 @@ export default function MemberEventsClient({
                     attended={attendedIds.has(event.id)}
                     rsvped={rsvpedIds.has(event.id)}
                     points={displayPoints(event, earnedPointsByEventId)}
+                    jiatings={eventParticipatingJiatings(event, jtFamilies, mixerFamiliesByEventId)}
                     onOpen={() => setDetailEvent(event)}
                   />
                 ))}

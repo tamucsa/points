@@ -30,13 +30,17 @@ export default async function MemberEventsPage() {
     eventsQuery = eventsQuery.in('scope', ['org', 'jt_shared'])
   }
 
-  const { data: events } = await eventsQuery
+  const [{ data: events }, { data: jtFamilies }] = await Promise.all([
+    eventsQuery,
+    supabase.from('jt_families').select('id, name, color').order('name'),
+  ])
 
   const mixerIds = (events ?? [])
     .filter(e => isMixerCategory(e.category))
     .map(e => e.id)
 
-  let mixerFamilyByEvent = new Map<string, Set<string>>()
+  const mixerFamilyByEvent = new Map<string, Set<string>>()
+  const mixerFamiliesByEventId: Record<string, string[]> = {}
   if (mixerIds.length > 0) {
     const { data: links } = await supabase
       .from('event_jt_families')
@@ -47,6 +51,9 @@ export default async function MemberEventsPage() {
       const set = mixerFamilyByEvent.get(row.event_id) ?? new Set<string>()
       set.add(row.jt_family_id)
       mixerFamilyByEvent.set(row.event_id, set)
+      const list = mixerFamiliesByEventId[row.event_id] ?? []
+      list.push(row.jt_family_id)
+      mixerFamiliesByEventId[row.event_id] = list
     }
   }
 
@@ -98,6 +105,8 @@ export default async function MemberEventsPage() {
       rsvpedIds={rsvpedIds}
       earnedPointsByEventId={earnedPointsByEventId}
       semester={semester}
+      jtFamilies={jtFamilies ?? []}
+      mixerFamiliesByEventId={mixerFamiliesByEventId}
     />
   )
 }

@@ -56,6 +56,7 @@ export function isInCurrentChicagoWeek(iso: string, now = new Date()) {
 
 const dateFormatter = new Intl.DateTimeFormat('en-US', {
   timeZone: EVENT_TIMEZONE,
+  weekday: 'long',
   month: 'short',
   day: 'numeric',
   year: 'numeric',
@@ -77,7 +78,7 @@ const dateTimeFormatter = new Intl.DateTimeFormat('en-US', {
   minute: '2-digit',
 })
 
-/** Date only — officer list, compact views. */
+/** Date with weekday — officer list and other compact event views. */
 export function formatEventDate(iso: string) {
   const date = parseInstant(iso)
   return date ? dateFormatter.format(date) : iso
