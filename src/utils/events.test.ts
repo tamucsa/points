@@ -50,6 +50,7 @@ describe("resolveEventCheckInType", () => {
   it("uses the category's fixed check-in type", () => {
     expect(resolveEventCheckInType("General Meeting", "officer")).toBe("self");
     expect(resolveEventCheckInType("Howdy Week", "officer")).toBe("csv_import");
+    expect(resolveEventCheckInType("Profit Share", "officer")).toBe("none");
   });
 
   it("labels mixer QR and CSV check-in", () => {
@@ -93,6 +94,13 @@ describe("event list filters", () => {
     expect(eventMatchesFilter(olympics, "jiating")).toBe(false);
     expect(eventMatchesFilter(olympics, "csa")).toBe(false);
     expect(eventMatchesFilter(olympics, "all")).toBe(true);
+  });
+
+  it("lists Profit Share under CSA", () => {
+    const profitShare = { category: "Profit Share", scope: "org" };
+    expect(eventMatchesFilter(profitShare, "csa")).toBe(true);
+    expect(eventMatchesFilter(profitShare, "jiating")).toBe(false);
+    expect(eventMatchesFilter(profitShare, "all")).toBe(true);
   });
 
   it("keeps family events and mixers on the Jiating tab", () => {
@@ -141,6 +149,7 @@ describe("event list filters", () => {
     expect(showAddPointsPill({ ...base, attendanceCount: 2 })).toBe(false);
     expect(showAddPointsPill({ ...base, hasImportUpload: true })).toBe(false);
     expect(showAddPointsPill({ ...base, category: "Howdy Week" })).toBe(false);
+    expect(showAddPointsPill({ ...base, category: "Profit Share" })).toBe(false);
     expect(showAddPointsPill({ ...base, publishStatus: "draft" })).toBe(false);
   });
 

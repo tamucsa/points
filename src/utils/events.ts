@@ -3,6 +3,7 @@ export const EVENT_CATEGORIES = [
   'General Meeting',
   'CSA-Wide',
   'CSA-Wide Mixers',
+  'Profit Share',
   'Howdy Week',
   'Jiating Olympics',
   'Jiating Event',
@@ -22,6 +23,7 @@ export type CheckInType =
   | 'rsvp_required'
   | 'csv_import'
   | 'manual_points'
+  | 'none'
 
 export interface CategoryConfig {
   pointValue: 0 | 1 | 2 | 3
@@ -40,6 +42,7 @@ export const CATEGORY_CONFIG: Record<EventCategory, CategoryConfig> = {
   'General Meeting': { pointValue: 2, scope: 'org', checkInType: 'self' },
   'CSA-Wide': { pointValue: 3, scope: 'org' },
   'CSA-Wide Mixers': { pointValue: 3, scope: 'org' },
+  'Profit Share': { pointValue: 0, scope: 'org', checkInType: 'none' },
   'Howdy Week': { pointValue: 0, scope: 'org', checkInType: 'csv_import' },
   'Jiating Olympics': { pointValue: 2, scope: 'jt_shared', checkInType: 'officer' },
   'Jiating Event': { pointValue: 1, scope: 'jt_specific' },
@@ -58,6 +61,7 @@ export const CATEGORY_OWNER_HINTS: Record<EventCategory, string> = {
   'General Meeting': 'Typically created by Executives, mainly the Secretary',
   'CSA-Wide': 'Typically created by the Event Coordinator',
   'CSA-Wide Mixers': 'Typically created by the Event Coordinator',
+  'Profit Share': 'Typically created by the Fundraising chair',
   'Howdy Week': 'Typically created by Executives / Event Coordinator during recruiting',
   'Jiating Olympics': 'Typically created by the Sports chair',
   'Jiating Event': 'Typically created by Jiating parents for their own family',
@@ -90,6 +94,7 @@ const CHECKIN_LABELS: Record<CheckInType, string> = {
   rsvp_required: 'RSVP',
   csv_import: 'CSV Check-in',
   manual_points: 'Manual Points',
+  none: 'Calendar only',
 }
 
 export function getCategoryConfig(category: string): CategoryConfig | null {
@@ -182,6 +187,7 @@ export function showAddPointsPill(input: {
 }) {
   if ((input.publishStatus ?? 'published') !== 'published') return false
   if (input.category.trim() === 'Howdy Week') return false
+  if (isProfitShareCategory(input.category)) return false
   if (input.attendanceCount > 0) return false
   if (input.hasImportUpload || input.hasRsvpUpload) return false
   return true
@@ -318,6 +324,15 @@ export function resolveEventCheckInType(
 
 export function isHowdyWeekCategory(category: string) {
   return category.trim() === 'Howdy Week'
+}
+
+export function isProfitShareCategory(category: string) {
+  return category.trim() === 'Profit Share'
+}
+
+/** Calendar-only events have no attendance. */
+export function isCalendarOnlyCheckIn(checkInType: string) {
+  return checkInType === 'none'
 }
 
 export function isCsvImportCheckIn(checkInType: string) {

@@ -7,6 +7,7 @@ import {
   Dumbbell,
   Eye,
   FileSpreadsheet,
+  HandCoins,
   HandHeart,
   Handshake,
   Home,
@@ -41,6 +42,7 @@ export const CHECKIN_TYPE_ICONS: Record<string, LucideIcon> = {
   rsvp_required: ClipboardList,
   csv_import: FileSpreadsheet,
   manual_points: DollarSign,
+  none: Calendar,
 }
 
 export const CHECKIN_METHOD_ICONS: Record<string, LucideIcon> = {
@@ -55,6 +57,7 @@ export const CATEGORY_ICONS: Record<string, LucideIcon> = {
   'General Meeting': Users,
   'CSA-Wide': Sparkles,
   'CSA-Wide Mixers': PartyPopper,
+  'Profit Share': HandCoins,
   'Jiating Olympics': Trophy,
   'Jiating Event': Home,
   'Jiating Mixer': Handshake,

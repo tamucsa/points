@@ -26,7 +26,9 @@ import {
   eventParticipatingJiatings,
   type EventFilterTabId,
   formatEventPointsLabel,
+  isCalendarOnlyCheckIn,
   isImportCheckIn,
+  isProfitShareCategory,
   showAddPointsPill,
 } from '@/utils/events'
 import { Calendar, MapPin, Plus, Star, Trash2, Users } from 'lucide-react'
@@ -198,17 +200,18 @@ export default function OfficerEventsClient({
   const pinnedPastEvents = useMemo(
     () =>
       pastEvents.filter(
-        e => (attendanceCounts[e.id] ?? 0) === 0 && !dismissedAttendance.has(e.id),
+        e =>
+          !isCalendarOnlyCheckIn(e.check_in_type) &&
+          !isProfitShareCategory(e.category) &&
+          (attendanceCounts[e.id] ?? 0) === 0 &&
+          !dismissedAttendance.has(e.id),
       ),
     [pastEvents, attendanceCounts, dismissedAttendance],
   )
 
   const unpinnedPastEvents = useMemo(
-    () =>
-      pastEvents.filter(
-        e => (attendanceCounts[e.id] ?? 0) > 0 || dismissedAttendance.has(e.id),
-      ),
-    [pastEvents, attendanceCounts, dismissedAttendance],
+    () => pastEvents.filter(e => !pinnedPastEvents.some(pinned => pinned.id === e.id)),
+    [pastEvents, pinnedPastEvents],
   )
 
   useEffect(() => {
@@ -375,9 +378,11 @@ export default function OfficerEventsClient({
             <EventMetaChip>
               <CheckInTypeBadge checkInType={event.check_in_type} />
             </EventMetaChip>
-            <EventMetaItem>
-              <IconLabel icon={Users} label={`${count} attended`} size="sm" />
-            </EventMetaItem>
+            {!isCalendarOnlyCheckIn(event.check_in_type) && (
+              <EventMetaItem>
+                <IconLabel icon={Users} label={`${count} attended`} size="sm" />
+              </EventMetaItem>
+            )}
             {spectator && (
               <EventMetaItem>
                 <IconLabel

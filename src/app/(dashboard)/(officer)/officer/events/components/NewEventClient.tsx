@@ -540,6 +540,13 @@ export default function NewEventClient({
           </p>
         )}
 
+        {fixedCheckIn === "none" && (
+          <p className="text-xs text-subtitle">
+            This event is for the member calendar only. It is worth 0 points
+            and has no attendance.
+          </p>
+        )}
+
         {isCsvImport && (
           <p className="text-xs text-subtitle">
             After publishing, upload the shared Google Form CSV. Only rows whose

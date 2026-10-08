@@ -46,6 +46,7 @@ import {
   flexibleCheckInTypes,
   formatEventPointsLabel,
   getCategoryConfig,
+  isCalendarOnlyCheckIn,
   isGeneralMeetingCategory,
   isHowdyWeekCategory,
   isImportCheckIn,
@@ -222,6 +223,7 @@ export default function EventDetailClient({
       )
     : null;
   const isHowdyWeek = isHowdyWeekCategory(event.category);
+  const isCalendarOnly = isCalendarOnlyCheckIn(event.check_in_type);
   const isRsvpEvent = event.check_in_type === "rsvp_required";
   const isImportEvent = isImportCheckIn(event.check_in_type) && !isHowdyWeek;
   const isCsvImportEvent = event.check_in_type === "csv_import";
@@ -917,8 +919,9 @@ export default function EventDetailClient({
             summary={`${event.category} · ${checkInOptionLabel(event.category, event.check_in_type)} · ${formatEventPointsLabel(mixerPointValue ?? event.point_value, event.check_in_type)} pt`}
           >
             <p className="text-xs leading-5 text-subtitle">
-              Existing check-ins stay on this event. Points are recalculated
-              for the new category.
+              {isCalendarOnlyCheckIn(resolvedCheckIn)
+                ? "This category is on the calendar only. There is no attendance."
+                : "Existing check-ins stay on this event. Points are recalculated for the new category."}
             </p>
             <div>
               <label className={labelClassName} htmlFor="event-edit-category">
@@ -1342,6 +1345,8 @@ export default function EventDetailClient({
         )}
       </div>
 
+      {!isCalendarOnly && (
+      <>
       <div className="mb-3 flex items-center justify-between">
         <h2 className="text-lg font-bold text-text">Attendance</h2>
         <span className="text-sm text-subtitle">
@@ -1434,6 +1439,8 @@ export default function EventDetailClient({
             );
           })}
       </div>
+      </>
+      )}
 
       {uncheckTarget && (
         <div
