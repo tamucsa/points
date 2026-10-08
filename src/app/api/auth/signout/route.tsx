@@ -1,6 +1,7 @@
 import { createServerClient } from "@supabase/ssr";
 import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
+import { publicOriginFromRequest } from "@/utils/public-origin";
 import { setSentryUser } from "@/utils/sentry";
 import { fetchWithAuthTimeout } from "@/utils/supabase/auth-request";
 
@@ -28,7 +29,9 @@ export async function GET(request: Request) {
   await supabase.auth.signOut({ scope: "local" });
   setSentryUser(null);
 
-  const response = NextResponse.redirect(new URL("/", request.url));
+  const response = NextResponse.redirect(
+    new URL("/", publicOriginFromRequest(request)),
+  );
   for (const cookie of cookieStore.getAll()) {
     if (
       cookie.name.startsWith("sb-") &&

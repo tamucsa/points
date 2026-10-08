@@ -1,6 +1,7 @@
 import { createServerClient } from "@supabase/ssr";
 import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
+import { publicOriginFromRequest } from "@/utils/public-origin";
 import { fetchWithAuthTimeout } from "@/utils/supabase/auth-request";
 
 function safeNextPath(next: string | null, origin: string): string | null {
@@ -22,7 +23,8 @@ function safeNextPath(next: string | null, origin: string): string | null {
  * (notably Arc) promote into a second tab once the user-gesture window has expired.
  */
 export async function GET(request: Request) {
-  const { searchParams, origin } = new URL(request.url);
+  const { searchParams } = new URL(request.url);
+  const origin = publicOriginFromRequest(request);
   const next = safeNextPath(searchParams.get("next"), origin);
 
   const callbackUrl = next

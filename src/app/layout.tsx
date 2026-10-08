@@ -3,6 +3,7 @@ import { Bayon, Akshar } from "next/font/google";
 import "@/app/globals.css";
 import { Analytics } from "@vercel/analytics/next"
 import ThemeProvider from "@/app/components/ThemeProvider";
+import { DEFAULT_SITE_ORIGIN, configuredSiteOrigin } from "@/utils/public-origin";
 
 const bayon = Bayon({
   variable: "--font-bayon",
@@ -16,7 +17,7 @@ const akshar = Akshar({
   weight: ["400", "500", "600", "700"],
 });
 
-const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? 'https://points.csatamu.org'
+const siteUrl = configuredSiteOrigin() ?? DEFAULT_SITE_ORIGIN
 
 export const metadata: Metadata = {
   metadataBase: new URL(siteUrl),

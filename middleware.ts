@@ -1,6 +1,7 @@
 import { createServerClient } from '@supabase/ssr'
 import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
+import { publicOriginFromRequest } from '@/utils/public-origin'
 import {
   fetchWithAuthTimeout,
   isTransientAuthError,
@@ -79,13 +80,13 @@ export async function middleware(request: NextRequest) {
     )
 
   if (!user && !isPublicRoute) {
-    const redirect = NextResponse.redirect(new URL('/', request.url))
+    const redirect = NextResponse.redirect(new URL('/', publicOriginFromRequest(request)))
     if (sessionIsDead) clearAuthCookies(redirect, request)
     return redirect
   }
 
   if (user && (pathname === '/' || pathname.startsWith('/login'))) {
-    return NextResponse.redirect(new URL('/leaderboard', request.url))
+    return NextResponse.redirect(new URL('/leaderboard', publicOriginFromRequest(request)))
   }
 
   return supabaseResponse

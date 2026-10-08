@@ -1,6 +1,7 @@
 import { headers } from 'next/headers'
 import { notFound, redirect } from 'next/navigation'
 import QRFullScreen from '@/app/(dashboard)/(officer)/officer/events/components/QRFullScreen'
+import { publicOrigin } from '@/utils/public-origin'
 import { getAuthUser } from '@/utils/supabase/auth'
 
 export default async function QRPage({
@@ -25,9 +26,11 @@ export default async function QRPage({
   if (!event?.check_in_code) notFound()
 
   const headersList = await headers()
-  const host = headersList.get('x-forwarded-host') ?? headersList.get('host')
-  const proto = headersList.get('x-forwarded-proto') ?? 'https'
-  const origin = host ? `${proto}://${host}` : (process.env.NEXT_PUBLIC_SITE_URL ?? '')
+  const origin = publicOrigin({
+    forwardedHost: headersList.get('x-forwarded-host'),
+    forwardedProto: headersList.get('x-forwarded-proto'),
+    host: headersList.get('host'),
+  })
 
   return (
     <QRFullScreen
