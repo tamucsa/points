@@ -45,8 +45,7 @@ export default function CheckinClient({ event, code, userEmail, member, alreadyC
   const [counted, setCounted] = useState(true)
 
   const signIn = () => {
-    const redirectTo = `${window.location.origin}/checkin/${code}`
-    router.push(`/?next=${encodeURIComponent(redirectTo)}`)
+    router.push(`/?next=${encodeURIComponent(`/checkin/${code}`)}`)
   }
 
   const checkIn = async () => {

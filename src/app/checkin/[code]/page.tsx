@@ -2,6 +2,7 @@ import { notFound } from "next/navigation";
 import CheckinClient from "@/app/checkin/[code]/components/CheckinClient";
 import SentryUser from "@/app/components/SentryUser";
 import { setSentryUser } from "@/utils/sentry";
+import { createAdminSupabase } from "@/utils/supabase/admin";
 import { createServerSupabase } from "@/utils/supabase/server";
 
 export default async function CheckinPage({
@@ -12,7 +13,11 @@ export default async function CheckinPage({
   const { code } = await params;
   const supabase = await createServerSupabase();
 
-  const { data: event } = await supabase
+  // The check-in code is the access key. Events SELECT policies hide rows from
+  // anonymous visitors, so this public page looks up one published self check-in
+  // with the service role instead of opening events to anon.
+  const admin = createAdminSupabase();
+  const { data: event } = await admin
     .from("events")
     .select(
       "id, name, category, point_value, starts_at, ends_at, location, location_maps_url, check_in_type, semester_id",
