@@ -6,6 +6,7 @@ import { useEffect, useState } from "react";
 import EventImportPanel from "@/app/(dashboard)/(officer)/officer/events/components/EventImportPanel";
 import EventRsvpPanel from "@/app/(dashboard)/(officer)/officer/events/components/EventRsvpPanel";
 import HowdyWeekGuestPanel from "@/app/(dashboard)/(officer)/officer/events/components/HowdyWeekGuestPanel";
+import RecapQuizPanel from "@/app/(dashboard)/(officer)/officer/events/components/RecapQuizPanel";
 import { officerRemoveCheckIn } from "@/app/actions/attendance";
 import {
   publishEvent,
@@ -17,6 +18,7 @@ import {
 } from "@/app/actions/events";
 import type { EventGuestRow } from "@/app/actions/guests";
 import type { EventImportRow } from "@/app/actions/imports";
+import type { GmRecapRow } from "@/app/actions/recap";
 import { publishJiatingStandings } from "@/app/actions/jt-standings";
 import type { EventRsvpRow } from "@/app/actions/rsvp";
 import BackLink from "@/app/components/BackLink";
@@ -130,6 +132,9 @@ interface Props {
   importMatchMembers: { id: string; full_name: string; email: string }[];
   guestRows: EventGuestRow[];
   guestMatchMembers: { id: string; full_name: string; email: string }[];
+  recapRows?: GmRecapRow[];
+  recapMatchMembers?: { id: string; full_name: string; email: string }[];
+  recapLoadError?: string | null;
 }
 
 const btnPrimaryClassName =
@@ -158,6 +163,9 @@ export default function EventDetailClient({
   importMatchMembers,
   guestRows,
   guestMatchMembers,
+  recapRows = [],
+  recapMatchMembers = [],
+  recapLoadError = null,
 }: Props) {
   const router = useRouter();
   const [publishing, setPublishing] = useState(false);
@@ -1303,6 +1311,32 @@ export default function EventDetailClient({
             />
           </CollapsibleSettings>
         )}
+        {isGm && (
+          <CollapsibleSettings
+            title="GM recap quiz"
+            defaultOpen
+            summary={
+              recapLoadError
+                ? "Could not load quiz"
+                : `${recapRows.filter((row) => row.member_id && !row.is_guest).length} matched · 0 points`
+            }
+          >
+            {recapLoadError ? (
+              <p className="text-sm text-red-600">
+                Could not load the recap quiz. Refresh the page to try again.
+              </p>
+            ) : (
+              <RecapQuizPanel
+                eventId={event.id}
+                initialRows={recapRows}
+                attendedMemberIds={attendance.map((row) => row.member_id)}
+                matchMembers={recapMatchMembers}
+                btnPrimaryClassName={btnPrimaryClassName}
+                btnSecondaryClassName={btnSecondaryClassName}
+              />
+            )}
+          </CollapsibleSettings>
+        )}
         {isImportEvent && (
           <CollapsibleSettings
             title={
@@ -1316,6 +1350,8 @@ export default function EventDetailClient({
             <EventImportPanel
               eventId={event.id}
               mode={isManualPointsEvent ? "manual_points" : "mixer_attendance"}
+              variant={isGm ? "general_meeting" : "mixer"}
+              pointValue={event.point_value}
               initialRows={importRows}
               matchMembers={importMatchMembers}
               btnPrimaryClassName={btnPrimaryClassName}
@@ -1367,7 +1403,9 @@ export default function EventDetailClient({
             description={
               isHowdyWeek
                 ? "Linked guests from the CSV appear here at 0 points. Unmatched emails stay in the guest panel until they register or you rematch them."
-                : "Members will appear here once they check in to this event."
+                : isCsvImportEvent
+                  ? "Matched rows from the attendance CSV appear here."
+                  : "Members will appear here once they check in to this event."
             }
             compact
           />

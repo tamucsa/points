@@ -15,6 +15,13 @@ import {
 const six = ["jt-1", "jt-2", "jt-3", "jt-4", "jt-5", "jt-6"];
 
 describe("flexibleCheckInTypes", () => {
+  it("lets General Meetings choose self check-in or CSV import", () => {
+    expect(flexibleCheckInTypes("General Meeting")).toEqual([
+      "self",
+      "csv_import",
+    ]);
+  });
+
   it("lets CSA-Wide Mixers choose CSV, officer, QR, or RSVP", () => {
     expect(flexibleCheckInTypes("CSA-Wide Mixers")).toEqual([
       "csv_import",
@@ -47,8 +54,15 @@ describe("resolveEventCheckInType", () => {
     );
   });
 
-  it("uses the category's fixed check-in type", () => {
+  it("keeps a General Meeting choice and falls back to self check-in", () => {
+    expect(resolveEventCheckInType("General Meeting", "csv_import")).toBe(
+      "csv_import",
+    );
+    expect(resolveEventCheckInType("General Meeting", "self")).toBe("self");
     expect(resolveEventCheckInType("General Meeting", "officer")).toBe("self");
+  });
+
+  it("uses the category's fixed check-in type", () => {
     expect(resolveEventCheckInType("Howdy Week", "officer")).toBe("csv_import");
     expect(resolveEventCheckInType("Profit Share", "officer")).toBe("none");
   });
@@ -58,6 +72,10 @@ describe("resolveEventCheckInType", () => {
     expect(checkInOptionLabel("CSA-Wide Mixers", "csv_import")).toBe(
       "CSV Import",
     );
+    expect(checkInOptionLabel("General Meeting", "csv_import")).toBe(
+      "CSV Import",
+    );
+    expect(checkInOptionLabel("General Meeting", "self")).toBe("Self Check-in");
     expect(checkInOptionLabel("CSA-Wide", "self")).toBe("Self Check-in");
   });
 });

@@ -38,6 +38,7 @@ Core tables (names reflect actual schema):
 - `event_guests`: Howdy Week prospective attendance by email (`semester_id`, `graduation_year`, optional `member_id`); officer CSV replace; auto-linked on register / roster import. Linked guests also get an `attendance` row (`check_in_method = csv_import`) at the event’s 0 point value so they show on the Attendance list; deferred points award is a separate later step.
 - `guest_export_log`: audit log when officers export unmatched Howdy Week prospects from `/officer/members?tab=guests`
 - `attendance`: joins members to events; source of points
+- `gm_recap_submissions`: General Meeting recap quiz rows. A matched member gets credit for that meeting and no points. Check-in plus quiz for the same meeting is one credit.
 - `member_semester_points`: cached counted point totals per member per semester; maintained by triggers on attendance / event category·point changes; backing store for `v_current_leaderboard`
 - `semesters`: identifies the active semester
 - `jt_families`: Jiating / family grouping; scoped to a school year via `year_id` (Fall and Spring share the same rows); `is_active` marks the current year’s set

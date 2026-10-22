@@ -41,6 +41,7 @@ const NAV_ITEMS: NavItem[] = [
   { label: 'My Points', path: '/profile', icon: NAV_ICONS.profile },
   { label: 'Members', path: '/officer/members', icon: NAV_ICONS.members, officerOnly: true },
   { label: 'Officer Events', path: '/officer/events', icon: NAV_ICONS.officerEvents, officerOnly: true },
+  { label: 'Rewards', path: '/officer/rewards', icon: NAV_ICONS.rewards, officerOnly: true },
   { label: 'Admin', path: '/admin/members', icon: NAV_ICONS.admin, adminOnly: true },
 ]
 

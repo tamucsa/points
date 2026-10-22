@@ -2,10 +2,12 @@ import { notFound, redirect } from 'next/navigation'
 import EventDetailClient from '@/app/(dashboard)/(officer)/officer/events/components/EventDetailClient'
 import { listEventGuests } from '@/app/actions/guests'
 import { listEventImportRows } from '@/app/actions/imports'
+import type { GmRecapRow } from '@/app/actions/recap'
 import { getSnapshotForEvent } from '@/app/actions/jt-standings'
 import { listEventRsvps } from '@/app/actions/rsvp'
 import {
   getCategoryConfig,
+  isGeneralMeetingCategory,
   isHowdyWeekCategory,
   isImportCheckIn,
   parentCanManageEvent,
@@ -131,6 +133,9 @@ export default async function EventDetailPage({ params }: { params: Promise<{ id
   let importMatchMembers: { id: string; full_name: string; email: string }[] = []
   let guestRows: Awaited<ReturnType<typeof listEventGuests>>['rows'] = []
   let guestMatchMembers: { id: string; full_name: string; email: string }[] = []
+  let recapRows: GmRecapRow[] = []
+  let recapMatchMembers: { id: string; full_name: string; email: string }[] = []
+  let recapLoadError: string | null = null
 
   if (event.check_in_type === 'rsvp_required') {
     const [rsvpResult, members] = await Promise.all([
@@ -178,6 +183,54 @@ export default async function EventDetailPage({ params }: { params: Promise<{ id
     importMatchMembers = members.data ?? []
   }
 
+  if (isGeneralMeetingCategory(event.category)) {
+    const [recapResult, memberResult] = await Promise.all([
+      fetchAllPages<{
+        id: string
+        email: string
+        full_name: string | null
+        member_id: string | null
+        is_guest: boolean
+        members: { full_name: string } | { full_name: string }[] | null
+      }>((from, to) =>
+        supabase
+          .from('gm_recap_submissions')
+          .select('id, email, full_name, member_id, is_guest, members(full_name)')
+          .eq('event_id', id)
+          .order('email')
+          .range(from, to),
+      ),
+      importMatchMembers.length > 0
+        ? Promise.resolve({ data: importMatchMembers, error: null })
+        : fetchAllPages<{ id: string; full_name: string; email: string }>((from, to) =>
+            supabase
+              .from('members')
+              .select('id, full_name, email')
+              .eq('status', 'active')
+              .order('full_name')
+              .range(from, to),
+          ),
+    ])
+
+    if (recapResult.error) {
+      recapLoadError = recapResult.error.message
+    } else {
+      recapRows = recapResult.data.map(row => {
+        const linked = Array.isArray(row.members) ? row.members[0] : row.members
+        return {
+          id: row.id,
+          email: row.email,
+          full_name: row.full_name,
+          member_id: row.member_id,
+          is_guest: row.is_guest,
+          member_name: linked?.full_name ?? null,
+        }
+      })
+    }
+
+    recapMatchMembers = memberResult.data ?? []
+  }
+
   return (
     <EventDetailClient
       event={event}
@@ -196,6 +249,9 @@ export default async function EventDetailPage({ params }: { params: Promise<{ id
       importMatchMembers={importMatchMembers}
       guestRows={guestRows}
       guestMatchMembers={guestMatchMembers}
+      recapRows={recapRows}
+      recapMatchMembers={recapMatchMembers}
+      recapLoadError={recapLoadError}
     />
   )
 }

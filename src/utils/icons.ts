@@ -1,5 +1,6 @@
 import type { LucideIcon } from 'lucide-react'
 import {
+  Award,
   Building2,
   Calendar,
   ClipboardList,
@@ -75,5 +76,6 @@ export const NAV_ICONS = {
   profile: Star,
   members: Users,
   officerEvents: ClipboardList,
+  rewards: Award,
   admin: Shield,
 } as const satisfies Record<string, LucideIcon>

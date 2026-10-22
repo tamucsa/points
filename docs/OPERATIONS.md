@@ -26,6 +26,8 @@ Runbook for day-to-day CSA Points operations. Each section includes an **overvie
 | Delete event                           | Officer/Parent/Admin | `/officer/events` (officers: non-JT Event/Mixer; parents: their JT Event/Mixer; admin: any) |
 | Manage member roles                    | Admin            | `/admin/members?tab=roles`                                        |
 | Look up member points / sign-in status | Officer/Admin/Parent | `/officer/members`                                                |
+| Upload a GM recap quiz                 | Officer/Admin/Parent | `/officer/events/[id]` on a General Meeting                       |
+| 3 GM reward list                       | Officer/Admin/Parent | `/officer/rewards`                                                |
 
 
 Related docs:
@@ -308,7 +310,7 @@ Canonical scoring policy for CSA Points. Change here when club policy changes; k
 
 | Category         | Points | Scope                  | Typical check-in                        |
 | ---------------- | ------ | ---------------------- | --------------------------------------- |
-| General Meeting  | 2      | CSA-wide               | Self (QR)                               |
+| General Meeting  | 2      | CSA-wide               | Self (QR) or CSV import (name + email). A recap quiz gives credit and 0 points. |
 | CSA-Wide         | 3      | CSA-wide               | Officer chooses / often self or officer |
 | CSA-Wide Mixers  | 3      | CSA-wide               | CSV import (shared form; org contains CSA) |
 | Howdy Week       | 0      | CSA-wide               | CSV import (prospective guests; no points yet) |
@@ -382,6 +384,36 @@ Event start/end and weekly windows use **America/Chicago**.
 4. The page header shows how many active members have not signed in.
 5. Navigate pages (25 members per page).
 6. Click a member row → `/officer/members/[id]` for full breakdown, sign-in status, and attendance history.
+
+### GM recap quiz
+
+A matched recap quiz gives credit for that General Meeting and does not add points. The response is stored in `gm_recap_submissions`, not `attendance`, so leaderboard totals stay the same. A member who both checks in and submits the quiz still has one credit for that meeting, plus the usual 2 GM points from the check-in.
+
+### Step-by-step: Upload a GM recap quiz
+
+1. Open the General Meeting from **Officer Events** → `/officer/events/[id]`.
+2. Open **GM recap quiz**.
+3. Export the form as CSV with **Email** and **Name** columns. Only `@tamu.edu` and `@buc.blinn.edu` rows are kept.
+4. Upload the file. Uploading again replaces the quiz list and leaves check-ins alone.
+5. Match any unmatched emails, or mark non-members as guests. Guests do not get meeting credit.
+
+### The 3 General Meetings reward
+
+In the active semester, a dues-paying member (not an officer, admin, or parent) reaches this reward with:
+
+- credit for **3** General Meetings (check-in or recap quiz)
+- attendance at **1** event in the **CSA-Wide** category
+
+Mixers, philanthropy, and concessions are separate categories and do not fill the CSA-Wide requirement.
+
+### Step-by-step: Compile the reward list
+
+1. Open **Rewards** → `/officer/rewards`.
+2. Review members marked **Reached**.
+3. Click **Download CSV** for the list currently on screen. **Show all members** includes progress for members who have not reached it yet.
+4. Open a name to see that member’s meeting credit on `/officer/members/[id]`.
+
+Members see the same progress on **My Points**.
 
 ---
 

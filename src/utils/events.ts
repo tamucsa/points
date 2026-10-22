@@ -39,7 +39,7 @@ export interface CategoryConfig {
  * Adjust here if CSA rules change.
  */
 export const CATEGORY_CONFIG: Record<EventCategory, CategoryConfig> = {
-  'General Meeting': { pointValue: 2, scope: 'org', checkInType: 'self' },
+  'General Meeting': { pointValue: 2, scope: 'org' },
   'CSA-Wide': { pointValue: 3, scope: 'org' },
   'CSA-Wide Mixers': { pointValue: 3, scope: 'org' },
   'Profit Share': { pointValue: 0, scope: 'org', checkInType: 'none' },
@@ -284,9 +284,13 @@ const FLEXIBLE_CHECK_IN_TYPES: CheckInType[] = ['officer', 'self', 'rsvp_require
 
 /**
  * Check-in types an officer can choose when the category does not fix one.
- * CSA-Wide Mixers also offer CSV import. Philanthropy also offers manual points.
+ * General Meetings offer self check-in or CSV import. CSA-Wide Mixers also
+ * offer CSV import. Philanthropy also offers manual points.
  */
 export function flexibleCheckInTypes(category: string): CheckInType[] {
+  if (isGeneralMeetingCategory(category)) {
+    return ['self', 'csv_import']
+  }
   if (isCsaWideMixersCategory(category)) {
     return ['csv_import', 'officer', 'self', 'rsvp_required']
   }
@@ -296,18 +300,28 @@ export function flexibleCheckInTypes(category: string): CheckInType[] {
   return [...FLEXIBLE_CHECK_IN_TYPES]
 }
 
+/** Fallback when the requested check-in type is not allowed for the category. */
+function defaultFlexibleCheckIn(category: string): CheckInType {
+  if (isCsaWideMixersCategory(category)) return 'csv_import'
+  if (isGeneralMeetingCategory(category)) return 'self'
+  return 'officer'
+}
+
 /** Button label for a check-in type. Mixers call QR check-in and CSV import by those names. */
 export function checkInOptionLabel(category: string, checkInType: string): string {
-  if (isCsaWideMixersCategory(category)) {
+  if (isCsaWideMixersCategory(category) || isGeneralMeetingCategory(category)) {
     if (checkInType === 'csv_import') return 'CSV Import'
-    if (checkInType === 'self') return 'QR Check-in'
+  }
+  if (isCsaWideMixersCategory(category) && checkInType === 'self') {
+    return 'QR Check-in'
   }
   return CHECKIN_LABELS[checkInType as CheckInType] ?? checkInType
 }
 
 /**
  * Check-in type stored for a category. Fixed categories ignore the request.
- * An unknown request falls back to CSV import for mixers and officer otherwise.
+ * An unknown request falls back to CSV import for mixers, self for General
+ * Meetings, and officer otherwise.
  */
 export function resolveEventCheckInType(
   category: string,
@@ -318,8 +332,7 @@ export function resolveEventCheckInType(
   if (config.checkInType) return config.checkInType
   const allowed = flexibleCheckInTypes(category)
   if ((allowed as string[]).includes(requested)) return requested as CheckInType
-  if (isCsaWideMixersCategory(category)) return 'csv_import'
-  return 'officer'
+  return defaultFlexibleCheckIn(category)
 }
 
 export function isHowdyWeekCategory(category: string) {
@@ -465,7 +478,9 @@ export function applyCategoryDefaults(
     category,
     point_value: String(config.pointValue),
     scope: config.scope,
-    check_in_type: config.checkInType ?? current.check_in_type,
+    check_in_type:
+      resolveEventCheckInType(category, current.check_in_type) ??
+      current.check_in_type,
     has_spectators: config.allowSpectators ? current.has_spectators : false,
   }
 }

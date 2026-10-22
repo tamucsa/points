@@ -8,7 +8,9 @@ import RoleBadges from '@/app/components/RoleBadges'
 import { CATEGORY_COLORS, POINT_BUCKET_LABELS } from '@/utils/constants'
 import { formatEventSchedule } from '@/utils/datetime'
 import { isManualPointsCheckIn } from '@/utils/events'
-import { attendanceAwardsPoints, roleEarnsPoints } from '@/utils/members'
+import { attendanceAwardsPoints, earnsRewards, roleEarnsPoints } from '@/utils/members'
+import type { GmRewardProgress } from '@/utils/rewards'
+import GmRewardCard from '@/app/(dashboard)/profile/components/GmRewardCard'
 import { Calendar } from 'lucide-react'
 
 interface Member {
@@ -55,13 +57,22 @@ interface Props {
   member: Member
   attendance: AttendanceRow[]
   history: SemesterSummary[]
+  gmReward?: GmRewardProgress | null
+  gmRewardLoadError?: string | null
 }
 
-export default function MemberDetailClient({ member, attendance, history }: Props) {
+export default function MemberDetailClient({
+  member,
+  attendance,
+  history,
+  gmReward = null,
+  gmRewardLoadError = null,
+}: Props) {
   const color = member.jt_color ?? '#4779B8'
   const displayName = member.full_name
   const role = member.role ?? 'member'
   const earnsPoints = roleEarnsPoints(role, member.is_parent)
+  const showReward = earnsRewards({ role, is_parent: member.is_parent })
 
   const breakdown = [
     { label: POINT_BUCKET_LABELS.csa, value: member.csa_points },
@@ -124,6 +135,14 @@ export default function MemberDetailClient({ member, attendance, history }: Prop
             </div>
           ))}
         </div>
+      )}
+
+      {showReward && gmReward && (
+        <GmRewardCard
+          progress={gmReward}
+          loadError={gmRewardLoadError}
+          voice="member"
+        />
       )}
 
       <h2 className="mb-3 text-lg font-bold text-text">This Semester</h2>

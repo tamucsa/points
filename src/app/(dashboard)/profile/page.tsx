@@ -1,5 +1,7 @@
 import { redirect } from 'next/navigation'
 import ProfileClient from '@/app/(dashboard)/profile/components/ProfileClient'
+import { earnsRewards } from '@/utils/members'
+import { buildGmRewardProgress, type GmRewardProgress } from '@/utils/rewards'
 import { getActiveSemester, getCurrentMember } from '@/utils/supabase/auth'
 
 export default async function ProfilePage() {
@@ -11,10 +13,12 @@ export default async function ProfilePage() {
   if (!user) redirect('/')
   if (!member) redirect('/')
 
+  const showReward = earnsRewards(member)
   const [
     { data: points, error: pointsError },
     { data: attendance, error: attendanceError },
     { data: history, error: historyError },
+    recapResult,
   ] = await Promise.all([
     supabase
       .from('v_current_leaderboard')
@@ -30,6 +34,7 @@ export default async function ProfilePage() {
         counted,
         point_value_override,
         events (
+          id,
           name,
           category,
           point_value,
@@ -46,11 +51,44 @@ export default async function ProfilePage() {
       .select('*, semesters(name)')
       .eq('member_id', member.id)
       .order('created_at', { ascending: false }),
+    showReward && semester
+      ? supabase
+          .from('gm_recap_submissions')
+          .select('event_id, events(id, name, starts_at)')
+          .eq('member_id', member.id)
+          .eq('semester_id', semester.id)
+          .eq('is_guest', false)
+      : Promise.resolve({ data: [], error: null }),
   ])
 
   if (pointsError) console.error('Failed to load profile points:', pointsError.message)
   if (attendanceError) console.error('Failed to load profile attendance:', attendanceError.message)
   if (historyError) console.error('Failed to load profile history:', historyError.message)
+  if (recapResult.error) {
+    console.error('Failed to load recap quiz credit:', recapResult.error.message)
+  }
+
+  const gmReward: GmRewardProgress | null = showReward
+    ? buildGmRewardProgress({
+        attendance: (attendanceError ? [] : attendance ?? []).map(row => {
+          const event = Array.isArray(row.events) ? row.events[0] : row.events
+          return {
+            eventId: event?.id ?? '',
+            name: event?.name ?? '',
+            category: event?.category ?? '',
+            startsAt: event?.starts_at ?? null,
+          }
+        }),
+        recapMeetings: (recapResult.error ? [] : recapResult.data ?? []).map(row => {
+          const event = Array.isArray(row.events) ? row.events[0] : row.events
+          return {
+            eventId: row.event_id,
+            name: event?.name ?? 'General Meeting',
+            startsAt: event?.starts_at ?? null,
+          }
+        }),
+      })
+    : null
 
   const normalizedAttendance = attendanceError
     ? []
@@ -58,6 +96,7 @@ export default async function ProfilePage() {
         ...row,
         events: Array.isArray(row.events)
           ? (row.events[0] ?? {
+              id: '',
               name: '',
               category: '',
               point_value: 0,
@@ -85,6 +124,8 @@ export default async function ProfilePage() {
       pointsLoadError={pointsError?.message ?? null}
       attendanceLoadError={attendanceError?.message ?? null}
       historyLoadError={historyError?.message ?? null}
+      gmReward={gmReward}
+      gmRewardLoadError={recapResult.error?.message ?? null}
     />
   )
 }
