@@ -1316,6 +1316,8 @@ export default function EventDetailClient({
             <EventImportPanel
               eventId={event.id}
               mode={isManualPointsEvent ? "manual_points" : "mixer_attendance"}
+              variant={isGm ? "general_meeting" : "mixer"}
+              pointValue={event.point_value}
               initialRows={importRows}
               matchMembers={importMatchMembers}
               btnPrimaryClassName={btnPrimaryClassName}
@@ -1367,7 +1369,9 @@ export default function EventDetailClient({
             description={
               isHowdyWeek
                 ? "Linked guests from the CSV appear here at 0 points. Unmatched emails stay in the guest panel until they register or you rematch them."
-                : "Members will appear here once they check in to this event."
+                : isCsvImportEvent
+                  ? "Matched rows from the attendance CSV appear here."
+                  : "Members will appear here once they check in to this event."
             }
             compact
           />

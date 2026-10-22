@@ -22,6 +22,9 @@ interface MatchMember {
 interface Props {
   eventId: string
   mode: 'mixer_attendance' | 'manual_points'
+  /** General Meeting sheets match on name and email. Mixers filter by organization. */
+  variant?: 'mixer' | 'general_meeting'
+  pointValue?: number
   initialRows: EventImportRow[]
   matchMembers: MatchMember[]
   btnPrimaryClassName: string
@@ -112,6 +115,8 @@ function parseManualPointsCsv(
 export default function EventImportPanel({
   eventId,
   mode,
+  variant = 'mixer',
+  pointValue = 2,
   initialRows,
   matchMembers,
   btnPrimaryClassName,
@@ -130,7 +135,8 @@ export default function EventImportPanel({
   } | null>(null)
   const [matchDraft, setMatchDraft] = useState<Record<string, string>>({})
 
-  const isMixer = mode === 'mixer_attendance'
+  const isAttendanceCsv = mode === 'mixer_attendance'
+  const isGeneralMeeting = variant === 'general_meeting'
   const hasUpload = rows.length > 0
 
   const unmatched = useMemo(
@@ -190,7 +196,7 @@ export default function EventImportPanel({
       const confirmReplace = () => {
         if (!hasUpload) return true
         const step1 = window.confirm(
-          isMixer
+          isAttendanceCsv
             ? 'Replace the current CSV attendance for this event? Matched check-ins and unmatched rows will be updated.'
             : 'Replace the current manual points for this event? Awarded points and unmatched rows will be updated.',
         )
@@ -201,7 +207,7 @@ export default function EventImportPanel({
       }
 
       let result: Awaited<ReturnType<typeof replaceMixerAttendanceCsv>>
-      if (isMixer) {
+      if (isAttendanceCsv) {
         const parsed = parseMixerCsv(text)
         if (parsed.length === 0) {
           await confirmEmptyClear()
@@ -236,7 +242,7 @@ export default function EventImportPanel({
       }
 
       const skippedNote =
-        isMixer && result.skipped > 0
+        isAttendanceCsv && !isGeneralMeeting && result.skipped > 0
           ? ` ${result.skipped} non-CSA row(s) skipped.`
           : ''
       const warningNote = result.errors.length
@@ -260,7 +266,7 @@ export default function EventImportPanel({
   const handleClear = async () => {
     if (!hasUpload) return
     const step1 = window.confirm(
-      isMixer
+      isAttendanceCsv
         ? 'Clear all CSV attendance and unmatched rows for this event?'
         : 'Clear all manual points and unmatched rows for this event?',
     )
@@ -370,10 +376,17 @@ export default function EventImportPanel({
     <div className="mt-5 space-y-3 rounded-2xl border border-home-border bg-bg p-4">
       <div>
         <div className="text-sm font-semibold text-text">
-          {isMixer ? 'Attendance CSV' : 'Manual points CSV'}
+          {isAttendanceCsv ? 'Attendance CSV' : 'Manual points CSV'}
         </div>
         <p className="mt-1 text-xs leading-5 text-subtitle">
-          {isMixer ? (
+          {isGeneralMeeting ? (
+            <>
+              Upload a sign-in sheet. Columns:{' '}
+              <span className="font-medium text-text">Name</span>,{' '}
+              <span className="font-medium text-text">Email</span>. Email is the
+              match key. Re-upload replaces the list and attendance.
+            </>
+          ) : isAttendanceCsv ? (
             <>
               Upload the shared Google Form responses. Only rows whose{' '}
               <span className="font-medium text-text">Organization</span>
@@ -425,7 +438,7 @@ export default function EventImportPanel({
       <div
         role="button"
         tabIndex={uploading ? -1 : 0}
-        aria-label={isMixer ? 'Upload attendance CSV' : 'Upload manual points CSV'}
+        aria-label={isAttendanceCsv ? 'Upload attendance CSV' : 'Upload manual points CSV'}
         aria-disabled={uploading}
         onKeyDown={e => {
           if (uploading) return
@@ -500,7 +513,7 @@ export default function EventImportPanel({
               >
                 <div className="text-sm font-medium text-text">
                   {row.full_name || '—'}
-                  {!isMixer && row.points != null ? (
+                  {!isAttendanceCsv && row.points != null ? (
                     <span className="ml-2 text-xs font-semibold text-primary">
                       {row.points} pt{row.points === 1 ? '' : 's'}
                     </span>
@@ -566,9 +579,11 @@ export default function EventImportPanel({
       )}
 
       <p className={`text-[11px] ${labelClassName}`}>
-        {isMixer
-          ? 'Non-CSA organization rows are ignored automatically. Matched CSA members receive 3 points.'
-          : 'Each matched row awards the points listed in the CSV under Philanthropy (CSA bucket).'}
+        {isGeneralMeeting
+          ? `Matched members receive ${pointValue} General Meeting point${pointValue === 1 ? '' : 's'}.`
+          : isAttendanceCsv
+            ? 'Non-CSA organization rows are ignored automatically. Matched CSA members receive 3 points.'
+            : 'Each matched row awards the points listed in the CSV under Philanthropy (CSA bucket).'}
       </p>
     </div>
   )

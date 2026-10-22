@@ -21,6 +21,8 @@ import {
   getCategoryConfig,
   getCategoryOwnerHint,
   isCsaWideMixersCategory,
+  isGeneralMeetingCategory,
+  isHowdyWeekCategory,
   isMixerCategory,
   jiatingMixerPointValue,
   PARENT_EVENT_CATEGORIES,
@@ -547,10 +549,24 @@ export default function NewEventClient({
           </p>
         )}
 
-        {isCsvImport && (
+        {isCsvImport && isGeneralMeetingCategory(form.category) && (
+          <p className="text-xs text-subtitle">
+            After publishing, upload a CSV with name and email. Matched members
+            are checked in for 2 General Meeting points each.
+          </p>
+        )}
+
+        {isCsvImport && isCsaWideMixersCategory(form.category) && (
           <p className="text-xs text-subtitle">
             After publishing, upload the shared Google Form CSV. Only rows whose
             Organization contains &ldquo;CSA&rdquo; are checked in (3 pts each).
+          </p>
+        )}
+
+        {isCsvImport && isHowdyWeekCategory(form.category) && (
+          <p className="text-xs text-subtitle">
+            After publishing, upload the guest responses CSV. Linked members
+            are checked in at 0 points.
           </p>
         )}
 

@@ -2,6 +2,7 @@
 
 import {
   isCsaWideMixersCategory,
+  isGeneralMeetingCategory,
   isImportCheckIn,
   isManualPointsCheckIn,
 } from "@/utils/events";
@@ -254,7 +255,11 @@ async function clearEventImportImpl(eventId: string) {
   return { success: true as const, error: null };
 }
 
-/** Replace mixer attendance from a shared multi-org Google Form CSV. */
+/**
+ * Replace attendance from a CSV.
+ * CSA-Wide Mixers keep only rows whose organization contains "CSA".
+ * General Meetings keep every row with a usable email (name + email sheet).
+ */
 export async function replaceMixerAttendanceCsv(
   eventId: string,
   rows: MixerCsvRow[],
@@ -298,8 +303,10 @@ async function replaceMixerAttendanceCsvImpl(
       errors: ["Event not found."],
     };
   }
+  const isMixer = isCsaWideMixersCategory(event.category);
+  const isGeneralMeeting = isGeneralMeetingCategory(event.category);
   if (
-    !isCsaWideMixersCategory(event.category) ||
+    (!isMixer && !isGeneralMeeting) ||
     event.check_in_type !== "csv_import"
   ) {
     return {
@@ -307,7 +314,9 @@ async function replaceMixerAttendanceCsvImpl(
       matched: 0,
       unmatched: 0,
       skipped: 0,
-      errors: ["CSV attendance import is only for CSA-Wide Mixers events."],
+      errors: [
+        "CSV attendance import is only for CSA-Wide Mixers and General Meeting events.",
+      ],
     };
   }
   if (event.publish_status !== "published") {
@@ -360,14 +369,16 @@ async function replaceMixerAttendanceCsvImpl(
     const fullName = (row.fullName ?? "").trim();
     const organization = (row.organization ?? "").trim();
 
-    if (!organizationIsCsa(organization)) {
+    if (isMixer && !organizationIsCsa(organization)) {
       skipped++;
       continue;
     }
 
     if (!email) {
       errors.push(
-        `Skipped a CSA row with blank email${fullName ? ` (${fullName})` : ""}.`,
+        isMixer
+          ? `Skipped a CSA row with blank email${fullName ? ` (${fullName})` : ""}.`
+          : `Skipped a row with blank email${fullName ? ` (${fullName})` : ""}.`,
       );
       continue;
     }

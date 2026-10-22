@@ -308,7 +308,7 @@ Canonical scoring policy for CSA Points. Change here when club policy changes; k
 
 | Category         | Points | Scope                  | Typical check-in                        |
 | ---------------- | ------ | ---------------------- | --------------------------------------- |
-| General Meeting  | 2      | CSA-wide               | Self (QR)                               |
+| General Meeting  | 2      | CSA-wide               | Self (QR) or CSV import (name + email)  |
 | CSA-Wide         | 3      | CSA-wide               | Officer chooses / often self or officer |
 | CSA-Wide Mixers  | 3      | CSA-wide               | CSV import (shared form; org contains CSA) |
 | Howdy Week       | 0      | CSA-wide               | CSV import (prospective guests; no points yet) |
