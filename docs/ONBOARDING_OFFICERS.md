@@ -15,6 +15,12 @@ Officers must have `members.role` set to `officer` (or `admin`). If you can't se
   - Officer Members: `https://points.csatamu.org/officer/members`
 - Verify the current semester is set correctly and active.
 
+## GM recap quiz and the 3-GM reward
+
+On a General Meeting, open **GM recap quiz** and upload the form CSV (Email and Name, school emails). Matched members get credit for that meeting and **0 points**. Check-in points are unchanged.
+
+**Rewards** (`/officer/rewards`) lists dues-paying members with credit for 3 General Meetings and attendance at 1 CSA-Wide event. Download CSV from that page. Officers, admins, and parents are not on the list.
+
 ## Running an event (end-to-end)
 
 ### Browse Officer Events

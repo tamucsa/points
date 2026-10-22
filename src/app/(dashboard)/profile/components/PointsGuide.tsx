@@ -88,7 +88,8 @@ export default function PointsGuide({ attendance }: Props) {
         each event category has a fixed point value (Philanthropy can also include monetary opportunities
         with custom point amounts). Howdy Week events are tracked for recruiting (0 points) and do not
         count toward leaderboard buckets. Profit Share events are on the calendar only (0 points) and
-        do not count either. Two caps can stop extra check-ins from counting
+        do not count either. A General Meeting recap quiz can count as credit for that
+        meeting toward the 3-GM reward, and it does not add points. Two caps can stop extra check-ins from counting
         toward your total — you&apos;ll still show as attended with a &ldquo;cap reached&rdquo; tag.
       </p>
 

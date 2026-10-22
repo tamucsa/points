@@ -3,14 +3,16 @@
 import { POINT_BUCKET_LABELS, CHECKIN_METHOD_LABELS } from '@/utils/constants'
 import { formatEventSchedule } from '@/utils/datetime'
 import { isManualPointsCheckIn } from '@/utils/events'
-import { attendanceAwardsPoints, formatClassification, roleEarnsPoints } from '@/utils/members'
+import { attendanceAwardsPoints, earnsRewards, formatClassification, roleEarnsPoints } from '@/utils/members'
 import JtFamilyBadge from '@/app/(dashboard)/leaderboard/components/JtFamilyBadge'
 import MemberAvatar from '@/app/components/MemberAvatar'
 import RoleBadges from '@/app/components/RoleBadges'
 import EmptyState from '@/app/components/EmptyState'
 import PageHeader from '@/app/components/PageHeader'
 import PointsGuide from '@/app/(dashboard)/profile/components/PointsGuide'
+import GmRewardCard from '@/app/(dashboard)/profile/components/GmRewardCard'
 import { AlertCircle, Calendar } from 'lucide-react'
+import type { GmRewardProgress } from '@/utils/rewards'
 
 interface Member {
   id: string
@@ -63,6 +65,8 @@ interface Props {
   pointsLoadError?: string | null
   attendanceLoadError?: string | null
   historyLoadError?: string | null
+  gmReward?: GmRewardProgress | null
+  gmRewardLoadError?: string | null
 }
 
 const CATEGORY_COLORS: Record<string, string> = {
@@ -82,10 +86,13 @@ export default function ProfileClient({
   pointsLoadError = null,
   attendanceLoadError = null,
   historyLoadError = null,
+  gmReward = null,
+  gmRewardLoadError = null,
 }: Props) {
   const displayName = member.full_name
   const color = points?.jt_color ?? '#4779B8'
   const earnsPoints = roleEarnsPoints(member.role, member.is_parent)
+  const showReward = earnsRewards({ role: member.role, is_parent: member.is_parent })
 
   const breakdown = [
     { label: `${POINT_BUCKET_LABELS.csa} Points`, value: points?.csa_points ?? 0, color: CATEGORY_COLORS['CSA-Wide'] },
@@ -179,6 +186,10 @@ export default function ProfileClient({
             ))}
           </div>
         </div>
+      )}
+
+      {showReward && gmReward && (
+        <GmRewardCard progress={gmReward} loadError={gmRewardLoadError} />
       )}
 
       {earnsPoints && !pointsLoadError && (
