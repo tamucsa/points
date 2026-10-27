@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useMemo, useState } from "react";
+import RewardTrackingTabs from "@/app/(dashboard)/(officer)/officer/rewards/components/RewardTrackingTabs";
 import PageHeader from "@/app/components/PageHeader";
 import {
   GM_REWARD_REQUIRED_CREDITS,
@@ -48,19 +49,17 @@ export default function RewardsClient({ semesterName, rows, error }: Props) {
   return (
     <div className="mx-auto max-w-5xl px-6 py-8 lg:px-8">
       <PageHeader
-        title="Rewards"
+        title="Reward Tracking"
         subtitle={
           semesterName
-            ? `${semesterName}. Credit for ${GM_REWARD_REQUIRED_CREDITS} General Meetings and attendance at ${GM_REWARD_REQUIRED_CSA_WIDE} CSA-Wide event.`
-            : "Credit for 3 General Meetings and attendance at 1 CSA-Wide event."
         }
+        className="mb-2"
       />
 
+      <RewardTrackingTabs />
+
       <p className="mb-6 max-w-3xl text-sm leading-6 text-subtitle">
-        A check-in or a matched recap quiz each give credit for that General
-        Meeting. The quiz adds no points. Doing both for the same meeting still
-        counts once. CSA-Wide means an event in the CSA-Wide category. Officers,
-        admins, and parents are left off this list.
+      Members who qualify for the Semi-Formals Discount must attend at least 3 General Meetings and 1 CSA-Wide event. GM credit can be made up through recap quizzes as well!
       </p>
 
       {error && <p className="mb-4 text-sm text-red-600">{error}</p>}
@@ -68,8 +67,7 @@ export default function RewardsClient({ semesterName, rows, error }: Props) {
       <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div className="text-sm text-subtitle">
           <span className="font-semibold text-text">{qualifiedCount}</span>{" "}
-          {qualifiedCount === 1 ? "member has" : "members have"} reached this
-          reward
+          {qualifiedCount === 1 ? "member has" : "members have"} reached this reward
         </div>
         <div className="flex flex-col gap-2 sm:flex-row">
           <input

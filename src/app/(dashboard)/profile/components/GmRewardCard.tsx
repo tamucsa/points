@@ -48,17 +48,14 @@ export default function GmRewardCard({
   return (
     <div className="mb-8 rounded-4xl border border-home-border bg-surface p-5 shadow-sm">
       <div className="text-sm font-semibold text-text">
-        3 General Meetings reward
+        Semi-Formals Discount Reward
       </div>
       <p className="mt-2 text-sm leading-6 text-subtitle">
-        This reward needs credit for {GM_REWARD_REQUIRED_CREDITS} General
-        Meetings and attendance at {GM_REWARD_REQUIRED_CSA_WIDE} CSA-Wide event.
-        A recap quiz counts as credit for that meeting and does not add points.
+        Members who qualify for the Semi-Formals Discount must attend at least {GM_REWARD_REQUIRED_CREDITS} General Meetings and {GM_REWARD_REQUIRED_CSA_WIDE} CSA-Wide event. GM credit can be made up through recap quizzes as well!
       </p>
       {loadError && (
         <p className="mt-2 text-sm text-red-600">
-          Recap quiz credit could not be loaded, so this total may be missing
-          quiz meetings.
+          GM credit could not be loaded, so this total may be missing.
         </p>
       )}
       <div className="mt-4 grid gap-4 sm:grid-cols-2">

@@ -14,7 +14,7 @@ This document explains how the system is structured, how requests flow through t
 
 - `src/app/`: Next.js routes, layouts, server components, and client components.
   - `(auth)/`: public homepage (`/`), sign-in, registration, pending onboarding, and legal pages (`/privacy`, `/terms`). `/login` redirects to `/` for backward compatibility.
-  - `(dashboard)/`: authenticated app shell + pages (leaderboard/events/profile)
+  - `(dashboard)/`: authenticated app shell + pages (leaderboard/events/rewards/profile)
   - `(dashboard)/(officer)/officer`: officer tools
   - `(dashboard)/(admin)/admin`: admin tools (`/admin/members`, `/admin/semesters`)
   - `api/auth/*`: Supabase session exchange + signout
@@ -40,6 +40,8 @@ Core tables (names reflect actual schema):
 - `attendance`: joins members to events; source of points
 - `gm_recap_submissions`: General Meeting recap quiz rows. A matched member gets credit for that meeting and no points. Check-in plus quiz for the same meeting is one credit.
 - `member_semester_points`: cached counted point totals per member per semester; maintained by triggers on attendance / event category·point changes; backing store for `v_current_leaderboard`
+- `battle_pass_rewards`: per-semester battle pass catalog (`name`, `points_required`). New semesters are seeded with the default set; admins edit rows on `/admin/semesters`
+- `battle_pass_pickups`: one row per member per reward once an officer records pickup. Insert is rejected unless the member is an active dues-paying member whose points for that reward’s semester meet `points_required`
 - `semesters`: identifies the active semester
 - `jt_families`: Jiating / family grouping; scoped to a school year via `year_id` (Fall and Spring share the same rows); `is_active` marks the current year’s set
 - `semester_summaries`: optional historical rollups per member per semester

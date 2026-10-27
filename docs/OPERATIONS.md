@@ -27,7 +27,10 @@ Runbook for day-to-day CSA Points operations. Each section includes an **overvie
 | Manage member roles                    | Admin            | `/admin/members?tab=roles`                                        |
 | Look up member points / sign-in status | Officer/Admin/Parent | `/officer/members`                                                |
 | Upload a GM recap quiz                 | Officer/Admin/Parent | `/officer/events/[id]` on a General Meeting                       |
-| 3 GM reward list                       | Officer/Admin/Parent | `/officer/rewards`                                                |
+| Battle pass rewards                    | Member           | `/rewards`                                                        |
+| Edit battle pass rewards               | Admin            | `/admin/semesters`                                                |
+| 3 GM reward list (Formals)             | Officer/Admin/Parent | `/officer/rewards/formals`                                        |
+| Battle pass pickup                     | Officer/Admin/Parent | `/officer/rewards/bp`                                             |
 
 
 Related docs:
@@ -177,7 +180,7 @@ Closing a semester archives totals (via `close_semester` in the database, which 
 
 > **Note:** Do not pre-create inactive semester rows for a future term. Use **Start semester** on `/admin/semesters` when the term actually begins; pre-created rows can duplicate when you start the term from the UI.
 
-The semester admin page shows the active term (editable), a collapsible **Past semesters** list (read-only), and per-semester details (school year, dates, Jiatings, event count, archived member count for closed terms). Jiatings are scoped to `jt_families.year_id` and shared by Fall and Spring of that year.
+The semester admin page shows the active term (editable), a collapsible **Past semesters** list, and per-semester details (school year, dates, Jiatings, event count, archived member count for closed terms). Jiatings are scoped to `jt_families.year_id` and shared by Fall and Spring of that year. Battle pass rewards belong to the semester. Each new semester starts with the default set, and admins can edit the name and points — or add and remove rewards — on the active term and on closed terms.
 
 ---
 
@@ -408,12 +411,35 @@ Mixers, philanthropy, and concessions are separate categories and do not fill th
 
 ### Step-by-step: Compile the reward list
 
-1. Open **Rewards** → `/officer/rewards`.
+1. Open **Reward Tracking** → **Formals** (`/officer/rewards/formals`).
 2. Review members marked **Reached**.
 3. Click **Download CSV** for the list currently on screen. **Show all members** includes progress for members who have not reached it yet.
 4. Open a name to see that member’s meeting credit on `/officer/members/[id]`.
 
 Members see the same progress on **My Points**.
+
+### Battle pass rewards
+
+Each semester has its own battle pass. A new semester starts with:
+
+| Reward | Points |
+| --- | --- |
+| CSA Sticker | 20 |
+| Free Boba | 40 |
+| Past Merch | 50 |
+| Pie an Officer/Parent | 70 |
+| Blindbox | 90 |
+
+Admins change the name and points, or add and remove rewards, on **Admin** → **Semesters**. Members read the current semester’s list on **Rewards** (`/rewards`). Dues-paying members see which rewards they have unlocked from their semester points and which ones an officer has marked as picked up.
+
+Officers, admins, and parents do not unlock battle pass rewards. A pickup can be recorded only after that member’s points for the reward’s semester meet the threshold.
+
+### Step-by-step: Track battle pass pickup
+
+1. Open **Reward Tracking** → **Battle Pass** (`/officer/rewards/bp`).
+2. The list starts with members who can claim a reward they have not picked up yet. Search by name, email, or Jiating, or filter to one reward.
+3. **Mark picked up** when they take it. **Undo** if that was a mistake.
+4. Someone still short of the threshold shows how many points they need and cannot be marked.
 
 ---
 
@@ -440,7 +466,7 @@ Use remove only when they were **not** at the event. If they attended but points
 
 Roles (`member`, `officer`, `admin`) control access to officer and admin pages. The **Parent** flag (`members.is_parent`) stacks with those roles. RLS policies prevent officers from elevating roles. Admins manage roles in the app.
 
-**Parent** never earns points (`recompute_member_semester_points` stores 0). Parents are excluded from the public leaderboard, Jiating standings totals, and (when built) Battle Pass / reduced-fee rewards. Officers and admins without Parent still earn points, including toward Jiating standings totals, but they are omitted from the Overall and Jiatings name lists. They are also excluded from those rewards.
+**Parent** never earns points (`recompute_member_semester_points` stores 0). Parents are excluded from the public leaderboard, Jiating standings totals, and battle pass rewards. Officers and admins without Parent still earn points, including toward Jiating standings totals, but they are omitted from the Overall and Jiatings name lists. They are also excluded from battle pass rewards and the 3 General Meetings reward.
 
 Parent-only users have the same Members roster and Officer Events tools as officers, except they can only **create** **Jiating Event** and **Jiating Mixer** for their own Jiating. Officers can **delete** events except those two categories; parents can **delete** JT Event/Mixer for their family. Officer + Parent and Admin + Parent keep full create access and both delete rules. Admins can delete any event.
 

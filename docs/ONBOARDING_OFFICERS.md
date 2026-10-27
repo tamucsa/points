@@ -19,7 +19,9 @@ Officers must have `members.role` set to `officer` (or `admin`). If you can't se
 
 On a General Meeting, open **GM recap quiz** and upload the form CSV (Email and Name, school emails). Matched members get credit for that meeting and **0 points**. Check-in points are unchanged.
 
-**Rewards** (`/officer/rewards`) lists dues-paying members with credit for 3 General Meetings and attendance at 1 CSA-Wide event. Download CSV from that page. Officers, admins, and parents are not on the list.
+**Reward Tracking** → **Formals** (`/officer/rewards/formals`) lists dues-paying members with credit for 3 General Meetings and attendance at 1 CSA-Wide event. Download CSV from that page. Officers, admins, and parents are not on the list.
+
+**Reward Tracking** → **Battle Pass** (`/officer/rewards/bp`) is where you mark which members have picked up each semester reward. A member appears as ready only after their points reach that reward. Use **Undo** if a pickup was recorded by mistake.
 
 ## Running an event (end-to-end)
 

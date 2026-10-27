@@ -1,6 +1,6 @@
 'use client'
 
-import { POINT_BUCKET_LABELS, CHECKIN_METHOD_LABELS } from '@/utils/constants'
+import { CATEGORY_COLORS, CHECKIN_METHOD_LABELS, POINT_BUCKET_LABELS } from '@/utils/constants'
 import { formatEventSchedule } from '@/utils/datetime'
 import { isManualPointsCheckIn } from '@/utils/events'
 import { attendanceAwardsPoints, earnsRewards, formatClassification, roleEarnsPoints } from '@/utils/members'
@@ -67,14 +67,6 @@ interface Props {
   historyLoadError?: string | null
   gmReward?: GmRewardProgress | null
   gmRewardLoadError?: string | null
-}
-
-const CATEGORY_COLORS: Record<string, string> = {
-  'CSA-Wide':          '#4f6ef7',
-  'Jiating Olympics':  '#f7934f',
-  Sports:              '#4fc787',
-  'General Meeting':   '#e8b84b',
-  default:             '#888',
 }
 
 export default function ProfileClient({
@@ -223,7 +215,8 @@ export default function ProfileClient({
             />
           )}
           {!attendanceLoadError && attendance.map((row) => {
-            const cat = row.events?.category ?? 'default'
+            const category = row.events?.category
+            const catColor = CATEGORY_COLORS[category] ?? CATEGORY_COLORS.default
             const earnedPoints =
               row.point_value_override ?? row.events?.point_value ?? 0
             const awardsPoints = attendanceAwardsPoints(
@@ -233,7 +226,10 @@ export default function ProfileClient({
             return (
               <div key={row.id} className="flex items-center gap-4 border-b border-home-border px-5 py-3 last:border-b-0">
                 {/* Point badge */}
-                <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-sm font-extrabold text-primary">
+                <div
+                  className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl text-sm font-extrabold"
+                  style={{ background: `${catColor}20`, color: catColor }}
+                >
                   {awardsPoints ? `+${earnedPoints}` : '—'}
                 </div>
 
@@ -250,9 +246,14 @@ export default function ProfileClient({
                           })
                         : '—'}
                     </span>
-                    <span className="rounded-md bg-primary/10 px-2 py-0.5 text-[11px] text-primary">
-                      {cat}
-                    </span>
+                    {category && (
+                      <span
+                        className="rounded-md px-2 py-0.5"
+                        style={{ background: `${catColor}15`, color: catColor }}
+                      >
+                        {category}
+                      </span>
+                    )}
                     {earnsPoints && !row.counted && (
                       <span className="rounded-md bg-red-50 px-2 py-0.5 text-[11px] text-red-500">
                         cap reached

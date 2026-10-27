@@ -14,6 +14,7 @@ import {
   type SemesterJtFamily,
   type SemesterListItem,
 } from '@/app/actions/semesters'
+import BattlePassRewardsEditor from '@/app/(dashboard)/(admin)/admin/semesters/components/BattlePassRewardsEditor'
 import JtFamilyBadge from '@/app/(dashboard)/leaderboard/components/JtFamilyBadge'
 import ColorPickerField from '@/app/components/ColorPickerField'
 import { schoolYearFromStartDate } from '@/utils/schoolYear'
@@ -89,7 +90,15 @@ const btnSecondary =
 const btnDanger =
   'rounded-xl bg-red-600 px-4 py-2.5 text-sm font-semibold text-on-primary transition hover:bg-red-700 disabled:cursor-not-allowed disabled:opacity-60'
 
-function PastSemesterCard({ semester }: { semester: SemesterListItem }) {
+function PastSemesterCard({
+  semester,
+  onUpdated,
+  onMessage,
+}: {
+  semester: SemesterListItem
+  onUpdated: (next: SemesterListItem) => void
+  onMessage: (msg: { type: 'success' | 'error'; text: string } | null) => void
+}) {
   const memberLabel =
     semester.memberCount > 0
       ? `${semester.memberCount} member${semester.memberCount === 1 ? '' : 's'} archived`
@@ -126,6 +135,14 @@ function PastSemesterCard({ semester }: { semester: SemesterListItem }) {
           </dd>
         </div>
       </dl>
+      <div className="mt-5">
+        <BattlePassRewardsEditor
+          semesterId={semester.id}
+          rewards={semester.battlePassRewards}
+          onChange={battlePassRewards => onUpdated({ ...semester, battlePassRewards })}
+          onMessage={onMessage}
+        />
+      </div>
     </article>
   )
 }
@@ -512,6 +529,15 @@ function ActiveSemesterCard({
         )}
       </div>
 
+      <div className="mt-5">
+        <BattlePassRewardsEditor
+          semesterId={semester.id}
+          rewards={semester.battlePassRewards}
+          onChange={battlePassRewards => onUpdated({ ...semester, battlePassRewards })}
+          onMessage={onMessage}
+        />
+      </div>
+
       <button
         type="button"
         onClick={onClose}
@@ -825,7 +851,14 @@ export default function SemesterAdminClient({
           {pastOpen && (
             <div className="mt-3 grid gap-3">
               {pastSemesters.map(semester => (
-                <PastSemesterCard key={semester.id} semester={semester} />
+                <PastSemesterCard
+                  key={semester.id}
+                  semester={semester}
+                  onMessage={setMessage}
+                  onUpdated={next => {
+                    setSemesters(prev => prev.map(item => (item.id === next.id ? next : item)))
+                  }}
+                />
               ))}
             </div>
           )}
