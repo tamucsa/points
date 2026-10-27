@@ -1,5 +1,10 @@
 "use server";
 
+import {
+  type BattlePassReward,
+  mapBattlePassReward,
+  sortBattlePassRewards,
+} from "@/utils/battle-pass";
 import { schoolYearFromStartDate } from "@/utils/schoolYear";
 import { setSentryUser, withServerAction } from "@/utils/sentry";
 import { createActionSupabase } from "@/utils/supabase/action";
@@ -678,6 +683,7 @@ export interface SemesterListItem {
   year_id: string;
   years: { name: string } | { name: string }[] | null;
   jtFamilies: SemesterJtFamily[];
+  battlePassRewards: BattlePassReward[];
   eventCount: number;
   memberCount: number;
   /** True when active JTs belong to a different (or missing) year than this semester. */
@@ -698,6 +704,7 @@ async function listSemestersImpl() {
     { data: jtFamilies, error: jtError },
     { data: events, error: eventsError },
     { data: summaries, error: summariesError },
+    { data: battlePassRewards, error: rewardsError },
   ] = await Promise.all([
     supabase
       .from("semesters")
@@ -727,13 +734,44 @@ async function listSemestersImpl() {
           .select("semester_id, jt_family_name")
           .range(from, to),
     ),
+    fetchAllPages<{
+      id: string;
+      semester_id: string;
+      name: string;
+      points_required: number;
+      redeem_members: boolean;
+      redeem_officers: boolean;
+      redeem_parents: boolean;
+    }>((from, to) =>
+      supabase
+        .from("battle_pass_rewards")
+        .select(
+          "id, semester_id, name, points_required, redeem_members, redeem_officers, redeem_parents",
+        )
+        .order("points_required")
+        .order("name")
+        .range(from, to),
+    ),
   ]);
 
-  if (semestersError || jtError || eventsError || summariesError) {
+  if (
+    semestersError ||
+    jtError ||
+    eventsError ||
+    summariesError ||
+    rewardsError
+  ) {
     return {
       semesters: [] as SemesterListItem[],
       error: "Failed to load semesters.",
     };
+  }
+
+  const rewardsBySemester = new Map<string, BattlePassReward[]>();
+  for (const reward of battlePassRewards) {
+    const list = rewardsBySemester.get(reward.semester_id) ?? [];
+    list.push(mapBattlePassReward(reward));
+    rewardsBySemester.set(reward.semester_id, list);
   }
 
   const eventCounts = new Map<string, number>();
@@ -837,6 +875,9 @@ async function listSemestersImpl() {
     return {
       ...semester,
       jtFamilies: jtFamiliesForSemester,
+      battlePassRewards: sortBattlePassRewards(
+        rewardsBySemester.get(semester.id) ?? [],
+      ),
       eventCount: eventCounts.get(semester.id) ?? 0,
       memberCount: memberCounts.get(semester.id) ?? 0,
       jtYearMismatch,

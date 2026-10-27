@@ -19,7 +19,9 @@ Officers must have `members.role` set to `officer` (or `admin`). If you can't se
 
 On a General Meeting, open **GM recap quiz** and upload the form CSV (Email and Name, school emails). Matched members get credit for that meeting and **0 points**. Check-in points are unchanged.
 
-**Rewards** (`/officer/rewards`) lists dues-paying members with credit for 3 General Meetings and attendance at 1 CSA-Wide event. Download CSV from that page. Officers, admins, and parents are not on the list.
+**Reward Tracking** → **Formals** (`/officer/rewards/formals`) lists dues-paying members with credit for 3 General Meetings and attendance at 1 CSA-Wide event. Download CSV from that page. Officers, admins, and parents are not on the list.
+
+**Reward Tracking** → **Battle Pass** (`/officer/rewards/bp`) is where you mark which members have picked up each semester reward. A member appears as ready only after their points reach that reward. Use **Undo** if a pickup was recorded by mistake.
 
 ## Running an event (end-to-end)
 
@@ -84,7 +86,7 @@ If you need an event outside your usual categories, create it only when the resp
 - Open the event check-in page
 - Search/filter members
 - Check them in as they arrive
-- Parents (label **Parent** or **Officer · Parent**) can be checked in; attendance is recorded but they do not earn points
+- Parents (label **Parent** or **Officer · Parent**) can be checked in. Their points show on their profile and the members list, and are not on the leaderboard or a Jiating total
 - For **Jiating Olympics**, use the Jiating tabs (all families). For **Mixers**, tabs only include the families selected when the event was created.
 
 ### 3) Verify attendance
@@ -113,7 +115,7 @@ Each Members row shows whether the member has **signed in with Google**:
 - **Signed in** — `auth_uid` is linked (normal for self-registered or post-import login)
 - **Not signed in** — on the roster via CSV import but has not completed first Google login yet
 - Members who attended Howdy Week may also show **Attended N Howdy Week event(s)**
-- **Parent**, **Officer**, and **Officer · Parent** labels appear under the name. Parents can be checked in; they do not earn points.
+- **Parent**, **Officer**, and **Officer · Parent** labels appear under the name. Parent rows show their points. Those points are not on the leaderboard or a Jiating total.
 
 Roster-imported members can still be officer-checked-in before they sign in, but they should sign in once so their account links and profile photo syncs.
 

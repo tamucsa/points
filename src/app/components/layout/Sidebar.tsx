@@ -38,10 +38,11 @@ interface NavItem {
 const NAV_ITEMS: NavItem[] = [
   { label: 'Leaderboard', path: '/leaderboard', icon: NAV_ICONS.leaderboard },
   { label: 'Events', path: '/events', icon: NAV_ICONS.events },
+  { label: 'Rewards', path: '/rewards', icon: NAV_ICONS.rewards },
   { label: 'My Points', path: '/profile', icon: NAV_ICONS.profile },
   { label: 'Members', path: '/officer/members', icon: NAV_ICONS.members, officerOnly: true },
   { label: 'Officer Events', path: '/officer/events', icon: NAV_ICONS.officerEvents, officerOnly: true },
-  { label: 'Rewards', path: '/officer/rewards', icon: NAV_ICONS.rewards, officerOnly: true },
+  { label: 'Reward Tracking', path: '/officer/rewards', icon: NAV_ICONS.rewardTracking, officerOnly: true },
   { label: 'Admin', path: '/admin/members', icon: NAV_ICONS.admin, adminOnly: true },
 ]
 

@@ -12,6 +12,7 @@ This guide is for CSA members using the points system.
 6. Once active, you can view:
    - **Leaderboard**
    - **Events** (JT-specific events appear after you are assigned a Jiating)
+   - **Rewards** (battle pass for this semester)
    - **My Points**
 
 ### Appearance (light / dark)
@@ -51,6 +52,10 @@ On **Events** (`/events`):
 - On **My Points** (`/profile`), see your bucket totals, a **How points work** guide (category values + the two caps), and attendance history.
 - The **Sports & Dance** bucket includes Sports, Sports Spectator, and Dance events (same as the leaderboard sports column).
 - Caps: **Sports Spectator** max 10 counting points per semester; **Jiating Event + Mixer** max 4 counting check-ins per Mon–Sun week (Central). Over-cap attendance still records with a “cap reached” tag. Officers/admins: full policy in `docs/OPERATIONS.md` → **Points rules**.
+
+## Battle pass rewards
+
+**Rewards** (`/rewards`) lists this semester’s battle pass, the points each one takes, and who can redeem it. If a reward is open to you, the page also shows your points, which of those rewards you have unlocked, and which ones an officer has marked as picked up. Ask an officer when you are ready to claim one.
 
 ## Troubleshooting
 

@@ -175,15 +175,14 @@ export default function CheckinClient({ event, code, userEmail, member, alreadyC
                 <div className="rounded-2xl border border-primary/20 bg-primary/5 p-4 text-center">
                   <PartyPopper className="mx-auto size-10 text-primary" aria-hidden />
                   <p className="mt-2 text-base font-semibold text-text">You&apos;re checked in!</p>
-                  {earnsPoints && counted ? (
+                  {counted ? (
                     <p className="mt-1 text-sm text-subtitle">
                       +{event.point_value} point{event.point_value !== 1 ? 's' : ''} added
+                      {earnsPoints ? '' : '. These points are not on the leaderboard.'}
                     </p>
                   ) : (
                     <p className="mt-1 text-sm text-subtitle">
-                      {earnsPoints
-                        ? "Attendance recorded, but this check-in doesn't add points under current caps."
-                        : 'Attendance recorded. Parents do not earn points.'}
+                      Attendance recorded, but this check-in doesn&apos;t add points under current caps.
                     </p>
                   )}
                   <button

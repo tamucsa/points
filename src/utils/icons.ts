@@ -8,6 +8,7 @@ import {
   Dumbbell,
   Eye,
   FileSpreadsheet,
+  Gift,
   HandCoins,
   HandHeart,
   Handshake,
@@ -76,6 +77,7 @@ export const NAV_ICONS = {
   profile: Star,
   members: Users,
   officerEvents: ClipboardList,
-  rewards: Award,
+  rewards: Gift,
+  rewardTracking: Award,
   admin: Shield,
 } as const satisfies Record<string, LucideIcon>

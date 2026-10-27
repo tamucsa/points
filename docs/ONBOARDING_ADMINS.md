@@ -55,8 +55,8 @@ Members still sign in with Google once to link `auth_uid`. They skip the self-re
 
 Go to **Admin** → **Semesters** (`/admin/semesters`).
 
-- **Current** — active semester; edit name/dates; manage Jiatings; close action
-- **Past semesters** — collapsible history of closed terms with archived member counts
+- **Current** — active semester; edit name/dates; manage Jiatings; edit battle pass rewards (name, points, and who can redeem them); close action
+- **Past semesters** — collapsible history of closed terms with archived member counts. Battle pass rewards on a closed term can still be edited.
 - **Close semester** — archives points into `semester_summaries` via `close_semester` (requires `SUPABASE_SERVICE_ROLE_KEY` on the server). **Spring close** also clears active members’ `jt_family_id` (status stays `active`). Fall close keeps Jiatings for Spring.
 - **Start semester** — only when no semester is active; enter name and dates. **School year is derived from the start date** (Aug–Dec → `YYYY-(YYYY+1)`, Jan–Jul → `(YYYY-1)-YYYY`) and created automatically if missing
 

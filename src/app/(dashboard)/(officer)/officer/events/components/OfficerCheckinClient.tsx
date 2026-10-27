@@ -121,13 +121,15 @@ export default function OfficerCheckinClient({
     }
 
     setCheckedIn(prev => new Set([...prev, memberId]))
-    if (result.awardsPoints === false) {
-      const checkedMember = members.find(m => m.id === memberId)
-      const memberName = checkedMember?.full_name ?? 'Member'
+    const checkedMember = members.find(m => m.id === memberId)
+    const memberName = checkedMember?.full_name ?? 'Member'
+    if (!result.counted) {
       setNotice(
-        checkedMember?.is_parent
-          ? `${memberName} is checked in. Parents do not earn points.`
-          : `${memberName} is checked in, but this attendance does not add points under current caps.`,
+        `${memberName} is checked in, but this attendance does not add points under current caps.`,
+      )
+    } else if (checkedMember?.is_parent) {
+      setNotice(
+        `${memberName} is checked in. Points show on their profile and are not on the leaderboard.`,
       )
     }
     setSaving(null)
