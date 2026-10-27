@@ -3,7 +3,7 @@
 import { CATEGORY_COLORS, CHECKIN_METHOD_LABELS, POINT_BUCKET_LABELS } from '@/utils/constants'
 import { formatEventSchedule } from '@/utils/datetime'
 import { isManualPointsCheckIn } from '@/utils/events'
-import { attendanceAwardsPoints, earnsRewards, formatClassification, roleEarnsPoints } from '@/utils/members'
+import { earnsRewards, formatClassification, isParent } from '@/utils/members'
 import JtFamilyBadge from '@/app/(dashboard)/leaderboard/components/JtFamilyBadge'
 import MemberAvatar from '@/app/components/MemberAvatar'
 import RoleBadges from '@/app/components/RoleBadges'
@@ -83,7 +83,7 @@ export default function ProfileClient({
 }: Props) {
   const displayName = member.full_name
   const color = points?.jt_color ?? '#4779B8'
-  const earnsPoints = roleEarnsPoints(member.role, member.is_parent)
+  const parentPoints = isParent({ role: member.role, is_parent: member.is_parent })
   const showReward = earnsRewards({ role: member.role, is_parent: member.is_parent })
 
   const breakdown = [
@@ -130,17 +130,14 @@ export default function ProfileClient({
           )}
         </div>
         <div className="text-right">
-          {earnsPoints ? (
-            <>
-              <div className="text-5xl font-extrabold tracking-[-2px] text-text">
-                {pointsLoadError ? '—' : (points?.total_points ?? 0)}
-              </div>
-              <div className="text-sm text-subtitle">total points</div>
-            </>
-          ) : (
-            <div className="max-w-[12rem] text-sm leading-5 text-subtitle">
-              Parents do not earn points. Attendance is still tracked.
-            </div>
+          <div className="text-5xl font-extrabold tracking-[-2px] text-text">
+            {pointsLoadError ? '—' : (points?.total_points ?? 0)}
+          </div>
+          <div className="text-sm text-subtitle">total points</div>
+          {parentPoints && (
+            <p className="mt-1 max-w-[14rem] text-xs leading-5 text-subtitle">
+              Not on the leaderboard or a Jiating total.
+            </p>
           )}
         </div>
       </div>
@@ -157,7 +154,7 @@ export default function ProfileClient({
       )}
 
       {/* Point Breakdown */}
-      {earnsPoints && !pointsLoadError && (
+      {!pointsLoadError && (
         <div className="mb-8">
           <h2 className="mb-1 text-lg font-bold text-text">
             Point Breakdown
@@ -184,7 +181,7 @@ export default function ProfileClient({
         <GmRewardCard progress={gmReward} loadError={gmRewardLoadError} />
       )}
 
-      {earnsPoints && !pointsLoadError && (
+      {!pointsLoadError && (
         <PointsGuide attendance={attendanceLoadError ? [] : attendance} />
       )}
 
@@ -207,9 +204,9 @@ export default function ProfileClient({
               icon={Calendar}
               title="No events attended yet this semester"
               description={
-                earnsPoints
-                  ? 'Attend CSA events to start earning points.'
-                  : 'Check in to CSA events to record attendance.'
+                parentPoints
+                  ? 'Check in to CSA events. Your points show here and stay off the leaderboard.'
+                  : 'Attend CSA events to start earning points.'
               }
               compact
             />
@@ -219,10 +216,7 @@ export default function ProfileClient({
             const catColor = CATEGORY_COLORS[category] ?? CATEGORY_COLORS.default
             const earnedPoints =
               row.point_value_override ?? row.events?.point_value ?? 0
-            const awardsPoints = attendanceAwardsPoints(
-              { role: member.role, is_parent: member.is_parent },
-              row.counted,
-            )
+            const awardsPoints = row.counted
             return (
               <div key={row.id} className="flex items-center gap-4 border-b border-home-border px-5 py-3 last:border-b-0">
                 {/* Point badge */}
@@ -254,7 +248,7 @@ export default function ProfileClient({
                         {category}
                       </span>
                     )}
-                    {earnsPoints && !row.counted && (
+                    {!row.counted && (
                       <span className="rounded-md bg-red-50 px-2 py-0.5 text-[11px] text-red-500">
                         cap reached
                       </span>

@@ -2,9 +2,11 @@
 
 import { revalidatePath } from "next/cache";
 import {
+  type BattlePassAudience,
   type BattlePassReward,
   type BattlePassTrackingRow,
   compileBattlePassRows,
+  mapBattlePassReward,
   sortBattlePassRewards,
 } from "@/utils/battle-pass";
 import { canAccessOfficerEvents } from "@/utils/members";
@@ -90,6 +92,7 @@ export async function createBattlePassReward(input: {
   semesterId: string;
   name: string;
   pointsRequired: number;
+  audience?: BattlePassAudience;
 }) {
   return withServerAction("createBattlePassReward", () =>
     createBattlePassRewardImpl(input),
@@ -100,6 +103,7 @@ async function createBattlePassRewardImpl(input: {
   semesterId: string;
   name: string;
   pointsRequired: number;
+  audience?: BattlePassAudience;
 }) {
   const { error: authError } = await requireAdmin();
   if (authError)
@@ -136,14 +140,24 @@ async function createBattlePassRewardImpl(input: {
     };
   }
 
+  const audience = input.audience ?? {
+    redeemMembers: true,
+    redeemOfficers: false,
+    redeemParents: false,
+  };
   const { data, error } = await admin
     .from("battle_pass_rewards")
     .insert({
       semester_id: input.semesterId,
       name,
       points_required: pointsRequired,
+      redeem_members: audience.redeemMembers,
+      redeem_officers: audience.redeemOfficers,
+      redeem_parents: audience.redeemParents,
     })
-    .select("id, name, points_required")
+    .select(
+      "id, name, points_required, redeem_members, redeem_officers, redeem_parents",
+    )
     .single();
 
   if (error || !data) {
@@ -158,11 +172,7 @@ async function createBattlePassRewardImpl(input: {
   return {
     success: true as const,
     error: null,
-    reward: {
-      id: data.id as string,
-      name: data.name as string,
-      pointsRequired: data.points_required as number,
-    } satisfies BattlePassReward,
+    reward: mapBattlePassReward(data),
   };
 }
 
@@ -170,6 +180,7 @@ export async function updateBattlePassReward(input: {
   id: string;
   name: string;
   pointsRequired: number;
+  audience: BattlePassAudience;
 }) {
   return withServerAction("updateBattlePassReward", () =>
     updateBattlePassRewardImpl(input),
@@ -180,6 +191,7 @@ async function updateBattlePassRewardImpl(input: {
   id: string;
   name: string;
   pointsRequired: number;
+  audience: BattlePassAudience;
 }) {
   const { error: authError } = await requireAdmin();
   if (authError) return { success: false as const, error: authError };
@@ -196,7 +208,13 @@ async function updateBattlePassRewardImpl(input: {
   const admin = createAdminSupabase();
   const { error } = await admin
     .from("battle_pass_rewards")
-    .update({ name, points_required: pointsRequired })
+    .update({
+      name,
+      points_required: pointsRequired,
+      redeem_members: input.audience.redeemMembers,
+      redeem_officers: input.audience.redeemOfficers,
+      redeem_parents: input.audience.redeemParents,
+    })
     .eq("id", input.id);
 
   if (error) return { success: false as const, error: rewardWriteError(error) };
@@ -232,8 +250,11 @@ function pickupError(error: { message?: string } | null): string {
   if (message.includes("has not reached")) {
     return "This member has not reached this reward yet.";
   }
-  if (message.includes("dues-paying")) {
-    return "Only active dues-paying members can pick up battle pass rewards.";
+  if (message.includes("not available")) {
+    return "This reward is not available for this member.";
+  }
+  if (message.includes("active members")) {
+    return "Only active members can pick up battle pass rewards.";
   }
   if (message.includes("Officer access")) {
     return "Officer access required.";
@@ -316,7 +337,9 @@ async function loadBattlePassTrackingImpl(): Promise<BattlePassTrackingReport> {
 
   const { data: rewardRows, error: rewardsError } = await supabase
     .from("battle_pass_rewards")
-    .select("id, name, points_required")
+    .select(
+      "id, name, points_required, redeem_members, redeem_officers, redeem_parents",
+    )
     .eq("semester_id", semester.id)
     .order("points_required")
     .order("name");
@@ -330,11 +353,7 @@ async function loadBattlePassTrackingImpl(): Promise<BattlePassTrackingReport> {
   }
 
   const rewards = sortBattlePassRewards(
-    (rewardRows ?? []).map((reward) => ({
-      id: reward.id as string,
-      name: reward.name as string,
-      pointsRequired: reward.points_required as number,
-    })),
+    (rewardRows ?? []).map((reward) => mapBattlePassReward(reward)),
   );
   const rewardIds = rewards.map((reward) => reward.id);
 

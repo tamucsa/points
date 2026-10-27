@@ -1,4 +1,4 @@
-import { earnsRewards, type MemberAccess } from "@/utils/members";
+import { isOfficerRole, isParent, type MemberAccess } from "@/utils/members";
 
 /** Default catalog inserted for every new semester. Keep the SQL seed in sync. */
 export const DEFAULT_BATTLE_PASS_REWARDS = [
@@ -9,10 +9,51 @@ export const DEFAULT_BATTLE_PASS_REWARDS = [
   { name: "Blindbox", pointsRequired: 90 },
 ] as const;
 
-export interface BattlePassReward {
+export interface BattlePassAudience {
+  redeemMembers: boolean;
+  redeemOfficers: boolean;
+  redeemParents: boolean;
+}
+
+export interface BattlePassReward extends BattlePassAudience {
   id: string;
   name: string;
   pointsRequired: number;
+}
+
+/** Missing flags mean the original members-only catalog. */
+export function battlePassAudience(
+  reward: Partial<BattlePassAudience>,
+): BattlePassAudience {
+  return {
+    redeemMembers: reward.redeemMembers ?? true,
+    redeemOfficers: reward.redeemOfficers ?? false,
+    redeemParents: reward.redeemParents ?? false,
+  };
+}
+
+export function battlePassAudienceLabel(reward: Partial<BattlePassAudience>) {
+  const audience = battlePassAudience(reward);
+  const groups = [
+    audience.redeemMembers ? "Members" : null,
+    audience.redeemOfficers ? "Officers" : null,
+    audience.redeemParents ? "Parents" : null,
+  ].filter((group): group is string => group != null);
+  if (groups.length === 0) return "No one can redeem this";
+  return groups.join(", ");
+}
+
+export function canRedeemBattlePassReward(
+  member: MemberAccess,
+  reward: Partial<BattlePassAudience>,
+): boolean {
+  const audience = battlePassAudience(reward);
+  if (audience.redeemMembers && member.role === "member" && !isParent(member)) {
+    return true;
+  }
+  if (audience.redeemOfficers && isOfficerRole(member.role)) return true;
+  if (audience.redeemParents && isParent(member)) return true;
+  return false;
 }
 
 export interface BattlePassMemberInput {
@@ -34,6 +75,7 @@ export interface BattlePassRewardCell {
   rewardId: string;
   name: string;
   pointsRequired: number;
+  redeemable: boolean;
   eligible: boolean;
   pickedUp: boolean;
 }
@@ -56,9 +98,28 @@ export interface BattlePassRewardSummary {
 }
 
 export interface BattlePassProgressItem extends BattlePassReward {
+  redeemable: boolean;
   eligible: boolean;
   pickedUp: boolean;
   pointsToGo: number;
+}
+
+export function mapBattlePassReward(row: {
+  id: string;
+  name: string;
+  points_required: number;
+  redeem_members: boolean;
+  redeem_officers: boolean;
+  redeem_parents: boolean;
+}): BattlePassReward {
+  return {
+    id: row.id,
+    name: row.name,
+    pointsRequired: row.points_required,
+    redeemMembers: row.redeem_members,
+    redeemOfficers: row.redeem_officers,
+    redeemParents: row.redeem_parents,
+  };
 }
 
 export function sortBattlePassRewards<
@@ -73,15 +134,18 @@ export function sortBattlePassRewards<
 export function memberCanPickUpReward(
   member: MemberAccess,
   totalPoints: number,
-  pointsRequired: number,
+  reward: { pointsRequired: number } & Partial<BattlePassAudience>,
 ): boolean {
-  return earnsRewards(member) && totalPoints >= pointsRequired;
+  return (
+    canRedeemBattlePassReward(member, reward) &&
+    totalPoints >= reward.pointsRequired
+  );
 }
 
 /**
- * Active dues-paying members only. A reward is eligible when semester points
- * meet its threshold. A recorded pickup stays on the row even if points later
- * fall below that threshold.
+ * People who can redeem at least one reward, plus anyone with a recorded
+ * pickup. Eligible means they can redeem it and their points meet the
+ * threshold. A pickup stays even if points or the audience later change.
  */
 export function compileBattlePassRows(
   members: BattlePassMemberInput[],
@@ -95,7 +159,21 @@ export function compileBattlePassRows(
   const rows: BattlePassTrackingRow[] = [];
 
   for (const member of members) {
-    if (!earnsRewards({ role: member.role, is_parent: member.isParent }))
+    const access = { role: member.role, is_parent: member.isParent };
+    const rewardsForMember = ordered.map((reward) => {
+      const redeemable = canRedeemBattlePassReward(access, reward);
+      return {
+        rewardId: reward.id,
+        name: reward.name,
+        pointsRequired: reward.pointsRequired,
+        redeemable,
+        eligible: redeemable && member.totalPoints >= reward.pointsRequired,
+        pickedUp: picked.has(`${member.id}:${reward.id}`),
+      };
+    });
+    if (
+      !rewardsForMember.some((reward) => reward.redeemable || reward.pickedUp)
+    )
       continue;
     rows.push({
       id: member.id,
@@ -103,13 +181,7 @@ export function compileBattlePassRows(
       email: member.email,
       jtFamily: member.jtFamily,
       totalPoints: member.totalPoints,
-      rewards: ordered.map((reward) => ({
-        rewardId: reward.id,
-        name: reward.name,
-        pointsRequired: reward.pointsRequired,
-        eligible: member.totalPoints >= reward.pointsRequired,
-        pickedUp: picked.has(`${member.id}:${reward.id}`),
-      })),
+      rewards: rewardsForMember,
     });
   }
 
@@ -155,19 +227,26 @@ export function describeBattlePassProgress(
   points: number,
   rewards: BattlePassReward[],
   pickedUpRewardIds: Iterable<string>,
+  member?: MemberAccess | null,
 ): {
   items: BattlePassProgressItem[];
   next: BattlePassProgressItem | null;
   reachedCount: number;
 } {
   const picked = new Set(pickedUpRewardIds);
-  const items = sortBattlePassRewards(rewards).map((reward) => ({
-    ...reward,
-    eligible: points >= reward.pointsRequired,
-    pickedUp: picked.has(reward.id),
-    pointsToGo: Math.max(0, reward.pointsRequired - points),
-  }));
-  const next = items.find((item) => !item.eligible) ?? null;
+  const items = sortBattlePassRewards(rewards).map((reward) => {
+    const redeemable = member
+      ? canRedeemBattlePassReward(member, reward)
+      : true;
+    return {
+      ...reward,
+      redeemable,
+      eligible: redeemable && points >= reward.pointsRequired,
+      pickedUp: picked.has(reward.id),
+      pointsToGo: Math.max(0, reward.pointsRequired - points),
+    };
+  });
+  const next = items.find((item) => item.redeemable && !item.eligible) ?? null;
   return {
     items,
     next,

@@ -7,7 +7,9 @@ import {
   updateBattlePassReward,
 } from "@/app/actions/battle-pass";
 import {
+  type BattlePassAudience,
   type BattlePassReward,
+  battlePassAudienceLabel,
   sortBattlePassRewards,
 } from "@/utils/battle-pass";
 
@@ -17,6 +19,46 @@ const btnSecondary =
   "rounded-xl border border-home-border bg-surface px-3 py-2 text-sm font-medium text-text transition hover:border-primary/40 disabled:opacity-60";
 const btnPrimary =
   "rounded-xl bg-primary px-4 py-2.5 text-sm font-semibold text-on-primary transition disabled:cursor-not-allowed disabled:bg-disabled";
+
+const membersOnlyAudience: BattlePassAudience = {
+  redeemMembers: true,
+  redeemOfficers: false,
+  redeemParents: false,
+};
+
+function AudienceFields({
+  value,
+  onChange,
+}: {
+  value: BattlePassAudience;
+  onChange: (next: BattlePassAudience) => void;
+}) {
+  const options = [
+    ["redeemMembers", "Members"],
+    ["redeemOfficers", "Officers"],
+    ["redeemParents", "Parents"],
+  ] as const;
+
+  return (
+    <fieldset className="flex flex-wrap gap-x-4 gap-y-2">
+      <legend className="mb-1 w-full text-sm font-medium text-text">
+        Who can redeem
+      </legend>
+      {options.map(([key, label]) => (
+        <label key={key} className="flex items-center gap-2 text-sm text-text">
+          <input
+            type="checkbox"
+            checked={value[key]}
+            onChange={(event) =>
+              onChange({ ...value, [key]: event.target.checked })
+            }
+          />
+          {label}
+        </label>
+      ))}
+    </fieldset>
+  );
+}
 
 export default function BattlePassRewardsEditor({
   semesterId,
@@ -31,9 +73,17 @@ export default function BattlePassRewardsEditor({
 }) {
   const [items, setItems] = useState(rewards);
   const [editingId, setEditingId] = useState<string | null>(null);
-  const [draft, setDraft] = useState({ name: "", points: "" });
+  const [draft, setDraft] = useState({
+    name: "",
+    points: "",
+    audience: membersOnlyAudience,
+  });
   const [adding, setAdding] = useState(false);
-  const [newReward, setNewReward] = useState({ name: "", points: "" });
+  const [newReward, setNewReward] = useState({
+    name: "",
+    points: "",
+    audience: membersOnlyAudience,
+  });
   const [busy, setBusy] = useState(false);
 
   useEffect(() => {
@@ -49,7 +99,15 @@ export default function BattlePassRewardsEditor({
   const beginEdit = (reward: BattlePassReward) => {
     setAdding(false);
     setEditingId(reward.id);
-    setDraft({ name: reward.name, points: String(reward.pointsRequired) });
+    setDraft({
+      name: reward.name,
+      points: String(reward.pointsRequired),
+      audience: {
+        redeemMembers: reward.redeemMembers,
+        redeemOfficers: reward.redeemOfficers,
+        redeemParents: reward.redeemParents,
+      },
+    });
   };
 
   const handleSave = async () => {
@@ -69,6 +127,7 @@ export default function BattlePassRewardsEditor({
       id: editingId,
       name: draft.name,
       pointsRequired,
+      audience: draft.audience,
     });
     setBusy(false);
     if (!result.success) {
@@ -85,6 +144,7 @@ export default function BattlePassRewardsEditor({
               ...reward,
               name: draft.name.trim().replace(/\s+/g, " "),
               pointsRequired,
+              ...draft.audience,
             }
           : reward,
       ),
@@ -101,6 +161,7 @@ export default function BattlePassRewardsEditor({
       semesterId,
       name: newReward.name,
       pointsRequired: Number(newReward.points),
+      audience: newReward.audience,
     });
     setBusy(false);
     if (!result.success || !result.reward) {
@@ -112,7 +173,7 @@ export default function BattlePassRewardsEditor({
     }
     publish([...items, result.reward]);
     setAdding(false);
-    setNewReward({ name: "", points: "" });
+    setNewReward({ name: "", points: "", audience: membersOnlyAudience });
     onMessage({ type: "success", text: `Added "${result.reward.name}".` });
   };
 
@@ -148,8 +209,9 @@ export default function BattlePassRewardsEditor({
             Battle pass rewards
           </h4>
           <p className="mt-1 text-xs leading-5 text-subtitle">
-            Members unlock a reward when their points this semester reach the
-            threshold.
+            Choose members, officers, parents, or any mix. Officers includes
+            admins. Leave every group off to keep the reward listed without
+            letting anyone pick it up.
           </p>
         </div>
         {!adding && !editingId && (
@@ -159,7 +221,11 @@ export default function BattlePassRewardsEditor({
             disabled={busy}
             onClick={() => {
               setAdding(true);
-              setNewReward({ name: "", points: "" });
+              setNewReward({
+                name: "",
+                points: "",
+                audience: membersOnlyAudience,
+              });
             }}
           >
             Add reward
@@ -207,6 +273,12 @@ export default function BattlePassRewardsEditor({
                     required
                   />
                 </label>
+                <AudienceFields
+                  value={draft.audience}
+                  onChange={(audience) =>
+                    setDraft((current) => ({ ...current, audience }))
+                  }
+                />
                 <div className="flex gap-2">
                   <button
                     type="button"
@@ -233,7 +305,8 @@ export default function BattlePassRewardsEditor({
                     {reward.name}
                   </div>
                   <div className="text-xs text-subtitle">
-                    {reward.pointsRequired} points
+                    {reward.pointsRequired} points ·{" "}
+                    {battlePassAudienceLabel(reward)}
                   </div>
                 </div>
                 <div className="flex gap-2">
@@ -303,6 +376,12 @@ export default function BattlePassRewardsEditor({
               required
             />
           </label>
+          <AudienceFields
+            value={newReward.audience}
+            onChange={(audience) =>
+              setNewReward((current) => ({ ...current, audience }))
+            }
+          />
           <div className="flex gap-2">
             <button type="submit" className={btnPrimary} disabled={busy}>
               Add

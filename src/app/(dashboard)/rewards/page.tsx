@@ -1,11 +1,11 @@
 import { redirect } from "next/navigation";
 import MemberRewardsView from "@/app/(dashboard)/rewards/components/MemberRewardsView";
 import {
-  type BattlePassReward,
+  canRedeemBattlePassReward,
   describeBattlePassProgress,
+  mapBattlePassReward,
   sortBattlePassRewards,
 } from "@/utils/battle-pass";
-import { earnsRewards } from "@/utils/members";
 import { getActiveSemester, getCurrentMember } from "@/utils/supabase/auth";
 
 export default async function RewardsPage() {
@@ -29,37 +29,35 @@ export default async function RewardsPage() {
     );
   }
 
-  const showProgress = earnsRewards(member);
   const [rewardsResult, pointsResult, pickupsResult] = await Promise.all([
     supabase
       .from("battle_pass_rewards")
-      .select("id, name, points_required")
+      .select(
+        "id, name, points_required, redeem_members, redeem_officers, redeem_parents",
+      )
       .eq("semester_id", semester.id)
       .order("points_required")
       .order("name"),
-    showProgress
-      ? supabase
-          .from("member_semester_points")
-          .select("total_points")
-          .eq("member_id", member.id)
-          .eq("semester_id", semester.id)
-          .maybeSingle()
-      : Promise.resolve({ data: null, error: null }),
-    showProgress
-      ? supabase
-          .from("battle_pass_pickups")
-          .select("reward_id")
-          .eq("member_id", member.id)
-      : Promise.resolve({ data: [], error: null }),
+    supabase
+      .from("member_semester_points")
+      .select("total_points")
+      .eq("member_id", member.id)
+      .eq("semester_id", semester.id)
+      .maybeSingle(),
+    supabase
+      .from("battle_pass_pickups")
+      .select("reward_id")
+      .eq("member_id", member.id),
   ]);
 
-  const rewards: BattlePassReward[] = sortBattlePassRewards(
-    (rewardsResult.error ? [] : (rewardsResult.data ?? [])).map((reward) => ({
-      id: reward.id,
-      name: reward.name,
-      pointsRequired: reward.points_required,
-    })),
+  const rewards = sortBattlePassRewards(
+    (rewardsResult.error ? [] : (rewardsResult.data ?? [])).map((reward) =>
+      mapBattlePassReward(reward),
+    ),
   );
+  const showProgress =
+    !rewardsResult.error &&
+    rewards.some((reward) => canRedeemBattlePassReward(member, reward));
   const points = pointsResult.data?.total_points ?? 0;
   const pickedUpIds = (
     pickupsResult.error ? [] : (pickupsResult.data ?? [])
@@ -77,8 +75,8 @@ export default async function RewardsPage() {
       semesterName={semester.name}
       rewards={rewards}
       progress={
-        showProgress && !rewardsResult.error && !pointsResult.error
-          ? describeBattlePassProgress(points, rewards, pickedUpIds)
+        showProgress && !pointsResult.error
+          ? describeBattlePassProgress(points, rewards, pickedUpIds, member)
           : null
       }
       points={showProgress ? points : null}

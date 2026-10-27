@@ -150,7 +150,7 @@ export default function MembersClient({
           <div className="text-right">{POINT_BUCKET_LABELS.csa}</div>
           <div className="text-right">{POINT_BUCKET_LABELS.jt}</div>
           <div className="text-right">{POINT_BUCKET_LABELS.sports}</div>
-          <div className="text-right">Gen. Mtg.</div>
+          <div className="text-right">GM</div>
         </div>
 
         {members.length === 0 && (

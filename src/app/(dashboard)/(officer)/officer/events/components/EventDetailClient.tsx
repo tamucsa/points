@@ -59,8 +59,6 @@ import {
   resolveEventCheckInType,
 } from "@/utils/events";
 import { CHECKIN_TYPE_ICONS } from "@/utils/icons";
-import { roleEarnsPoints } from "@/utils/members";
-
 interface Event {
   id: string;
   name: string;
@@ -1413,10 +1411,6 @@ export default function EventDetailClient({
         {!attendanceLoadError &&
           attendance.map((row) => {
             const displayName = row.members?.full_name ?? "Unknown member";
-            const earnsPoints = roleEarnsPoints(
-              row.members?.role ?? "member",
-              row.members?.is_parent,
-            );
             return (
               <div
                 key={row.id}
@@ -1456,7 +1450,7 @@ export default function EventDetailClient({
                       Unverified
                     </span>
                   )}
-                  {earnsPoints && !row.counted && (
+                  {!row.counted && (
                     <span className="rounded-md bg-red-50 px-2 py-0.5 text-[11px] text-red-500">
                       Cap reached
                     </span>
@@ -1506,22 +1500,13 @@ export default function EventDetailClient({
             </p>
             <p className="mt-3 text-center text-sm leading-6 text-subtitle">
               This removes their attendance for {event.name}
-              {roleEarnsPoints(
-                uncheckTarget.members?.role ?? "member",
-                uncheckTarget.members?.is_parent,
-              ) &&
-              uncheckTarget.counted
+              {uncheckTarget.counted
                 ? (() => {
                     const pts =
                       uncheckTarget.point_value_override ?? event.point_value;
                     return ` and deducts ${pts} point${pts === 1 ? "" : "s"} from their total.`;
                   })()
-                : roleEarnsPoints(
-                    uncheckTarget.members?.role ?? "member",
-                    uncheckTarget.members?.is_parent,
-                  )
-                  ? ". This check-in was not counting toward points (cap), so totals stay the same."
-                  : ". Parents do not earn points, so totals stay the same."}
+                : ". This check-in was not counting toward points (cap), so totals stay the same."}
             </p>
             {uncheckError && (
               <p className="mt-4 rounded-2xl border border-error-border bg-error-bg px-4 py-3 text-center text-sm text-error">

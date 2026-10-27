@@ -55,7 +55,7 @@ On **Events** (`/events`):
 
 ## Battle pass rewards
 
-**Rewards** (`/rewards`) lists this semester’s battle pass and the points each one takes. If you are a dues-paying member, the page also shows your points, which rewards you have unlocked, and which ones an officer has marked as picked up. Ask an officer when you are ready to claim one.
+**Rewards** (`/rewards`) lists this semester’s battle pass, the points each one takes, and who can redeem it. If a reward is open to you, the page also shows your points, which of those rewards you have unlocked, and which ones an officer has marked as picked up. Ask an officer when you are ready to claim one.
 
 ## Troubleshooting
 

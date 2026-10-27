@@ -8,7 +8,7 @@ import RoleBadges from '@/app/components/RoleBadges'
 import { CATEGORY_COLORS, POINT_BUCKET_LABELS } from '@/utils/constants'
 import { formatEventSchedule } from '@/utils/datetime'
 import { isManualPointsCheckIn } from '@/utils/events'
-import { attendanceAwardsPoints, earnsRewards, roleEarnsPoints } from '@/utils/members'
+import { earnsRewards, isParent } from '@/utils/members'
 import type { GmRewardProgress } from '@/utils/rewards'
 import GmRewardCard from '@/app/(dashboard)/profile/components/GmRewardCard'
 import { Calendar } from 'lucide-react'
@@ -71,7 +71,7 @@ export default function MemberDetailClient({
   const color = member.jt_color ?? '#4779B8'
   const displayName = member.full_name
   const role = member.role ?? 'member'
-  const earnsPoints = roleEarnsPoints(role, member.is_parent)
+  const parentPoints = isParent({ role, is_parent: member.is_parent })
   const showReward = earnsRewards({ role, is_parent: member.is_parent })
 
   const breakdown = [
@@ -113,21 +113,17 @@ export default function MemberDetailClient({
           )}
         </div>
         <div className="text-right">
-          {earnsPoints ? (
-            <>
-              <div className="text-5xl font-extrabold tracking-tight text-text">{member.total_points}</div>
-              <div className="text-sm text-subtitle">total points</div>
-            </>
-          ) : (
-            <div className="max-w-[12rem] text-sm leading-5 text-subtitle">
-              Parents do not earn points. Attendance is still tracked.
-            </div>
+          <div className="text-5xl font-extrabold tracking-tight text-text">{member.total_points}</div>
+          <div className="text-sm text-subtitle">total points</div>
+          {parentPoints && (
+            <p className="mt-1 max-w-[14rem] text-xs leading-5 text-subtitle">
+              Not on the leaderboard or a Jiating total.
+            </p>
           )}
         </div>
       </div>
 
-      {earnsPoints && (
-        <div className="mb-6 grid grid-cols-2 gap-3 sm:grid-cols-4">
+      <div className="mb-6 grid grid-cols-2 gap-3 sm:grid-cols-4">
           {breakdown.map(cat => (
             <div key={cat.label} className="rounded-3xl border border-home-border bg-surface p-4 text-center shadow-sm">
               <div className="text-2xl font-extrabold text-primary">{cat.value}</div>
@@ -135,7 +131,6 @@ export default function MemberDetailClient({
             </div>
           ))}
         </div>
-      )}
 
       {showReward && gmReward && (
         <GmRewardCard
@@ -159,10 +154,7 @@ export default function MemberDetailClient({
           const catColor = CATEGORY_COLORS[row.events?.category] ?? CATEGORY_COLORS.default
           const earnedPoints =
             row.point_value_override ?? row.events?.point_value ?? 0
-          const awardsPoints = attendanceAwardsPoints(
-            { role, is_parent: member.is_parent },
-            row.counted,
-          )
+          const awardsPoints = row.counted
           return (
             <div key={row.id} className="flex items-center gap-4 border-b border-home-border px-5 py-3 last:border-b-0">
               <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl text-sm font-extrabold" style={{ background: `${catColor}20`, color: catColor }}>
@@ -179,7 +171,7 @@ export default function MemberDetailClient({
                       : '—'}
                   </span>
                   <span className="rounded-md px-2 py-0.5" style={{ background: `${catColor}15`, color: catColor }}>{row.events?.category}</span>
-                  {earnsPoints && !row.counted && <span className="rounded-md bg-red-50 px-2 py-0.5 text-red-500">Cap reached</span>}
+                  {!row.counted && <span className="rounded-md bg-red-50 px-2 py-0.5 text-red-500">Cap reached</span>}
                 </div>
               </div>
             </div>

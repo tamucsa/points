@@ -1,12 +1,10 @@
 import { Check, Gift, Lock } from "lucide-react";
 import PageHeader from "@/app/components/PageHeader";
-import type { BattlePassProgressItem } from "@/utils/battle-pass";
-
-interface CatalogReward {
-  id: string;
-  name: string;
-  pointsRequired: number;
-}
+import {
+  type BattlePassProgressItem,
+  type BattlePassReward,
+  battlePassAudienceLabel,
+} from "@/utils/battle-pass";
 
 interface Progress {
   items: BattlePassProgressItem[];
@@ -16,13 +14,18 @@ interface Progress {
 
 interface Props {
   semesterName: string | null;
-  rewards: CatalogReward[];
+  rewards: BattlePassReward[];
   progress: Progress | null;
   points: number | null;
   loadError: string | null;
 }
 
-type RewardState = "claimed" | "eligible" | "locked" | "catalog";
+type RewardState =
+  | "claimed"
+  | "eligible"
+  | "locked"
+  | "unavailable"
+  | "catalog";
 
 function rewardState(
   item: BattlePassProgressItem,
@@ -30,6 +33,7 @@ function rewardState(
 ): RewardState {
   if (!hasProgress) return "catalog";
   if (item.pickedUp) return "claimed";
+  if (!item.redeemable) return "unavailable";
   if (item.eligible) return "eligible";
   return "locked";
 }
@@ -38,6 +42,7 @@ function statusLabel(state: RewardState, item: BattlePassProgressItem) {
   if (state === "claimed") return "Claimed";
   if (state === "eligible") return "Eligible";
   if (state === "locked") return `${item.pointsToGo} to go`;
+  if (state === "unavailable") return "Not available";
   return `${item.pointsRequired} points`;
 }
 
@@ -49,13 +54,17 @@ function statusDetail(state: RewardState, item: BattlePassProgressItem) {
     const noun = item.pointsToGo === 1 ? "point" : "points";
     return `${item.pointsToGo} more ${noun} to unlock.`;
   }
-  return "Dues-paying members unlock this when their semester points reach the threshold.";
+  if (!item.redeemable) {
+    return `${battlePassAudienceLabel(item)}.`;
+  }
+  return battlePassAudienceLabel(item);
 }
 
 const BADGE: Record<RewardState, string> = {
   claimed: "bg-primary/10 text-primary",
   eligible: "bg-primary text-on-primary",
   locked: "bg-surface-muted text-subtitle",
+  unavailable: "bg-surface-muted text-subtitle",
   catalog: "bg-surface-muted text-subtitle",
 };
 
@@ -63,6 +72,7 @@ const NODE: Record<RewardState, string> = {
   claimed: "border-primary bg-primary text-on-primary",
   eligible: "border-primary bg-surface text-primary shadow-theme-primary",
   locked: "border-home-border bg-surface-muted text-subtitle",
+  unavailable: "border-home-border bg-surface-muted text-subtitle",
   catalog: "border-home-border bg-surface text-primary",
 };
 
@@ -70,12 +80,15 @@ const CARD: Record<RewardState, string> = {
   claimed: "border-primary/30 bg-primary/5",
   eligible: "border-primary bg-surface shadow-theme-sm",
   locked: "border-home-border bg-surface",
+  unavailable: "border-home-border bg-surface",
   catalog: "border-home-border bg-surface",
 };
 
 function StatusIcon({ state }: { state: RewardState }) {
   if (state === "claimed") return <Check className="size-4" aria-hidden />;
-  if (state === "locked") return <Lock className="size-4" aria-hidden />;
+  if (state === "locked" || state === "unavailable") {
+    return <Lock className="size-4" aria-hidden />;
+  }
   return <Gift className="size-4" aria-hidden />;
 }
 
@@ -154,6 +167,7 @@ export default function MemberRewardsView({
     progress?.items ??
     rewards.map((reward) => ({
       ...reward,
+      redeemable: false,
       eligible: false,
       pickedUp: false,
       pointsToGo: reward.pointsRequired,
@@ -321,7 +335,7 @@ export default function MemberRewardsView({
                       </span>
                     )}
                   </div>
-                  {hasProgress && (
+                  {hasProgress && state !== "unavailable" && (
                     <div className="mt-4 h-1.5 overflow-hidden rounded-full bg-bg">
                       <div
                         className={`h-full rounded-full ${
@@ -331,11 +345,9 @@ export default function MemberRewardsView({
                       />
                     </div>
                   )}
-                  {state !== "catalog" && (
-                    <p className="mt-3 text-sm leading-6 text-subtitle">
-                      {statusDetail(state, item)}
-                    </p>
-                  )}
+                  <p className="mt-3 text-sm leading-6 text-subtitle">
+                    {statusDetail(state, item)}
+                  </p>
                 </article>
               </li>
             );

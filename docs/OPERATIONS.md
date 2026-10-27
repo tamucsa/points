@@ -430,9 +430,9 @@ Each semester has its own battle pass. A new semester starts with:
 | Pie an Officer/Parent | 70 |
 | Blindbox | 90 |
 
-Admins change the name and points, or add and remove rewards, on **Admin** → **Semesters**. Members read the current semester’s list on **Rewards** (`/rewards`). Dues-paying members see which rewards they have unlocked from their semester points and which ones an officer has marked as picked up.
+Admins change the name, points, and who can redeem each reward on **Admin** → **Semesters**. The choices are members, officers (admins count as officers), and parents, in any combination. A reward with every group turned off stays on the list and cannot be picked up. New semesters start with the five rewards set to members only.
 
-Officers, admins, and parents do not unlock battle pass rewards. A pickup can be recorded only after that member’s points for the reward’s semester meet the threshold.
+**Rewards** (`/rewards`) shows the current list. Someone who can redeem a reward also sees their points, which of those rewards they have unlocked, and which ones an officer has marked as picked up. A pickup can be recorded only after that person’s points for the reward’s semester meet the threshold and the reward is open to their group.
 
 ### Step-by-step: Track battle pass pickup
 
@@ -466,7 +466,7 @@ Use remove only when they were **not** at the event. If they attended but points
 
 Roles (`member`, `officer`, `admin`) control access to officer and admin pages. The **Parent** flag (`members.is_parent`) stacks with those roles. RLS policies prevent officers from elevating roles. Admins manage roles in the app.
 
-**Parent** never earns points (`recompute_member_semester_points` stores 0). Parents are excluded from the public leaderboard, Jiating standings totals, and battle pass rewards. Officers and admins without Parent still earn points, including toward Jiating standings totals, but they are omitted from the Overall and Jiatings name lists. They are also excluded from battle pass rewards and the 3 General Meetings reward.
+**Parent** points are calculated and show on **My Points**, **Members**, and the member page. They are excluded from the public leaderboard and from Jiating standings totals. Officers and admins still earn points, including toward Jiating standings totals, but they are omitted from the Overall and Jiatings name lists. The 3 General Meetings reward stays limited to dues-paying members. Battle pass rewards follow the groups selected on each reward.
 
 Parent-only users have the same Members roster and Officer Events tools as officers, except they can only **create** **Jiating Event** and **Jiating Mixer** for their own Jiating. Officers can **delete** events except those two categories; parents can **delete** JT Event/Mixer for their family. Officer + Parent and Admin + Parent keep full create access and both delete rules. Admins can delete any event.
 

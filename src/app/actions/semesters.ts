@@ -2,6 +2,7 @@
 
 import {
   type BattlePassReward,
+  mapBattlePassReward,
   sortBattlePassRewards,
 } from "@/utils/battle-pass";
 import { schoolYearFromStartDate } from "@/utils/schoolYear";
@@ -738,10 +739,15 @@ async function listSemestersImpl() {
       semester_id: string;
       name: string;
       points_required: number;
+      redeem_members: boolean;
+      redeem_officers: boolean;
+      redeem_parents: boolean;
     }>((from, to) =>
       supabase
         .from("battle_pass_rewards")
-        .select("id, semester_id, name, points_required")
+        .select(
+          "id, semester_id, name, points_required, redeem_members, redeem_officers, redeem_parents",
+        )
         .order("points_required")
         .order("name")
         .range(from, to),
@@ -764,11 +770,7 @@ async function listSemestersImpl() {
   const rewardsBySemester = new Map<string, BattlePassReward[]>();
   for (const reward of battlePassRewards) {
     const list = rewardsBySemester.get(reward.semester_id) ?? [];
-    list.push({
-      id: reward.id,
-      name: reward.name,
-      pointsRequired: reward.points_required,
-    });
+    list.push(mapBattlePassReward(reward));
     rewardsBySemester.set(reward.semester_id, list);
   }
 

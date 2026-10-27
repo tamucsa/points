@@ -104,16 +104,15 @@ export default function BattlePassTrackingClient({
     <div className="mx-auto max-w-5xl px-6 py-8 lg:px-8">
       <PageHeader
         title="Reward Tracking"
-        subtitle={
-          semesterName
-            
-        }
+        subtitle={semesterName}
         className="mb-2"
       />
       <RewardTrackingTabs />
 
       <p className="mb-6 max-w-3xl text-sm leading-6 text-subtitle">
-        Once a member gets enough points, they can redeem their reward!
+        People who can redeem a reward show up here. Mark it picked up once
+        their points reach that reward. A reward with no groups selected cannot
+        be picked up.
       </p>
 
       {error && <p className="mb-4 text-sm text-red-600">{error}</p>}
@@ -248,7 +247,9 @@ export default function BattlePassTrackingClient({
                           highlighted ? "ring-2 ring-primary" : ""
                         }`}
                       >
-                        {reward.name} · {remaining} to go
+                        {reward.redeemable
+                          ? `${reward.name} · ${remaining} to go`
+                          : `${reward.name} · Not available`}
                       </span>
                     );
                   }
