@@ -22,10 +22,6 @@ import {
   SPECTATOR_EVENT_CATEGORY,
 } from "@/utils/events";
 import {
-  canAccessOfficerEvents,
-  isParentOnly,
-} from "@/utils/members";
-import {
   createCalendarEvent,
   deleteCalendarEvent,
   shouldSyncEventToGoogleCalendar,
@@ -33,6 +29,11 @@ import {
   syncSuccessFields,
   updateCalendarEvent,
 } from "@/utils/google-calendar";
+import {
+  removeJiatingCalendarEvents,
+  syncJiatingCalendars,
+} from "@/utils/jiating-calendar-sync";
+import { canAccessOfficerEvents, isParentOnly } from "@/utils/members";
 import { setSentryUser, withServerAction } from "@/utils/sentry";
 import { createActionSupabase } from "@/utils/supabase/action";
 
@@ -85,6 +86,8 @@ async function syncCalendarAfterPublish(
     check_in_type?: string | null;
   },
 ) {
+  await syncJiatingCalendars(event.id);
+
   if (
     !shouldSyncEventToGoogleCalendar(
       event.category,
@@ -445,6 +448,7 @@ async function deleteEventImpl(eventId: string) {
   }
 
   // Soft-fail: Calendar delete errors do not block App delete.
+  await removeJiatingCalendarEvents(eventId);
   await deleteCalendarEvent(existing.google_event_id);
 
   const { error: childError } = await supabase
@@ -485,7 +489,10 @@ async function createEventImpl(input: CreateEventInput) {
   if (!config) return { success: false, error: "Invalid event category." };
 
   const scope = config.scope;
-  const checkInType = resolveEventCheckInType(input.category, input.checkInType);
+  const checkInType = resolveEventCheckInType(
+    input.category,
+    input.checkInType,
+  );
   if (!checkInType) return { success: false, error: "Invalid event category." };
 
   const dateOnly = isManualPointsCheckIn(checkInType);
@@ -689,7 +696,7 @@ async function createEventImpl(input: CreateEventInput) {
     }
   }
 
-  // Calendar only on publish (never draft/scheduled). Mixer / JT Event still skipped by helper.
+  // Calendar only on publish (never draft/scheduled). Org categories use the member calendar; Jiating Event and Mixer use each family's calendar.
   if (publishStatus === "published") {
     await syncCalendarAfterPublish(supabase, {
       id: event.id,
@@ -745,7 +752,10 @@ async function updateEventClassificationImpl(
   const config = getCategoryConfig(input.category);
   if (!config) return { success: false, error: "Invalid event category." };
 
-  const checkInType = resolveEventCheckInType(input.category, input.checkInType);
+  const checkInType = resolveEventCheckInType(
+    input.category,
+    input.checkInType,
+  );
   if (!checkInType) return { success: false, error: "Invalid check-in type." };
 
   const { supabase, member, error: authError } = await requireEventStaff();
@@ -994,20 +1004,17 @@ async function updateEventClassificationImpl(
       parent_event_id: null,
       check_in_type: checkInType,
     };
-    if (
-      shouldSyncEventToGoogleCalendar(
-        input.category,
-        null,
-        checkInType,
-      )
-    ) {
+    if (shouldSyncEventToGoogleCalendar(input.category, null, checkInType)) {
       await syncCalendarAfterPublish(supabase, nextEvent);
-    } else if (event.google_event_id) {
-      await deleteCalendarEvent(event.google_event_id);
-      await supabase
-        .from("events")
-        .update({ google_event_id: null, google_sync_error: null })
-        .eq("id", eventId);
+    } else {
+      if (event.google_event_id) {
+        await deleteCalendarEvent(event.google_event_id);
+        await supabase
+          .from("events")
+          .update({ google_event_id: null, google_sync_error: null })
+          .eq("id", eventId);
+      }
+      await syncJiatingCalendars(eventId);
     }
   }
 
@@ -1254,7 +1261,11 @@ async function updateEventMixerFamiliesImpl(
     .maybeSingle();
 
   if (!event) return { success: false, error: "Event not found." };
-  if (isParentOnly(member) && member.jt_family_id && !familyIds.includes(member.jt_family_id)) {
+  if (
+    isParentOnly(member) &&
+    member.jt_family_id &&
+    !familyIds.includes(member.jt_family_id)
+  ) {
     return {
       success: false,
       error: "Parents must keep their own Jiating in the Mixer.",
@@ -1350,6 +1361,8 @@ async function updateEventMixerFamiliesImpl(
       error: "Families saved, but Mixer points could not be updated.",
     };
   }
+
+  await syncJiatingCalendars(eventId);
 
   return { success: true, error: null };
 }

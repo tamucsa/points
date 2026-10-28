@@ -79,6 +79,10 @@ App → Google pushes eligible org events to the shared **CSA Member Calendar** 
 
 When credentials are missing or sync is disabled, event create/update/delete in the App still succeed; Calendar writes are skipped.
 
+### Jiating calendars
+
+Jiating Event and Jiating Mixer stay off the member calendar. Each Jiating can have its own Calendar ID, edited on **Admin → Semesters**. The same service account needs **Make changes to events** on every Jiating calendar. Saving a Calendar ID copies that Jiating’s already-published events (and Mixers that include it) onto the calendar. Changing the ID later copies events to the new calendar and leaves copies on the previous calendar in place.
+
 ## Optional — Google Places autocomplete
 
 Officer event create/edit location fields can suggest Places near Texas A&M. Free-text entry always works without selecting a suggestion. Requests go through authenticated server routes (`/api/places/*`); the API key stays server-only.

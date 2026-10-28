@@ -78,11 +78,12 @@ Eligible org events can be pushed to the shared CSA Member Calendar via a **serv
 
 Before enabling in an environment:
 
-1. Apply the migration that adds `events.google_event_id` (and related columns).
-2. Complete the Google Calendar sharing steps and set `GOOGLE_*` variables described in `docs/ENVIRONMENT.md`.
+1. Apply the migrations that add `events.google_event_id` and per-Jiating calendar ids (`jt_families.google_calendar_id`, `event_jt_calendar_events`).
+2. Complete the Google Calendar sharing steps and set `GOOGLE_*` variables described in `docs/ENVIRONMENT.md`. Share each Jiating calendar with the same service account.
 3. Set `GOOGLE_CALENDAR_SYNC_ENABLED=true` only after the service account can write to the calendar.
+4. On **Admin → Semesters**, paste each Jiating’s Calendar ID. Saving copies already-published Jiating Events and Mixers onto that calendar.
 
-Verify after enable: create an eligible test event (e.g. General Meeting or Howdy Week), confirm it appears on the CSA Member Calendar, then edit schedule/location and delete it — Calendar should update/remove accordingly. Mixer and Jiating Event must not appear.
+Verify after enable: create an eligible test event (e.g. General Meeting or Howdy Week), confirm it appears on the CSA Member Calendar, then edit schedule/location and delete it — Calendar should update/remove accordingly. Jiating Event and Jiating Mixer must not appear on the member calendar. A published Jiating Event should appear only on that Jiating’s calendar, and a Mixer on each participating Jiating’s calendar.
 
 ## Google Places autocomplete
 
