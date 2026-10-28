@@ -17,6 +17,8 @@ Officers must have `members.role` set to `officer` (or `admin`). If you can't se
 
 ## GM recap quiz and the 3-GM reward
 
+On a General Meeting, open **Culture Quiz** and assign 1st, 2nd, and 3rd from members who checked in. 1st earns 3 points, 2nd earns 2, and 3rd earns 1. Several people can share a place and each receives those points. The points are added on top of the usual check-in and count toward General Meeting totals. Parents are not eligible. Enter the places before publishing Jiating standings so the snapshot includes them.
+
 On a General Meeting, open **GM recap quiz** and upload the form CSV (Email and Name, school emails). Matched members get credit for that meeting and **0 points**. Check-in points are unchanged.
 
 **Reward Tracking** → **Formals** (`/officer/rewards/formals`) lists dues-paying members with credit for 3 General Meetings and attendance at 1 CSA-Wide event. Download CSV from that page. Officers, admins, and parents are not on the list.

@@ -2,6 +2,7 @@ import { notFound, redirect } from 'next/navigation'
 import MemberDetailClient from '@/app/(dashboard)/(officer)/officer/members/components/MemberDetailClient'
 import { earnsRewards } from '@/utils/members'
 import { buildGmRewardProgress, type GmRewardProgress } from '@/utils/rewards'
+import { isCultureQuizPlace } from '@/utils/culture-quiz'
 import { getActiveSemester, getAuthUser } from '@/utils/supabase/auth'
 
 export default async function MemberDetailPage({ params }: { params: Promise<{ id: string }> }) {
@@ -23,7 +24,7 @@ export default async function MemberDetailPage({ params }: { params: Promise<{ i
     is_parent: member.is_parent,
   })
 
-  const [attendanceResult, recapResult, historyResult] = await Promise.all([
+  const [attendanceResult, recapResult, historyResult, cultureQuizResult] = await Promise.all([
     supabase
       .from('attendance')
       .select(`
@@ -59,6 +60,13 @@ export default async function MemberDetailPage({ params }: { params: Promise<{ i
       .select('*, semesters(name)')
       .eq('member_id', id)
       .order('created_at', { ascending: false }),
+    semester
+      ? supabase
+          .from('gm_culture_quiz_results')
+          .select('event_id, place, points')
+          .eq('member_id', id)
+          .eq('semester_id', semester.id)
+      : Promise.resolve({ data: [], error: null }),
   ])
 
   const attendance = attendanceResult.data
@@ -86,10 +94,30 @@ export default async function MemberDetailPage({ params }: { params: Promise<{ i
       })
     : null
 
+  const cultureQuizByEvent = new Map<string, { place: number; points: number }>()
+  if (!cultureQuizResult.error) {
+    for (const row of cultureQuizResult.data ?? []) {
+      if (!isCultureQuizPlace(row.place)) continue
+      cultureQuizByEvent.set(row.event_id, {
+        place: row.place,
+        points: row.points,
+      })
+    }
+  }
+
+  const attendanceRows = (attendance ?? []).map(row => {
+    const event = Array.isArray(row.events) ? row.events[0] : row.events
+    return {
+      ...row,
+      events: event,
+      cultureQuiz: event?.id ? cultureQuizByEvent.get(event.id) ?? null : null,
+    }
+  })
+
   return (
     <MemberDetailClient
       member={member}
-      attendance={(attendance ?? []) as unknown as Parameters<typeof MemberDetailClient>[0]['attendance']}
+      attendance={attendanceRows as unknown as Parameters<typeof MemberDetailClient>[0]['attendance']}
       history={history ?? []}
       gmReward={gmReward}
       gmRewardLoadError={recapResult.error?.message ?? null}

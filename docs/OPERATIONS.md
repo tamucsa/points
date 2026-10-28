@@ -26,6 +26,7 @@ Runbook for day-to-day CSA Points operations. Each section includes an **overvie
 | Delete event                           | Officer/Parent/Admin | `/officer/events` (officers: non-JT Event/Mixer; parents: their JT Event/Mixer; admin: any) |
 | Manage member roles                    | Admin            | `/admin/members?tab=roles`                                        |
 | Look up member points / sign-in status | Officer/Admin/Parent | `/officer/members`                                                |
+| Record a GM Culture Quiz              | Officer/Admin/Parent | `/officer/events/[id]` on a General Meeting                       |
 | Upload a GM recap quiz                 | Officer/Admin/Parent | `/officer/events/[id]` on a General Meeting                       |
 | Battle pass rewards                    | Member           | `/rewards`                                                        |
 | Edit battle pass rewards               | Admin            | `/admin/semesters`                                                |
@@ -313,7 +314,7 @@ Canonical scoring policy for CSA Points. Change here when club policy changes; k
 
 | Category         | Points | Scope                  | Typical check-in                        |
 | ---------------- | ------ | ---------------------- | --------------------------------------- |
-| General Meeting  | 2      | CSA-wide               | Self (QR) or CSV import (name + email). A recap quiz gives credit and 0 points. |
+| General Meeting  | 2      | CSA-wide               | Self (QR) or CSV import (name + email). Culture Quiz adds 3 / 2 / 1 for 1st / 2nd / 3rd on top of check-in. A recap quiz gives credit and 0 points. |
 | CSA-Wide         | 3      | CSA-wide               | Officer chooses / often self or officer |
 | CSA-Wide Mixers  | 3      | CSA-wide               | CSV import (shared form; org contains CSA) |
 | Howdy Week       | 0      | CSA-wide               | CSV import (prospective guests; no points yet) |
@@ -387,6 +388,12 @@ Event start/end and weekly windows use **America/Chicago**.
 4. The page header shows how many active members have not signed in.
 5. Navigate pages (25 members per page).
 6. Click a member row → `/officer/members/[id]` for full breakdown, sign-in status, and attendance history.
+
+### Culture Quiz
+
+On each General Meeting, officers can record a Culture Quiz. Places come from that meeting's attendance list. 1st earns 3 points, 2nd earns 2, and 3rd earns 1. Several members can share a place, and each of them earns that place's points. A member can hold only one place. Empty places are allowed. Parents cannot earn these points. Officers and admins can.
+
+The points are stored in `gm_culture_quiz_results` and added to the General Meeting bucket on top of the usual 2 check-in points. They do not add another meeting credit toward the Semi-Formals reward. Removing a check-in removes that member's place and the quiz points. Enter the quiz before **Publish Jiating standings** so the frozen snapshot includes those points.
 
 ### GM recap quiz
 

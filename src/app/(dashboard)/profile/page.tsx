@@ -2,6 +2,7 @@ import { redirect } from 'next/navigation'
 import ProfileClient from '@/app/(dashboard)/profile/components/ProfileClient'
 import { earnsRewards } from '@/utils/members'
 import { buildGmRewardProgress, type GmRewardProgress } from '@/utils/rewards'
+import { isCultureQuizPlace } from '@/utils/culture-quiz'
 import { getActiveSemester, getCurrentMember } from '@/utils/supabase/auth'
 
 export default async function ProfilePage() {
@@ -19,6 +20,7 @@ export default async function ProfilePage() {
     { data: attendance, error: attendanceError },
     { data: history, error: historyError },
     recapResult,
+    cultureQuizResult,
   ] = await Promise.all([
     supabase
       .from('v_current_leaderboard')
@@ -59,6 +61,13 @@ export default async function ProfilePage() {
           .eq('semester_id', semester.id)
           .eq('is_guest', false)
       : Promise.resolve({ data: [], error: null }),
+    semester
+      ? supabase
+          .from('gm_culture_quiz_results')
+          .select('event_id, place, points')
+          .eq('member_id', member.id)
+          .eq('semester_id', semester.id)
+      : Promise.resolve({ data: [], error: null }),
   ])
 
   if (pointsError) console.error('Failed to load profile points:', pointsError.message)
@@ -66,6 +75,20 @@ export default async function ProfilePage() {
   if (historyError) console.error('Failed to load profile history:', historyError.message)
   if (recapResult.error) {
     console.error('Failed to load recap quiz credit:', recapResult.error.message)
+  }
+  if (cultureQuizResult.error) {
+    console.error('Failed to load Culture Quiz results:', cultureQuizResult.error.message)
+  }
+
+  const cultureQuizByEvent = new Map<string, { place: number; points: number }>()
+  if (!cultureQuizResult.error) {
+    for (const row of cultureQuizResult.data ?? []) {
+      if (!isCultureQuizPlace(row.place)) continue
+      cultureQuizByEvent.set(row.event_id, {
+        place: row.place,
+        points: row.points,
+      })
+    }
   }
 
   const gmReward: GmRewardProgress | null = showReward
@@ -92,20 +115,22 @@ export default async function ProfilePage() {
 
   const normalizedAttendance = attendanceError
     ? []
-    : (attendance ?? []).map((row) => ({
-        ...row,
-        events: Array.isArray(row.events)
-          ? (row.events[0] ?? {
-              id: '',
-              name: '',
-              category: '',
-              point_value: 0,
-              starts_at: '',
-              ends_at: null,
-              check_in_type: '',
-            })
-          : row.events,
-      }))
+    : (attendance ?? []).map((row) => {
+        const event = Array.isArray(row.events) ? row.events[0] : row.events
+        return {
+          ...row,
+          events: event ?? {
+            id: '',
+            name: '',
+            category: '',
+            point_value: 0,
+            starts_at: '',
+            ends_at: null,
+            check_in_type: '',
+          },
+          cultureQuiz: event?.id ? cultureQuizByEvent.get(event.id) ?? null : null,
+        }
+      })
 
   return (
     <ProfileClient
