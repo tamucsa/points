@@ -3,6 +3,9 @@
 import { ClipboardList, Clock, MapPin, UserX } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
+import CultureQuizPanel, {
+  type CultureQuizResultRow,
+} from "@/app/(dashboard)/(officer)/officer/events/components/CultureQuizPanel";
 import EventImportPanel from "@/app/(dashboard)/(officer)/officer/events/components/EventImportPanel";
 import EventRsvpPanel from "@/app/(dashboard)/(officer)/officer/events/components/EventRsvpPanel";
 import HowdyWeekGuestPanel from "@/app/(dashboard)/(officer)/officer/events/components/HowdyWeekGuestPanel";
@@ -22,6 +25,7 @@ import type { GmRecapRow } from "@/app/actions/recap";
 import { publishJiatingStandings } from "@/app/actions/jt-standings";
 import type { EventRsvpRow } from "@/app/actions/rsvp";
 import BackLink from "@/app/components/BackLink";
+import CultureQuizBadge from "@/app/components/CultureQuizBadge";
 import EmptyState from "@/app/components/EmptyState";
 import IconLabel, {
   CheckInMethodBadge,
@@ -58,6 +62,7 @@ import {
   PARENT_EVENT_CATEGORIES,
   resolveEventCheckInType,
 } from "@/utils/events";
+import { checkInRemovalSummary } from "@/utils/culture-quiz";
 import { CHECKIN_TYPE_ICONS } from "@/utils/icons";
 interface Event {
   id: string;
@@ -133,6 +138,8 @@ interface Props {
   recapRows?: GmRecapRow[];
   recapMatchMembers?: { id: string; full_name: string; email: string }[];
   recapLoadError?: string | null;
+  cultureQuizRows?: CultureQuizResultRow[];
+  cultureQuizLoadError?: string | null;
 }
 
 const btnPrimaryClassName =
@@ -164,6 +171,8 @@ export default function EventDetailClient({
   recapRows = [],
   recapMatchMembers = [],
   recapLoadError = null,
+  cultureQuizRows = [],
+  cultureQuizLoadError = null,
 }: Props) {
   const router = useRouter();
   const [publishing, setPublishing] = useState(false);
@@ -221,6 +230,9 @@ export default function EventDetailClient({
   const [uncheckError, setUncheckError] = useState<string | null>(null);
   const [uncheckSaving, setUncheckSaving] = useState(false);
   const isGm = isGeneralMeetingCategory(event.category);
+  const cultureQuizByMember = new Map(
+    cultureQuizRows.map((row) => [row.memberId, row]),
+  );
   const isMixer = isMixerCategory(event.category);
   const mixerPointValue = isMixer
     ? jiatingMixerPointValue(
@@ -1311,6 +1323,39 @@ export default function EventDetailClient({
         )}
         {isGm && (
           <CollapsibleSettings
+            title="Culture Quiz"
+            defaultOpen
+            summary={
+              cultureQuizLoadError
+                ? "Could not load quiz"
+                : cultureQuizRows.length === 0
+                  ? "No places yet"
+                  : `${cultureQuizRows.length} placed`
+            }
+          >
+            {cultureQuizLoadError ? (
+              <p className="text-sm text-red-600">
+                Could not load the Culture Quiz. Refresh the page to try again.
+              </p>
+            ) : (
+              <CultureQuizPanel
+                eventId={event.id}
+                initialRows={cultureQuizRows}
+                attendees={attendance.map((row) => ({
+                  memberId: row.member_id,
+                  fullName: row.members?.full_name ?? "Unknown member",
+                  role: row.members?.role ?? "member",
+                  isParent: row.members?.is_parent,
+                }))}
+                attendanceLoadError={attendanceLoadError}
+                btnPrimaryClassName={btnPrimaryClassName}
+                btnSecondaryClassName={btnSecondaryClassName}
+              />
+            )}
+          </CollapsibleSettings>
+        )}
+        {isGm && (
+          <CollapsibleSettings
             title="GM recap quiz"
             defaultOpen
             summary={
@@ -1411,6 +1456,7 @@ export default function EventDetailClient({
         {!attendanceLoadError &&
           attendance.map((row) => {
             const displayName = row.members?.full_name ?? "Unknown member";
+            const cultureQuiz = cultureQuizByMember.get(row.member_id);
             return (
               <div
                 key={row.id}
@@ -1434,6 +1480,12 @@ export default function EventDetailClient({
                       {row.point_value_override} pt
                       {row.point_value_override === 1 ? "" : "s"}
                     </span>
+                  )}
+                  {cultureQuiz && (
+                    <CultureQuizBadge
+                      place={cultureQuiz.place}
+                      points={cultureQuiz.points}
+                    />
                   )}
                   <RoleBadges
                     role={row.members?.role ?? "member"}
@@ -1499,14 +1551,27 @@ export default function EventDetailClient({
               {uncheckTarget.members?.full_name ?? "Unknown member"}
             </p>
             <p className="mt-3 text-center text-sm leading-6 text-subtitle">
-              This removes their attendance for {event.name}
-              {uncheckTarget.counted
-                ? (() => {
-                    const pts =
-                      uncheckTarget.point_value_override ?? event.point_value;
-                    return ` and deducts ${pts} point${pts === 1 ? "" : "s"} from their total.`;
-                  })()
-                : ". This check-in was not counting toward points (cap), so totals stay the same."}
+              {(cultureQuizByMember.get(uncheckTarget.member_id)?.points ?? 0) > 0
+                ? checkInRemovalSummary({
+                    eventName: event.name,
+                    checkInPoints: uncheckTarget.counted
+                      ? (uncheckTarget.point_value_override ?? event.point_value)
+                      : 0,
+                    quizPoints:
+                      cultureQuizByMember.get(uncheckTarget.member_id)?.points ?? 0,
+                  })
+                : (
+                  <>
+                    This removes their attendance for {event.name}
+                    {uncheckTarget.counted
+                      ? (() => {
+                          const pts =
+                            uncheckTarget.point_value_override ?? event.point_value;
+                          return ` and deducts ${pts} point${pts === 1 ? "" : "s"} from their total.`;
+                        })()
+                      : ". This check-in was not counting toward points (cap), so totals stay the same."}
+                  </>
+                )}
             </p>
             {uncheckError && (
               <p className="mt-4 rounded-2xl border border-error-border bg-error-bg px-4 py-3 text-center text-sm text-error">

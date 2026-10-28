@@ -39,6 +39,7 @@ Core tables (names reflect actual schema):
 - `guest_export_log`: audit log when officers export unmatched Howdy Week prospects from `/officer/members?tab=guests`
 - `attendance`: joins members to events; source of points
 - `gm_recap_submissions`: General Meeting recap quiz rows. A matched member gets credit for that meeting and no points. Check-in plus quiz for the same meeting is one credit.
+- `gm_culture_quiz_results`: Culture Quiz places for a General Meeting. 1st is 3 points, 2nd is 2, 3rd is 1, and a place can be shared. Points are added to the GM bucket on top of check-in. Winners must be on that meeting's attendance list. Parents cannot earn them.
 - `member_semester_points`: cached counted point totals per member per semester; maintained by triggers on attendance / event category·point changes; backing store for `v_current_leaderboard`
 - `battle_pass_rewards`: per-semester battle pass catalog (`name`, `points_required`, `redeem_members`, `redeem_officers`, `redeem_parents`). New semesters are seeded with the default set for members only; admins edit rows on `/admin/semesters`. Admins count as officers. All three flags false means nobody can redeem that reward
 - `battle_pass_pickups`: one row per member per reward once an officer records pickup. Insert is rejected unless the member is active, the reward is open to their group, and their points for that reward’s semester meet `points_required`

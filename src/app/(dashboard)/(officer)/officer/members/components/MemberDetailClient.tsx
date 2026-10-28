@@ -11,6 +11,7 @@ import { isManualPointsCheckIn } from '@/utils/events'
 import { earnsRewards, isParent } from '@/utils/members'
 import type { GmRewardProgress } from '@/utils/rewards'
 import GmRewardCard from '@/app/(dashboard)/profile/components/GmRewardCard'
+import CultureQuizBadge from '@/app/components/CultureQuizBadge'
 import { Calendar } from 'lucide-react'
 
 interface Member {
@@ -44,6 +45,7 @@ interface AttendanceRow {
     ends_at: string | null
     check_in_type?: string | null
   }
+  cultureQuiz?: { place: number; points: number } | null
 }
 
 interface SemesterSummary {
@@ -171,6 +173,9 @@ export default function MemberDetailClient({
                       : '—'}
                   </span>
                   <span className="rounded-md px-2 py-0.5" style={{ background: `${catColor}15`, color: catColor }}>{row.events?.category}</span>
+                  {row.cultureQuiz && (
+                    <CultureQuizBadge place={row.cultureQuiz.place} points={row.cultureQuiz.points} />
+                  )}
                   {!row.counted && <span className="rounded-md bg-red-50 px-2 py-0.5 text-red-500">Cap reached</span>}
                 </div>
               </div>

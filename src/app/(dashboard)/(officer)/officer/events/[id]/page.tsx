@@ -1,5 +1,6 @@
 import { notFound, redirect } from 'next/navigation'
 import EventDetailClient from '@/app/(dashboard)/(officer)/officer/events/components/EventDetailClient'
+import type { CultureQuizResultRow } from '@/app/(dashboard)/(officer)/officer/events/components/CultureQuizPanel'
 import { listEventGuests } from '@/app/actions/guests'
 import { listEventImportRows } from '@/app/actions/imports'
 import type { GmRecapRow } from '@/app/actions/recap'
@@ -13,6 +14,7 @@ import {
   parentCanManageEvent,
 } from '@/utils/events'
 import { canAccessOfficerEvents, isParentOnly } from '@/utils/members'
+import { isCultureQuizPlace } from '@/utils/culture-quiz'
 import { fetchAllPages } from '@/utils/supabase/fetchAll'
 import { getCurrentMember } from '@/utils/supabase/auth'
 
@@ -136,6 +138,8 @@ export default async function EventDetailPage({ params }: { params: Promise<{ id
   let recapRows: GmRecapRow[] = []
   let recapMatchMembers: { id: string; full_name: string; email: string }[] = []
   let recapLoadError: string | null = null
+  let cultureQuizRows: CultureQuizResultRow[] = []
+  let cultureQuizLoadError: string | null = null
 
   if (event.check_in_type === 'rsvp_required') {
     const [rsvpResult, members] = await Promise.all([
@@ -184,7 +188,7 @@ export default async function EventDetailPage({ params }: { params: Promise<{ id
   }
 
   if (isGeneralMeetingCategory(event.category)) {
-    const [recapResult, memberResult] = await Promise.all([
+    const [recapResult, memberResult, quizResult] = await Promise.all([
       fetchAllPages<{
         id: string
         email: string
@@ -210,6 +214,19 @@ export default async function EventDetailPage({ params }: { params: Promise<{ id
               .order('full_name')
               .range(from, to),
           ),
+      fetchAllPages<{
+        member_id: string
+        place: number
+        points: number
+        members: { full_name: string } | { full_name: string }[] | null
+      }>((from, to) =>
+        supabase
+          .from('gm_culture_quiz_results')
+          .select('member_id, place, points, members(full_name)')
+          .eq('event_id', id)
+          .order('place')
+          .range(from, to),
+      ),
     ])
 
     if (recapResult.error) {
@@ -229,6 +246,21 @@ export default async function EventDetailPage({ params }: { params: Promise<{ id
     }
 
     recapMatchMembers = memberResult.data ?? []
+
+    if (quizResult.error) {
+      cultureQuizLoadError = quizResult.error.message
+    } else {
+      cultureQuizRows = quizResult.data.flatMap(row => {
+        if (!isCultureQuizPlace(row.place)) return []
+        const linked = Array.isArray(row.members) ? row.members[0] : row.members
+        return [{
+          memberId: row.member_id,
+          fullName: linked?.full_name ?? 'Member',
+          place: row.place,
+          points: row.points,
+        }]
+      })
+    }
   }
 
   return (
@@ -252,6 +284,8 @@ export default async function EventDetailPage({ params }: { params: Promise<{ id
       recapRows={recapRows}
       recapMatchMembers={recapMatchMembers}
       recapLoadError={recapLoadError}
+      cultureQuizRows={cultureQuizRows}
+      cultureQuizLoadError={cultureQuizLoadError}
     />
   )
 }

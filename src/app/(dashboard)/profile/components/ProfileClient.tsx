@@ -8,6 +8,7 @@ import JtFamilyBadge from '@/app/(dashboard)/leaderboard/components/JtFamilyBadg
 import MemberAvatar from '@/app/components/MemberAvatar'
 import RoleBadges from '@/app/components/RoleBadges'
 import EmptyState from '@/app/components/EmptyState'
+import CultureQuizBadge from '@/app/components/CultureQuizBadge'
 import PageHeader from '@/app/components/PageHeader'
 import PointsGuide from '@/app/(dashboard)/profile/components/PointsGuide'
 import GmRewardCard from '@/app/(dashboard)/profile/components/GmRewardCard'
@@ -47,6 +48,7 @@ interface AttendanceRow {
     ends_at: string | null
     check_in_type?: string | null
   }
+  cultureQuiz?: { place: number; points: number } | null
 }
 
 interface SemmarySummary {
@@ -247,6 +249,12 @@ export default function ProfileClient({
                       >
                         {category}
                       </span>
+                    )}
+                    {row.cultureQuiz && (
+                      <CultureQuizBadge
+                        place={row.cultureQuiz.place}
+                        points={row.cultureQuiz.points}
+                      />
                     )}
                     {!row.counted && (
                       <span className="rounded-md bg-red-50 px-2 py-0.5 text-[11px] text-red-500">
