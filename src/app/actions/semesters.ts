@@ -5,6 +5,11 @@ import {
   mapBattlePassReward,
   sortBattlePassRewards,
 } from "@/utils/battle-pass";
+import {
+  jiatingCalendarSyncNotice,
+  parseGoogleCalendarId,
+} from "@/utils/jiating-calendar";
+import { backfillJiatingCalendar } from "@/utils/jiating-calendar-sync";
 import { schoolYearFromStartDate } from "@/utils/schoolYear";
 import { setSentryUser, withServerAction } from "@/utils/sentry";
 import { createActionSupabase } from "@/utils/supabase/action";
@@ -426,23 +431,47 @@ async function updateSemesterImpl(input: {
   };
 }
 
-export async function createJtFamily(input: { name: string; color: string }) {
+export async function createJtFamily(input: {
+  name: string;
+  color: string;
+  googleCalendarId?: string;
+}) {
   return withServerAction("createJtFamily", () => createJtFamilyImpl(input));
 }
 
-async function createJtFamilyImpl(input: { name: string; color: string }) {
+async function createJtFamilyImpl(input: {
+  name: string;
+  color: string;
+  googleCalendarId?: string;
+}) {
   const { error: authError } = await requireAdmin();
-  if (authError) return { success: false, error: authError, family: null };
+  if (authError)
+    return { success: false, error: authError, family: null, notice: null };
 
   const name = input.name.trim();
   const color = input.color.trim() || randomJtColor();
+  const parsedCalendar = parseGoogleCalendarId(input.googleCalendarId ?? "");
   if (!name)
-    return { success: false, error: "Jiating name is required.", family: null };
+    return {
+      success: false,
+      error: "Jiating name is required.",
+      family: null,
+      notice: null,
+    };
   if (!/^#[0-9A-Fa-f]{6}$/.test(color)) {
     return {
       success: false,
       error: "Use a hex color like #4f6ef7.",
       family: null,
+      notice: null,
+    };
+  }
+  if (!parsedCalendar.ok) {
+    return {
+      success: false,
+      error: parsedCalendar.error,
+      family: null,
+      notice: null,
     };
   }
 
@@ -458,6 +487,7 @@ async function createJtFamilyImpl(input: { name: string; color: string }) {
       success: false,
       error: "No active semester with a school year.",
       family: null,
+      notice: null,
     };
   }
 
@@ -469,8 +499,9 @@ async function createJtFamilyImpl(input: { name: string; color: string }) {
       year_id: active.year_id,
       semester: active.id,
       is_active: true,
+      google_calendar_id: parsedCalendar.calendarId,
     })
-    .select("id, name, color, year_id, is_active")
+    .select("id, name, color, year_id, is_active, google_calendar_id")
     .single();
 
   if (error) {
@@ -479,18 +510,30 @@ async function createJtFamilyImpl(input: { name: string; color: string }) {
         success: false,
         error: `An active Jiating named "${name}" already exists.`,
         family: null,
+        notice: null,
       };
     }
-    return { success: false, error: "Failed to create Jiating.", family: null };
+    return {
+      success: false,
+      error: "Failed to create Jiating.",
+      family: null,
+      notice: null,
+    };
   }
 
-  return { success: true, error: null, family: data };
+  const notice = await noticeForCalendarSave(
+    data.id,
+    null,
+    parsedCalendar.calendarId,
+  );
+  return { success: true, error: null, family: data, notice };
 }
 
 export async function updateJtFamily(input: {
   id: string;
   name: string;
   color: string;
+  googleCalendarId?: string;
 }) {
   return withServerAction("updateJtFamily", () => updateJtFamilyImpl(input));
 }
@@ -499,19 +542,36 @@ async function updateJtFamilyImpl(input: {
   id: string;
   name: string;
   color: string;
+  googleCalendarId?: string;
 }) {
   const { error: authError } = await requireAdmin();
-  if (authError) return { success: false, error: authError, family: null };
+  if (authError)
+    return { success: false, error: authError, family: null, notice: null };
 
   const name = input.name.trim();
   const color = input.color.trim();
+  const parsedCalendar = parseGoogleCalendarId(input.googleCalendarId ?? "");
   if (!name)
-    return { success: false, error: "Jiating name is required.", family: null };
+    return {
+      success: false,
+      error: "Jiating name is required.",
+      family: null,
+      notice: null,
+    };
   if (!/^#[0-9A-Fa-f]{6}$/.test(color)) {
     return {
       success: false,
       error: "Use a hex color like #4f6ef7.",
       family: null,
+      notice: null,
+    };
+  }
+  if (!parsedCalendar.ok) {
+    return {
+      success: false,
+      error: parsedCalendar.error,
+      family: null,
+      notice: null,
     };
   }
 
@@ -529,7 +589,7 @@ async function updateJtFamilyImpl(input: {
 
   const { data: existing } = await admin
     .from("jt_families")
-    .select("id, year_id, is_active")
+    .select("id, year_id, is_active, google_calendar_id")
     .eq("id", input.id)
     .maybeSingle();
 
@@ -550,9 +610,13 @@ async function updateJtFamilyImpl(input: {
 
   const { data, error } = await admin
     .from("jt_families")
-    .update({ name, color })
+    .update({
+      name,
+      color,
+      google_calendar_id: parsedCalendar.calendarId,
+    })
     .eq("id", input.id)
-    .select("id, name, color, year_id, is_active")
+    .select("id, name, color, year_id, is_active, google_calendar_id")
     .single();
 
   if (error) {
@@ -561,12 +625,37 @@ async function updateJtFamilyImpl(input: {
         success: false,
         error: `An active Jiating named "${name}" already exists.`,
         family: null,
+        notice: null,
       };
     }
-    return { success: false, error: "Failed to update Jiating.", family: null };
+    return {
+      success: false,
+      error: "Failed to update Jiating.",
+      family: null,
+      notice: null,
+    };
   }
 
-  return { success: true, error: null, family: data };
+  const notice = await noticeForCalendarSave(
+    data.id,
+    existing.google_calendar_id,
+    parsedCalendar.calendarId,
+  );
+  return { success: true, error: null, family: data, notice };
+}
+
+async function noticeForCalendarSave(
+  jtFamilyId: string,
+  previousCalendarId: string | null,
+  calendarId: string | null,
+) {
+  if (!calendarId) return null;
+  const sync = await backfillJiatingCalendar(jtFamilyId);
+  return jiatingCalendarSyncNotice({
+    previousCalendarId,
+    calendarId,
+    sync,
+  });
 }
 
 export async function deactivateJtFamily(id: string) {
@@ -672,6 +761,7 @@ export interface SemesterJtFamily {
   name: string;
   color: string | null;
   year_id: string | null;
+  google_calendar_id: string | null;
 }
 
 export interface SemesterListItem {
@@ -717,10 +807,13 @@ async function listSemestersImpl() {
       semester: string | null;
       year_id: string | null;
       is_active: boolean;
+      google_calendar_id: string | null;
     }>((from, to) =>
       supabase
         .from("jt_families")
-        .select("id, name, color, semester, year_id, is_active")
+        .select(
+          "id, name, color, semester, year_id, is_active, google_calendar_id",
+        )
         .order("name")
         .range(from, to),
     ),
@@ -805,6 +898,7 @@ async function listSemestersImpl() {
       name: jt.name,
       color: jt.color,
       year_id: jt.year_id,
+      google_calendar_id: jt.google_calendar_id,
     };
     if (jt.is_active) {
       activeJtFamilies.push(item);
@@ -831,6 +925,7 @@ async function listSemestersImpl() {
       name: jt.name,
       color: jt.color,
       year_id: jt.year_id,
+      google_calendar_id: jt.google_calendar_id,
     });
     inactiveByYear.set(jt.year_id, list);
   }
@@ -849,6 +944,7 @@ async function listSemestersImpl() {
           name,
           color: null,
           year_id: semester.year_id,
+          google_calendar_id: null,
         }))
       : [];
 
