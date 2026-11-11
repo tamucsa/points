@@ -23,8 +23,13 @@ import {
   dateKeyToWallMs,
   entriesInRange,
   filterVisibleEntries,
-  findCsaConflicts,
+  findLayerConflicts,
   fitDayHourRanges,
+  isLayerKind,
+  LAYER_KINDS,
+  LAYER_META,
+  type LayerKind,
+  type LayerVisibility,
   parseJtParam,
   resolveWeekKey,
   serializeJtParam,
@@ -115,7 +120,12 @@ export default function JiatingCalendarView({
   const checkedKey = checkedList.join(",");
   // biome-ignore lint/correctness/useExhaustiveDependencies: keyed by the joined ids
   const checked = useMemo(() => new Set(checkedList), [checkedKey]);
-  const showCsa = searchParams.get("csa") !== "0";
+  const showCsa = searchParams.get(LAYER_META.csa.param) !== "0";
+  const showOlympics = searchParams.get(LAYER_META.olympics.param) !== "0";
+  const layers: LayerVisibility = useMemo(
+    () => ({ csa: showCsa, olympics: showOlympics }),
+    [showCsa, showOlympics],
+  );
   const layout: CalendarLayout =
     searchParams.get("layout") === "lanes" ? "lanes" : "week";
   const showFree = searchParams.get("free") === "1";
@@ -145,16 +155,18 @@ export default function JiatingCalendarView({
     updateParams({ jt: value });
   };
 
-  // No `jt` in the URL: restore the last selection from this browser.
+  // No usable `jt` in the URL (missing, or a stale link with no valid ids):
+  // restore the last selection from this browser.
   const restoredRef = useRef(false);
+  const jtUsable = parsedJt !== null;
   useEffect(() => {
-    if (restoredRef.current || jtParam !== null) return;
+    if (restoredRef.current || jtUsable) return;
     restoredRef.current = true;
     const stored = readStoredJt();
     if (stored === null) return;
     const ids = parseJtParam(stored, familyIds);
     if (ids) updateParams({ jt: serializeJtParam(ids) });
-  }, [jtParam, familyIds, updateParams]);
+  }, [jtUsable, familyIds, updateParams]);
 
   // Client-only clock so server and client markup match.
   const [nowWall, setNowWall] = useState<number | null>(null);
@@ -175,15 +187,15 @@ export default function JiatingCalendarView({
     [allEntries, weekStart],
   );
   const visible = useMemo(
-    () => filterVisibleEntries(weekEntries, checked, showCsa),
-    [weekEntries, checked, showCsa],
+    () => filterVisibleEntries(weekEntries, checked, layers),
+    [weekEntries, checked, layers],
   );
   const conflicts = useMemo(
-    () => findCsaConflicts(weekEntries, checked),
+    () => findLayerConflicts(weekEntries, checked),
     [weekEntries, checked],
   );
   const conflictIds = useMemo(
-    () => new Set(conflicts.flatMap((c) => [c.jiatingId, c.csaId])),
+    () => new Set(conflicts.flatMap((c) => [c.jiatingId, c.layerId])),
     [conflicts],
   );
   const { startHour, endHour } = visibleHourRange(visible, weekStart);
@@ -200,7 +212,7 @@ export default function JiatingCalendarView({
       cells: buildBusyHeatmap({
         entries: weekEntries,
         checkedFamilyIds: checked,
-        includeCsa: showCsa,
+        layers,
         weekStart,
         startHour,
         endHour,
@@ -208,13 +220,14 @@ export default function JiatingCalendarView({
         slotMinutes: HEAT_SLOT_MINUTES,
       }),
       slotMinutes: HEAT_SLOT_MINUTES,
-      denominator: checked.size + (showCsa ? 1 : 0),
+      denominator:
+        checked.size + LAYER_KINDS.filter((layer) => layers[layer]).length,
     };
   }, [
     showFree,
     weekEntries,
     checked,
-    showCsa,
+    layers,
     weekStart,
     startHour,
     endHour,
@@ -222,9 +235,9 @@ export default function JiatingCalendarView({
   ]);
 
   const legendCounts = useMemo(() => {
-    const counts: Record<string, number> = { csa: 0 };
+    const counts: Record<string, number> = { csa: 0, olympics: 0 };
     for (const entry of weekEntries) {
-      if (entry.kind === "csa") counts.csa += 1;
+      if (isLayerKind(entry.kind)) counts[entry.kind] += 1;
       for (const id of entry.familyIds) counts[id] = (counts[id] ?? 0) + 1;
     }
     return counts;
@@ -269,7 +282,12 @@ export default function JiatingCalendarView({
 
   // Close stale popovers when the week or selection changes.
   // biome-ignore lint/correctness/useExhaustiveDependencies: reset on navigation
-  useEffect(() => setSelected(null), [weekKey, layout, checkedKey, showCsa]);
+  useEffect(() => setSelected(null), [weekKey, layout, checkedKey, layers]);
+
+  // Each week starts with the conflicts list closed, so an open list doesn't
+  // reappear on its own in a later week that has conflicts.
+  // biome-ignore lint/correctness/useExhaustiveDependencies: reset on week change
+  useEffect(() => setShowConflicts(false), [weekKey]);
 
   const onSelect = (entry: CalendarEntry, anchor: DOMRect) =>
     setSelected({ entry, anchor });
@@ -278,11 +296,12 @@ export default function JiatingCalendarView({
     ? conflicts
         .filter(
           (c) =>
-            c.jiatingId === selected.entry.id || c.csaId === selected.entry.id,
+            c.jiatingId === selected.entry.id ||
+            c.layerId === selected.entry.id,
         )
         .map((c) =>
           entriesById.get(
-            c.jiatingId === selected.entry.id ? c.csaId : c.jiatingId,
+            c.jiatingId === selected.entry.id ? c.layerId : c.jiatingId,
           ),
         )
         .filter((e): e is CalendarEntry => Boolean(e))
@@ -318,8 +337,12 @@ export default function JiatingCalendarView({
           }
           onOnly={(id) => setChecked([id])}
           onSetAll={(all) => setChecked(all ? familyIds : [])}
-          showCsa={showCsa}
-          onToggleCsa={() => updateParams({ csa: showCsa ? "0" : null })}
+          layers={layers}
+          onToggleLayer={(layer: LayerKind) =>
+            updateParams({
+              [LAYER_META[layer].param]: layers[layer] ? "0" : null,
+            })
+          }
           counts={legendCounts}
         />
       </aside>
@@ -410,7 +433,8 @@ export default function JiatingCalendarView({
           <div className="mb-3 rounded-2xl border border-error-border bg-error-bg p-3">
             <div className="mb-2 flex items-center justify-between">
               <p className="text-sm font-semibold text-error">
-                Jiating events overlapping CSA-wide events this week
+                Jiating events overlapping CSA-wide or Jiating Olympics events
+                this week
               </p>
               <button
                 type="button"
@@ -424,11 +448,11 @@ export default function JiatingCalendarView({
             <ul className="flex flex-col gap-1 text-sm text-text">
               {conflicts.map((c) => {
                 const jt = entriesById.get(c.jiatingId);
-                const csa = entriesById.get(c.csaId);
-                if (!jt || !csa) return null;
+                const shared = entriesById.get(c.layerId);
+                if (!jt || !shared) return null;
                 return (
                   <li
-                    key={`${c.jiatingId}-${c.csaId}`}
+                    key={`${c.jiatingId}-${c.layerId}`}
                     className="flex flex-wrap gap-x-1.5"
                   >
                     <Link
@@ -439,12 +463,12 @@ export default function JiatingCalendarView({
                     </Link>
                     <span className="text-subtitle">overlaps</span>
                     <Link
-                      href={`/officer/events/${csa.id}`}
+                      href={`/officer/events/${shared.id}`}
                       className="font-semibold hover:underline"
                     >
-                      {csa.name}
+                      {shared.name}
                     </Link>
-                    <span className="text-subtitle">({csa.category})</span>
+                    <span className="text-subtitle">({shared.category})</span>
                   </li>
                 );
               })}
@@ -461,7 +485,10 @@ export default function JiatingCalendarView({
                   background: "color-mix(in srgb, #10b981 30%, transparent)",
                 }}
               />
-              Open for every checked Jiating{showCsa ? " and CSA-wide" : ""}
+              Open for every checked Jiating
+              {LAYER_KINDS.filter((layer) => layers[layer])
+                .map((layer) => ` and ${LAYER_META[layer].label}`)
+                .join("")}
             </span>
             <span className="inline-flex items-center gap-1.5">
               <span
@@ -493,7 +520,7 @@ export default function JiatingCalendarView({
             entries={visible}
             families={families}
             checked={checked}
-            showCsa={showCsa}
+            layers={layers}
             weekStart={weekStart}
             dayRanges={dayRanges ?? fitDayHourRanges(visible, weekStart)}
             familiesById={familiesById}

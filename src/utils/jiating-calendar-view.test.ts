@@ -7,7 +7,7 @@ import {
   DAY_MS,
   dateKeyToWallMs,
   filterVisibleEntries,
-  findCsaConflicts,
+  findLayerConflicts,
   fitDayHourRanges,
   HOUR_MS,
   layoutWeekDays,
@@ -81,7 +81,7 @@ describe("week keys", () => {
 });
 
 describe("buildCalendarEntries", () => {
-  it("keeps Jiating events, mixers, and CSA conflict categories only", () => {
+  it("keeps Jiating events, mixers, CSA conflict categories, and Olympics only", () => {
     const entries = buildCalendarEntries(
       [
         event({ id: "jt" }),
@@ -89,6 +89,7 @@ describe("buildCalendarEntries", () => {
         event({ id: "gm", category: "General Meeting", jt_family_id: null }),
         event({ id: "wide", category: "CSA-Wide", jt_family_id: null }),
         event({ id: "wmix", category: "CSA-Wide Mixers", jt_family_id: null }),
+        event({ id: "oly", category: "Jiating Olympics", jt_family_id: null }),
         event({ id: "sports", category: "Sports", jt_family_id: null }),
         event({ id: "award", check_in_type: "manual_points" }),
         event({ id: "orphan", jt_family_id: "zzz" }),
@@ -105,6 +106,7 @@ describe("buildCalendarEntries", () => {
       ["gm", "csa"],
       ["jt", "jiating"],
       ["mix", "jiating"],
+      ["oly", "olympics"],
       ["wide", "csa"],
       ["wmix", "csa"],
     ]);
@@ -141,7 +143,12 @@ function entry(
   return {
     id,
     name: id,
-    category: kind === "csa" ? "General Meeting" : "Jiating Event",
+    category:
+      kind === "csa"
+        ? "General Meeting"
+        : kind === "olympics"
+          ? "Jiating Olympics"
+          : "Jiating Event",
     location: null,
     publishStatus: "published",
     kind,
@@ -159,23 +166,34 @@ describe("filterVisibleEntries", () => {
     entry("a1", "jiating", ["a"], 18, 20),
     entry("mix", "jiating", ["b", "c"], 18, 20),
     entry("gm", "csa", [], 19, 21),
+    entry("oly", "olympics", [], 12, 16),
   ];
 
   it("shows a mixer when any participating family is checked", () => {
-    const ids = filterVisibleEntries(entries, new Set(["c"]), false).map(
-      (e) => e.id,
-    );
+    const ids = filterVisibleEntries(entries, new Set(["c"]), {
+      csa: false,
+      olympics: false,
+    }).map((e) => e.id);
     expect(ids).toEqual(["mix"]);
   });
 
-  it("toggles the CSA layer", () => {
+  it("toggles each layer on its own", () => {
     expect(
-      filterVisibleEntries(entries, new Set(), true).map((e) => e.id),
+      filterVisibleEntries(entries, new Set(), {
+        csa: true,
+        olympics: false,
+      }).map((e) => e.id),
     ).toEqual(["gm"]);
+    expect(
+      filterVisibleEntries(entries, new Set(), {
+        csa: false,
+        olympics: true,
+      }).map((e) => e.id),
+    ).toEqual(["oly"]);
   });
 });
 
-describe("findCsaConflicts", () => {
+describe("findLayerConflicts", () => {
   const entries = [
     entry("a1", "jiating", ["a"], 18, 20),
     entry("b1", "jiating", ["b"], 18, 20),
@@ -185,21 +203,35 @@ describe("findCsaConflicts", () => {
   ];
 
   it("flags Jiating vs CSA overlaps only", () => {
-    expect(findCsaConflicts(entries, new Set(["a", "b"]))).toEqual([
-      { jiatingId: "a1", csaId: "gm" },
-      { jiatingId: "b1", csaId: "gm" },
+    expect(findLayerConflicts(entries, new Set(["a", "b"]))).toEqual([
+      { jiatingId: "a1", layerId: "gm" },
+      { jiatingId: "b1", layerId: "gm" },
     ]);
   });
 
   it("ignores Jiating-only overlaps and touching edges", () => {
     // a1 and b1 overlap each other; mix starts exactly when gm ends.
-    const conflicts = findCsaConflicts(entries, new Set(["a", "b"]));
+    const conflicts = findLayerConflicts(entries, new Set(["a", "b"]));
     expect(conflicts.some((c) => c.jiatingId === "mix")).toBe(false);
   });
 
+  it("flags Jiating vs Jiating Olympics overlaps too", () => {
+    const withOlympics = [
+      ...entries,
+      entry("oly", "olympics", [], 12, 18.5),
+      entry("a-noon", "jiating", ["a"], 11, 13),
+    ];
+    const conflicts = findLayerConflicts(withOlympics, new Set(["a", "b"]));
+    expect(conflicts).toContainEqual({ jiatingId: "a-noon", layerId: "oly" });
+    expect(conflicts).toContainEqual({ jiatingId: "a1", layerId: "oly" });
+    expect(conflicts).toContainEqual({ jiatingId: "b1", layerId: "oly" });
+    // Olympics vs CSA-wide is not a Jiating conflict.
+    expect(conflicts.some((c) => c.jiatingId === "gm")).toBe(false);
+  });
+
   it("skips families that are unchecked", () => {
-    expect(findCsaConflicts(entries, new Set(["b"]))).toEqual([
-      { jiatingId: "b1", csaId: "gm" },
+    expect(findLayerConflicts(entries, new Set(["b"]))).toEqual([
+      { jiatingId: "b1", layerId: "gm" },
     ]);
   });
 });
@@ -252,7 +284,7 @@ describe("buildBusyHeatmap", () => {
     const grid = buildBusyHeatmap({
       entries,
       checkedFamilyIds: new Set(["a", "b"]),
-      includeCsa: true,
+      layers: { csa: true, olympics: true },
       weekStart,
       startHour: 18,
       endHour: 21,
@@ -260,7 +292,7 @@ describe("buildBusyHeatmap", () => {
     expect(grid).toHaveLength(7);
     const day = grid[2].map((c) => [
       c.busyFamilyIds.sort().join(""),
-      c.csaBusy,
+      c.layerBusy,
     ]);
     expect(day).toEqual([
       ["a", false],
@@ -272,17 +304,39 @@ describe("buildBusyHeatmap", () => {
     ]);
   });
 
+  it("marks Olympics slots busy only when that layer is on", () => {
+    const olympics = [entry("oly", "olympics", [], 18, 19)];
+    const on = buildBusyHeatmap({
+      entries: olympics,
+      checkedFamilyIds: new Set(),
+      layers: { csa: false, olympics: true },
+      weekStart,
+      startHour: 18,
+      endHour: 19,
+    });
+    expect(on[2].every((c) => c.layerBusy)).toBe(true);
+    const off = buildBusyHeatmap({
+      entries: olympics,
+      checkedFamilyIds: new Set(),
+      layers: { csa: true, olympics: false },
+      weekStart,
+      startHour: 18,
+      endHour: 19,
+    });
+    expect(off[2].some((c) => c.layerBusy)).toBe(false);
+  });
+
   it("ignores CSA when the layer is off and unchecked families", () => {
     const grid = buildBusyHeatmap({
       entries,
       checkedFamilyIds: new Set(["b"]),
-      includeCsa: false,
+      layers: { csa: false, olympics: false },
       weekStart,
       startHour: 20,
       endHour: 21,
     });
     expect(
-      grid[2].every((c) => !c.csaBusy && c.busyFamilyIds.length === 0),
+      grid[2].every((c) => !c.layerBusy && c.busyFamilyIds.length === 0),
     ).toBe(true);
   });
 });
@@ -292,6 +346,11 @@ describe("parseJtParam", () => {
     expect(parseJtParam(null, ["a", "b"])).toBeNull();
     expect(parseJtParam("a,zzz,a", ["a", "b"])).toEqual(["a"]);
     expect(parseJtParam("", ["a"])).toEqual([]);
+  });
+
+  it("treats a link with only unknown ids as absent", () => {
+    expect(parseJtParam("zzz,yyy", ["a", "b"])).toBeNull();
+    expect(parseJtParam(" , ", ["a"])).toEqual([]);
   });
 });
 
@@ -354,7 +413,7 @@ describe("buildBusyHeatmap with per-day ranges", () => {
     const grid = buildBusyHeatmap({
       entries: [entry("a1", "jiating", ["a"], 18, 19)],
       checkedFamilyIds: new Set(["a"]),
-      includeCsa: false,
+      layers: { csa: false, olympics: false },
       weekStart,
       startHour: 0,
       endHour: 24,

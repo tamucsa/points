@@ -3,10 +3,13 @@
 import {
   type CalendarEntry,
   type CalendarFamily,
-  CSA_LAYER_COLOR,
   DAY_MS,
   HOUR_MS,
   type HourRange,
+  isLayerKind,
+  LAYER_KINDS,
+  LAYER_META,
+  type LayerVisibility,
   packOverlaps,
 } from "@/utils/jiating-calendar-view";
 import {
@@ -27,7 +30,7 @@ interface Props {
   entries: CalendarEntry[];
   families: CalendarFamily[];
   checked: ReadonlySet<string>;
-  showCsa: boolean;
+  layers: LayerVisibility;
   weekStart: number;
   /** Hour window per day, fitted to that day's events. */
   dayRanges: HourRange[];
@@ -49,7 +52,7 @@ export default function SwimlaneView({
   entries,
   families,
   checked,
-  showCsa,
+  layers,
   weekStart,
   dayRanges,
   familiesById,
@@ -64,19 +67,16 @@ export default function SwimlaneView({
     const spanMs = (range.endHour - range.startHour) * HOUR_MS;
     return { start, end: start + spanMs, spanMs, ...range };
   };
-  const csaEntries = entries.filter((e) => e.kind === "csa");
+  // `entries` is already filtered, so layer entries here belong to shown layers.
+  const layerEntries = entries.filter((e) => isLayerKind(e.kind));
 
   const lanes: Lane[] = [
-    ...(showCsa
-      ? [
-          {
-            id: "csa",
-            label: "CSA-wide",
-            color: CSA_LAYER_COLOR,
-            entries: csaEntries,
-          },
-        ]
-      : []),
+    ...LAYER_KINDS.filter((layer) => layers[layer]).map((layer) => ({
+      id: layer,
+      label: LAYER_META[layer].label,
+      color: LAYER_META[layer].color,
+      entries: entries.filter((e) => e.kind === layer),
+    })),
     ...families
       .filter((f) => checked.has(f.id))
       .map((family) => ({
@@ -197,7 +197,7 @@ export default function SwimlaneView({
 
           {lanes.length === 0 && (
             <p className="px-4 py-10 text-center text-sm text-subtitle">
-              Check a Jiating or the CSA-wide layer to see lanes.
+              Check a Jiating or a shared layer to see lanes.
             </p>
           )}
 
@@ -226,10 +226,9 @@ export default function SwimlaneView({
                     style={{ height: rows * ROW_PX + LANE_PAD_PX * 2 }}
                   >
                     {dayLines}
-                    {/* CSA bands make org-wide overlaps visible in every lane. */}
-                    {showCsa &&
-                      lane.id !== "csa" &&
-                      packOverlaps(segmentsFor(csaEntries)).map(
+                    {/* Layer bands make shared-event overlaps visible in every family lane. */}
+                    {!(LAYER_KINDS as readonly string[]).includes(lane.id) &&
+                      packOverlaps(segmentsFor(layerEntries)).map(
                         ({ item, start, end }) => {
                           const day = Math.floor((start - weekStart) / DAY_MS);
                           const left = xPct(start, day);
@@ -240,7 +239,7 @@ export default function SwimlaneView({
                               style={{
                                 left: `${left}%`,
                                 width: `${xPct(end, day) - left}%`,
-                                background: `${CSA_LAYER_COLOR}1f`,
+                                background: `${isLayerKind(item.kind) ? LAYER_META[item.kind].color : LAYER_META.csa.color}1f`,
                               }}
                             />
                           );

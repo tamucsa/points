@@ -1,5 +1,5 @@
 import { chicagoWeekMondayKey, EVENT_TIMEZONE } from "@/utils/datetime";
-import { isMixerCategory } from "@/utils/events";
+import { isJiatingOlympicsCategory, isMixerCategory } from "@/utils/events";
 
 /**
  * Pure helpers for the officer Jiating calendar view.
@@ -25,6 +25,29 @@ export const CSA_CONFLICT_CATEGORIES: ReadonlySet<string> = new Set([
 
 export const DEFAULT_FAMILY_COLOR = "#4779B8";
 export const CSA_LAYER_COLOR = "#64748b";
+export const OLYMPICS_LAYER_COLOR = "#d97706";
+
+/**
+ * Shared layers that Jiating events and mixers are checked against. Each has
+ * its own legend checkbox and URL flag (`csa=0` / `oly=0` hides it).
+ */
+export type LayerKind = "csa" | "olympics";
+
+export const LAYER_KINDS: readonly LayerKind[] = ["csa", "olympics"];
+
+export const LAYER_META: Record<
+  LayerKind,
+  { label: string; color: string; param: string }
+> = {
+  csa: { label: "CSA-wide", color: CSA_LAYER_COLOR, param: "csa" },
+  olympics: {
+    label: "Jiating Olympics",
+    color: OLYMPICS_LAYER_COLOR,
+    param: "oly",
+  },
+};
+
+export type LayerVisibility = Record<LayerKind, boolean>;
 
 export type CalendarSourceEvent = {
   id: string;
@@ -44,7 +67,11 @@ export type CalendarFamily = {
   color: string | null;
 };
 
-export type CalendarEntryKind = "jiating" | "csa";
+export type CalendarEntryKind = "jiating" | LayerKind;
+
+export function isLayerKind(kind: CalendarEntryKind): kind is LayerKind {
+  return kind !== "jiating";
+}
 
 export type CalendarEntry = {
   id: string;
@@ -54,7 +81,7 @@ export type CalendarEntry = {
   publishStatus: string;
   kind: CalendarEntryKind;
   isMixer: boolean;
-  /** Participating Jiatings, in family order. Empty for CSA entries. */
+  /** Participating Jiatings, in family order. Empty for layer entries. */
   familyIds: string[];
   /** Chicago wall-clock ms. */
   start: number;
@@ -161,6 +188,9 @@ export function buildCalendarEntries(
     } else if (CSA_CONFLICT_CATEGORIES.has(category)) {
       kind = "csa";
       familyIds = [];
+    } else if (isJiatingOlympicsCategory(category)) {
+      kind = "olympics";
+      familyIds = [];
     } else {
       continue;
     }
@@ -192,15 +222,15 @@ export function buildCalendarEntries(
   return entries.sort((a, b) => a.start - b.start || a.end - b.end);
 }
 
-/** Jiating entries with at least one checked family; CSA entries when the layer is on. */
+/** Jiating entries with at least one checked family; layer entries when their layer is on. */
 export function filterVisibleEntries(
   entries: readonly CalendarEntry[],
   checkedFamilyIds: ReadonlySet<string>,
-  showCsa: boolean,
+  layers: LayerVisibility,
 ): CalendarEntry[] {
   return entries.filter((entry) =>
-    entry.kind === "csa"
-      ? showCsa
+    isLayerKind(entry.kind)
+      ? layers[entry.kind]
       : entry.familyIds.some((id) => checkedFamilyIds.has(id)),
   );
 }
@@ -212,26 +242,27 @@ export function entriesOverlap(
   return a.start < b.end && b.start < a.end;
 }
 
-export type CsaConflict = { jiatingId: string; csaId: string };
+export type LayerConflict = { jiatingId: string; layerId: string };
 
 /**
  * A conflict is a Jiating Event or Mixer (with a checked family) overlapping a
- * General Meeting, CSA-Wide, or CSA-Wide Mixers event. CSA events count whether
- * or not their layer is shown, so hiding the layer never hides a warning.
+ * layer event: a General Meeting, CSA-Wide, or CSA-Wide Mixers event, or a
+ * Jiating Olympics event. Layer events count whether or not their layer is
+ * shown, so hiding a layer never hides a warning.
  */
-export function findCsaConflicts(
+export function findLayerConflicts(
   entries: readonly CalendarEntry[],
   checkedFamilyIds: ReadonlySet<string>,
-): CsaConflict[] {
-  const csa = entries.filter((e) => e.kind === "csa");
-  if (csa.length === 0) return [];
-  const conflicts: CsaConflict[] = [];
+): LayerConflict[] {
+  const layerEntries = entries.filter((e) => isLayerKind(e.kind));
+  if (layerEntries.length === 0) return [];
+  const conflicts: LayerConflict[] = [];
   for (const entry of entries) {
     if (entry.kind !== "jiating") continue;
     if (!entry.familyIds.some((id) => checkedFamilyIds.has(id))) continue;
-    for (const other of csa) {
+    for (const other of layerEntries) {
       if (entriesOverlap(entry, other)) {
-        conflicts.push({ jiatingId: entry.id, csaId: other.id });
+        conflicts.push({ jiatingId: entry.id, layerId: other.id });
       }
     }
   }
@@ -382,8 +413,8 @@ export function fitDayHourRanges(
 export type HeatmapCell = {
   /** Checked families with an event in this slot. */
   busyFamilyIds: string[];
-  /** A CSA-wide event fills this slot (only counted when the layer is on). */
-  csaBusy: boolean;
+  /** A CSA-wide or Olympics event fills this slot (only counted when its layer is on). */
+  layerBusy: boolean;
 };
 
 /**
@@ -393,7 +424,7 @@ export type HeatmapCell = {
 export function buildBusyHeatmap(input: {
   entries: readonly CalendarEntry[];
   checkedFamilyIds: ReadonlySet<string>;
-  includeCsa: boolean;
+  layers: LayerVisibility;
   weekStart: number;
   startHour: number;
   endHour: number;
@@ -419,32 +450,45 @@ export function buildBusyHeatmap(input: {
       const slotStart = dayStart + slot * slotMs;
       const slotRange = { start: slotStart, end: slotStart + slotMs };
       const busy = new Set<string>();
-      let csaBusy = false;
+      let layerBusy = false;
       for (const entry of dayEntries) {
         if (!entriesOverlap(entry, slotRange)) continue;
-        if (entry.kind === "csa") {
-          if (input.includeCsa) csaBusy = true;
+        if (isLayerKind(entry.kind)) {
+          if (input.layers[entry.kind]) layerBusy = true;
           continue;
         }
         for (const id of entry.familyIds) {
           if (input.checkedFamilyIds.has(id)) busy.add(id);
         }
       }
-      return { busyFamilyIds: [...busy], csaBusy };
+      return { busyFamilyIds: [...busy], layerBusy };
     });
   });
 }
 
-/** `jt` query param → checked family ids (unknown ids dropped), or null when absent. */
+/**
+ * `jt` query param → checked family ids (unknown ids dropped).
+ * Returns null when the param is absent, or when it lists ids but none are
+ * valid (a stale link), so callers fall back to the default selection.
+ * An empty value (`jt=`) is a deliberate "none checked" and returns [].
+ */
 export function parseJtParam(
   raw: string | null | undefined,
   validFamilyIds: readonly string[],
 ): string[] | null {
   if (raw === null || raw === undefined) return null;
+  const requested = [
+    ...new Set(
+      raw
+        .split(",")
+        .map((s) => s.trim())
+        .filter(Boolean),
+    ),
+  ];
+  if (requested.length === 0) return [];
   const valid = new Set(validFamilyIds);
-  return [...new Set(raw.split(",").map((s) => s.trim()))].filter((id) =>
-    valid.has(id),
-  );
+  const ids = requested.filter((id) => valid.has(id));
+  return ids.length > 0 ? ids : null;
 }
 
 export function serializeJtParam(familyIds: Iterable<string>): string {

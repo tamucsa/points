@@ -23,7 +23,7 @@ const MIN_BLOCK_PX = 20;
 export type HeatmapOverlay = {
   cells: HeatmapCell[][];
   slotMinutes: number;
-  /** Checked families plus the CSA layer when shown; 0 means nothing to measure. */
+  /** Checked families plus each shown layer; 0 means nothing to measure. */
   denominator: number;
 };
 
@@ -40,12 +40,12 @@ interface Props {
 }
 
 export function heatCellStyle(cell: HeatmapCell, denominator: number) {
-  const busy = cell.busyFamilyIds.length + (cell.csaBusy ? 1 : 0);
+  const busy = cell.busyFamilyIds.length + (cell.layerBusy ? 1 : 0);
   if (busy === 0) {
     return { background: "color-mix(in srgb, #10b981 16%, transparent)" };
   }
-  // A CSA-wide event blocks everyone, so it shades the slot fully.
-  const ratio = cell.csaBusy ? 1 : busy / Math.max(1, denominator);
+  // A CSA-wide or Olympics event blocks everyone, so it shades the slot fully.
+  const ratio = cell.layerBusy ? 1 : busy / Math.max(1, denominator);
   const pct = Math.round(14 + ratio * 36);
   return {
     background: `color-mix(in srgb, var(--theme-primary) ${pct}%, transparent)`,
@@ -152,7 +152,7 @@ export default function WeekGrid({
                         ...heatCellStyle(cell, heatmap?.denominator ?? 0),
                       }}
                       title={
-                        cell.busyFamilyIds.length === 0 && !cell.csaBusy
+                        cell.busyFamilyIds.length === 0 && !cell.layerBusy
                           ? "Open for every checked Jiating"
                           : undefined
                       }
