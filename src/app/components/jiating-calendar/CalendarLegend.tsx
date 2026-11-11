@@ -3,7 +3,10 @@
 import { Check } from "lucide-react";
 import {
   type CalendarFamily,
-  CSA_LAYER_COLOR,
+  LAYER_KINDS,
+  LAYER_META,
+  type LayerKind,
+  type LayerVisibility,
 } from "@/utils/jiating-calendar-view";
 import { familyColor } from "./shared";
 
@@ -13,9 +16,9 @@ interface Props {
   onToggle: (familyId: string) => void;
   onOnly: (familyId: string) => void;
   onSetAll: (checked: boolean) => void;
-  showCsa: boolean;
-  onToggleCsa: () => void;
-  /** Visible-week event counts per family id, plus `csa`. */
+  layers: LayerVisibility;
+  onToggleLayer: (layer: LayerKind) => void;
+  /** Visible-week event counts per family id, plus each layer kind. */
   counts: Record<string, number>;
 }
 
@@ -80,8 +83,8 @@ export default function CalendarLegend({
   onToggle,
   onOnly,
   onSetAll,
-  showCsa,
-  onToggleCsa,
+  layers,
+  onToggleLayer,
   counts,
 }: Props) {
   const allChecked = families.every((f) => checked.has(f.id));
@@ -114,13 +117,16 @@ export default function CalendarLegend({
       </ul>
       <div className="my-2 border-t border-home-border" />
       <ul>
-        <LegendCheckbox
-          label="CSA-wide"
-          color={CSA_LAYER_COLOR}
-          checked={showCsa}
-          count={counts.csa ?? 0}
-          onToggle={onToggleCsa}
-        />
+        {LAYER_KINDS.map((layer) => (
+          <LegendCheckbox
+            key={layer}
+            label={LAYER_META[layer].label}
+            color={LAYER_META[layer].color}
+            checked={layers[layer]}
+            count={counts[layer] ?? 0}
+            onToggle={() => onToggleLayer(layer)}
+          />
+        ))}
       </ul>
     </div>
   );

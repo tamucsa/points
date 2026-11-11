@@ -4,8 +4,9 @@ import type { CSSProperties } from "react";
 import {
   type CalendarEntry,
   type CalendarFamily,
-  CSA_LAYER_COLOR,
   DEFAULT_FAMILY_COLOR,
+  isLayerKind,
+  LAYER_META,
   stripeGradient,
   withAlpha,
 } from "@/utils/jiating-calendar-view";
@@ -38,12 +39,12 @@ export function familyColor(family: CalendarFamily | undefined): string {
     : DEFAULT_FAMILY_COLOR;
 }
 
-/** Colors for an entry: CSA gray, one family color, or each mixer family in order. */
+/** Colors for an entry: its layer color, one family color, or each mixer family in order. */
 export function entryColors(
   entry: CalendarEntry,
   familiesById: ReadonlyMap<string, CalendarFamily>,
 ): string[] {
-  if (entry.kind === "csa") return [CSA_LAYER_COLOR];
+  if (isLayerKind(entry.kind)) return [LAYER_META[entry.kind].color];
   return entry.familyIds.map((id) => familyColor(familiesById.get(id)));
 }
 
