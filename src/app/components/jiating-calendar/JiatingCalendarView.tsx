@@ -155,16 +155,18 @@ export default function JiatingCalendarView({
     updateParams({ jt: value });
   };
 
-  // No `jt` in the URL: restore the last selection from this browser.
+  // No usable `jt` in the URL (missing, or a stale link with no valid ids):
+  // restore the last selection from this browser.
   const restoredRef = useRef(false);
+  const jtUsable = parsedJt !== null;
   useEffect(() => {
-    if (restoredRef.current || jtParam !== null) return;
+    if (restoredRef.current || jtUsable) return;
     restoredRef.current = true;
     const stored = readStoredJt();
     if (stored === null) return;
     const ids = parseJtParam(stored, familyIds);
     if (ids) updateParams({ jt: serializeJtParam(ids) });
-  }, [jtParam, familyIds, updateParams]);
+  }, [jtUsable, familyIds, updateParams]);
 
   // Client-only clock so server and client markup match.
   const [nowWall, setNowWall] = useState<number | null>(null);
@@ -281,6 +283,11 @@ export default function JiatingCalendarView({
   // Close stale popovers when the week or selection changes.
   // biome-ignore lint/correctness/useExhaustiveDependencies: reset on navigation
   useEffect(() => setSelected(null), [weekKey, layout, checkedKey, layers]);
+
+  // Each week starts with the conflicts list closed, so an open list doesn't
+  // reappear on its own in a later week that has conflicts.
+  // biome-ignore lint/correctness/useExhaustiveDependencies: reset on week change
+  useEffect(() => setShowConflicts(false), [weekKey]);
 
   const onSelect = (entry: CalendarEntry, anchor: DOMRect) =>
     setSelected({ entry, anchor });

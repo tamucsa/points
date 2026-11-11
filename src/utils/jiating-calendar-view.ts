@@ -466,16 +466,29 @@ export function buildBusyHeatmap(input: {
   });
 }
 
-/** `jt` query param → checked family ids (unknown ids dropped), or null when absent. */
+/**
+ * `jt` query param → checked family ids (unknown ids dropped).
+ * Returns null when the param is absent, or when it lists ids but none are
+ * valid (a stale link), so callers fall back to the default selection.
+ * An empty value (`jt=`) is a deliberate "none checked" and returns [].
+ */
 export function parseJtParam(
   raw: string | null | undefined,
   validFamilyIds: readonly string[],
 ): string[] | null {
   if (raw === null || raw === undefined) return null;
+  const requested = [
+    ...new Set(
+      raw
+        .split(",")
+        .map((s) => s.trim())
+        .filter(Boolean),
+    ),
+  ];
+  if (requested.length === 0) return [];
   const valid = new Set(validFamilyIds);
-  return [...new Set(raw.split(",").map((s) => s.trim()))].filter((id) =>
-    valid.has(id),
-  );
+  const ids = requested.filter((id) => valid.has(id));
+  return ids.length > 0 ? ids : null;
 }
 
 export function serializeJtParam(familyIds: Iterable<string>): string {

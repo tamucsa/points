@@ -347,6 +347,11 @@ describe("parseJtParam", () => {
     expect(parseJtParam("a,zzz,a", ["a", "b"])).toEqual(["a"]);
     expect(parseJtParam("", ["a"])).toEqual([]);
   });
+
+  it("treats a link with only unknown ids as absent", () => {
+    expect(parseJtParam("zzz,yyy", ["a", "b"])).toBeNull();
+    expect(parseJtParam(" , ", ["a"])).toEqual([]);
+  });
 });
 
 describe("stripeGradient", () => {
