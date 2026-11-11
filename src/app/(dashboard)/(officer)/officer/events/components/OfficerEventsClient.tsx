@@ -1,7 +1,7 @@
 'use client'
 
 import { QRCodeSVG } from 'qrcode.react'
-import { useRouter } from 'next/navigation'
+import { usePathname, useRouter, useSearchParams } from 'next/navigation'
 import { useEffect, useMemo, useState } from 'react'
 import { deleteEvent, publishEvent } from '@/app/actions/events'
 import EventJiatingPills from '@/app/components/EventJiatingPills'
@@ -14,6 +14,7 @@ import EventTimeframeSwitch, {
 } from '@/app/components/EventTimeframeSwitch'
 import EventListPager, { paginateItems } from '@/app/components/EventListPager'
 import JiatingFamilyFilter from '@/app/components/JiatingFamilyFilter'
+import JiatingCalendarView from '@/app/components/jiating-calendar/JiatingCalendarView'
 import { EventMetaChip, EventMetaItem, EventMetaRow } from '@/app/components/EventMeta'
 import PageHeader from '@/app/components/PageHeader'
 import { EVENT_TIMEZONE, formatEventDate, isEventPast, sortEventsByStartsAt } from '@/utils/datetime'
@@ -31,7 +32,8 @@ import {
   isProfitShareCategory,
   showAddPointsPill,
 } from '@/utils/events'
-import { Calendar, MapPin, Plus, Star, Trash2, Users } from 'lucide-react'
+import { isParentOnly } from '@/utils/members'
+import { Calendar, CalendarRange, List, MapPin, Plus, Star, Trash2, Users } from 'lucide-react'
 
 interface Event {
   id: string
@@ -105,6 +107,20 @@ export default function OfficerEventsClient({
   eventsWithImportUpload = {},
 }: Props) {
   const router = useRouter()
+  const pathname = usePathname()
+  const searchParams = useSearchParams()
+  const view: 'list' | 'calendar' = searchParams.get('view') === 'calendar' ? 'calendar' : 'list'
+  const setView = (next: 'list' | 'calendar') => {
+    const params = new URLSearchParams(searchParams.toString())
+    if (next === 'calendar') {
+      params.set('view', 'calendar')
+    } else {
+      for (const key of ['view', 'jt', 'csa', 'layout', 'free', 'week']) params.delete(key)
+    }
+    const query = params.toString()
+    // Both views use data already on the page, so skip the server round trip.
+    window.history.replaceState(null, '', query ? `${pathname}?${query}` : pathname)
+  }
   const [qrEvent, setQrEvent] = useState<(Event | SpectatorEvent) | null>(null)
   const [deleteTarget, setDeleteTarget] = useState<Event | null>(null)
   const [deleting, setDeleting] = useState(false)
@@ -573,20 +589,67 @@ export default function OfficerEventsClient({
   }
 
   return (
-    <div className="mx-auto max-w-5xl px-6 py-8 lg:px-8">
+    <div
+      className={`mx-auto px-6 py-8 lg:px-8 ${view === 'calendar' ? 'max-w-7xl' : 'max-w-5xl'}`}
+    >
       <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <PageHeader
           title="Officer Events"
           subtitle={`${semester?.name ?? 'Current Semester'} · ${events.length} events`}
         />
-        <button
-          onClick={() => router.push('/officer/events/new')}
-          className="flex items-center justify-center gap-2 rounded-xl bg-primary px-4 py-2.5 text-sm font-semibold text-on-primary shadow-sm transition hover:bg-primary-hover"
-        >
-          <Plus className="size-4" aria-hidden />
-          New Event
-        </button>
+        <div className="flex flex-wrap items-center gap-2">
+          <div
+            className="inline-flex rounded-xl bg-surface-muted p-1"
+            role="tablist"
+            aria-label="List or calendar view"
+          >
+            {([
+              { id: 'list', label: 'List', icon: List },
+              { id: 'calendar', label: 'Calendar', icon: CalendarRange },
+            ] as const).map(option => {
+              const active = view === option.id
+              const Icon = option.icon
+              return (
+                <button
+                  key={option.id}
+                  type="button"
+                  role="tab"
+                  aria-selected={active}
+                  onClick={() => setView(option.id)}
+                  className={`inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm font-semibold transition ${
+                    active ? 'bg-surface text-text shadow-sm' : 'text-subtitle hover:text-text'
+                  }`}
+                >
+                  <Icon className="size-4" aria-hidden />
+                  {option.label}
+                </button>
+              )
+            })}
+          </div>
+          <button
+            type="button"
+            onClick={() => router.push('/officer/events/new')}
+            className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-primary px-4 py-2.5 text-sm font-semibold text-on-primary shadow-sm transition hover:bg-primary-hover sm:flex-none"
+          >
+            <Plus className="size-4" aria-hidden />
+            New Event
+          </button>
+        </div>
       </div>
+
+      {view === 'calendar' && (
+        <JiatingCalendarView
+          events={events}
+          families={jtFamilies}
+          mixerFamiliesByEventId={mixerFamiliesByEventId}
+          defaultFamilyId={
+            isParentOnly(memberAccess) ? memberAccess.jt_family_id : null
+          }
+        />
+      )}
+
+      {view === 'list' && (
+      <>
 
       {publishError && (
         <div className="mb-4 rounded-2xl border border-error-border bg-error-bg px-4 py-3 text-sm text-error">
@@ -711,6 +774,9 @@ export default function OfficerEventsClient({
             onPageChange={setPastPage}
           />
         </div>
+      )}
+
+      </>
       )}
 
       {deleteTarget && (
