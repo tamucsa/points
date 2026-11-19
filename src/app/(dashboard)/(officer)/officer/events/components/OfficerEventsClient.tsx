@@ -5,7 +5,7 @@ import { usePathname, useRouter, useSearchParams } from 'next/navigation'
 import { useEffect, useMemo, useState } from 'react'
 import { deleteEvent, publishEvent } from '@/app/actions/events'
 import EventJiatingPills from '@/app/components/EventJiatingPills'
-import IconLabel, { CheckInTypeBadge, ScopeBadge } from '@/app/components/IconLabel'
+import IconLabel, { CheckInTypeBadge } from '@/app/components/IconLabel'
 import EmptyState from '@/app/components/EmptyState'
 import EventFilterTabs from '@/app/components/EventFilterTabs'
 import EventTimeframeSwitch, {
@@ -17,7 +17,7 @@ import JiatingFamilyFilter from '@/app/components/JiatingFamilyFilter'
 import JiatingCalendarView from '@/app/components/jiating-calendar/JiatingCalendarView'
 import { EventMetaChip, EventMetaItem, EventMetaRow } from '@/app/components/EventMeta'
 import PageHeader from '@/app/components/PageHeader'
-import { EVENT_TIMEZONE, formatEventDate, isEventPast, sortEventsByStartsAt } from '@/utils/datetime'
+import { EVENT_TIMEZONE, formatEventDate, formatEventTime, isEventPast, sortEventsByStartsAt } from '@/utils/datetime'
 import { dismissAttendancePin, useDismissedAttendanceEventIds } from '@/utils/dismissed-attendance'
 import {
   EVENT_FILTER_TABS,
@@ -29,11 +29,22 @@ import {
   formatEventPointsLabel,
   isCalendarOnlyCheckIn,
   isImportCheckIn,
+  isManualPointsCheckIn,
   isProfitShareCategory,
   showAddPointsPill,
 } from '@/utils/events'
 import { isParentOnly } from '@/utils/members'
-import { Calendar, CalendarRange, List, MapPin, Plus, Star, Trash2, Users } from 'lucide-react'
+import { Calendar, CalendarRange, Clock, List, MapPin, Plus, Star, Trash2, Users } from 'lucide-react'
+
+/** Start – end time in Central; adds the end date if the event spans days. */
+function formatEventTimeRange(startsAt: string, endsAt?: string | null) {
+  const start = formatEventTime(startsAt)
+  if (!endsAt) return start
+  const sameDay = formatEventDate(startsAt) === formatEventDate(endsAt)
+  return sameDay
+    ? `${start} – ${formatEventTime(endsAt)}`
+    : `${start} – ${formatEventDate(endsAt)} ${formatEventTime(endsAt)}`
+}
 
 interface Event {
   id: string
@@ -375,6 +386,11 @@ export default function OfficerEventsClient({
             <EventMetaItem>
               <IconLabel icon={Calendar} label={formatEventDate(event.starts_at)} size="sm" />
             </EventMetaItem>
+            {!isManualPointsCheckIn(event.check_in_type) && (
+              <EventMetaItem>
+                <IconLabel icon={Clock} label={formatEventTimeRange(event.starts_at, event.ends_at)} size="sm" />
+              </EventMetaItem>
+            )}
             {event.location && (
               <EventMetaItem>
                 <IconLabel
@@ -388,9 +404,6 @@ export default function OfficerEventsClient({
           </EventMetaRow>
           <EventMetaRow className="mt-1.5">
             <EventMetaChip>{event.category}</EventMetaChip>
-            <EventMetaChip>
-              <ScopeBadge scope={event.scope} />
-            </EventMetaChip>
             <EventMetaChip>
               <CheckInTypeBadge checkInType={event.check_in_type} />
             </EventMetaChip>

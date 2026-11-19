@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from 'react'
 import EventJiatingPills from '@/app/components/EventJiatingPills'
-import IconLabel, { CategoryBadge, CheckInTypeBadge } from '@/app/components/IconLabel'
+import IconLabel, { CategoryBadge } from '@/app/components/IconLabel'
 import EmptyState from '@/app/components/EmptyState'
 import EventFilterTabs from '@/app/components/EventFilterTabs'
 import EventTimeframeSwitch, { type EventTimeframe } from '@/app/components/EventTimeframeSwitch'
@@ -127,9 +127,6 @@ function EventCard({
               />
             </EventMetaItem>
           )}
-          <EventMetaChip>
-            <CheckInTypeBadge checkInType={event.check_in_type} />
-          </EventMetaChip>
         </EventMetaRow>
       </div>
 
@@ -248,9 +245,6 @@ function EventDetailModal({
               />
             </div>
           )}
-          <div className="flex items-center">
-            <CheckInTypeBadge checkInType={event.check_in_type} />
-          </div>
         </div>
 
         {event.description ? (
