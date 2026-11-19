@@ -8,7 +8,7 @@ This document explains how the system is structured, how requests flow through t
 - **Backend**: Supabase (Postgres + Auth + RLS).
 - **Auth**: Supabase OAuth → `/api/auth/callback` exchanges code for session, enforces TAMU domain, and links auth users to `members`.
 - **Authorization**: RLS policies in Supabase + server-side guards in layouts/routes.
-- **Points**: Counted attendance points are rolled into `member_semester_points` on check-in / uncheck / related event updates. `v_current_leaderboard` reads those cached totals for the active semester.
+- **Points**: Counted attendance points are rolled into `member_semester_points` on check-in / uncheck / related event updates. `v_current_leaderboard` reads those cached totals for the active semester. Only events that pass `event_earns_points` count: an admin can set `semesters.points_cutoff_at` on `/admin/semesters` (events starting at or after it earn no points; attendance is still recorded), and mark single events `points_exception` = `always` / `never` on the event page. Changing either re-runs totals and the weekly JT / spectator caps.
 
 ## Repository layout
 
@@ -40,7 +40,7 @@ Core tables (names reflect actual schema):
 - `attendance`: joins members to events; source of points
 - `gm_recap_submissions`: General Meeting recap quiz rows. A matched member gets credit for that meeting and no points. Check-in plus quiz for the same meeting is one credit.
 - `gm_culture_quiz_results`: Culture Quiz places for a General Meeting. 1st is 3 points, 2nd is 2, 3rd is 1, and a place can be shared. Points are added to the GM bucket on top of check-in. Winners must be on that meeting's attendance list. Parents cannot earn them.
-- `member_semester_points`: cached counted point totals per member per semester; maintained by triggers on attendance / event category·point changes; backing store for `v_current_leaderboard`
+- `member_semester_points`: cached counted point totals per member per semester; maintained by triggers on attendance / event category·point·start time·points exception changes and semester points cutoff changes; backing store for `v_current_leaderboard` and `v_jt_leaderboard` (family totals are the sum of member totals)
 - `battle_pass_rewards`: per-semester battle pass catalog (`name`, `points_required`, `redeem_members`, `redeem_officers`, `redeem_parents`). New semesters are seeded with the default set for members only; admins edit rows on `/admin/semesters`. Admins count as officers. All three flags false means nobody can redeem that reward
 - `battle_pass_pickups`: one row per member per reward once an officer records pickup. Insert is rejected unless the member is active, the reward is open to their group, and their points for that reward’s semester meet `points_required`
 - `semesters`: identifies the active semester

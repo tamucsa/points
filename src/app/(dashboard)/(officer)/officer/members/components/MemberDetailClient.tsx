@@ -8,6 +8,7 @@ import RoleBadges from '@/app/components/RoleBadges'
 import { CATEGORY_COLORS, POINT_BUCKET_LABELS } from '@/utils/constants'
 import { formatEventSchedule } from '@/utils/datetime'
 import { isManualPointsCheckIn } from '@/utils/events'
+import { eventEarnsPoints, noPointsReason } from '@/utils/points-cutoff'
 import { earnsRewards, isParent } from '@/utils/members'
 import type { GmRewardProgress } from '@/utils/rewards'
 import GmRewardCard from '@/app/(dashboard)/profile/components/GmRewardCard'
@@ -44,6 +45,7 @@ interface AttendanceRow {
     starts_at: string
     ends_at: string | null
     check_in_type?: string | null
+    points_exception?: string | null
   }
   cultureQuiz?: { place: number; points: number } | null
 }
@@ -61,6 +63,7 @@ interface Props {
   history: SemesterSummary[]
   gmReward?: GmRewardProgress | null
   gmRewardLoadError?: string | null
+  pointsCutoffAt?: string | null
 }
 
 export default function MemberDetailClient({
@@ -69,6 +72,7 @@ export default function MemberDetailClient({
   history,
   gmReward = null,
   gmRewardLoadError = null,
+  pointsCutoffAt = null,
 }: Props) {
   const color = member.jt_color ?? '#4779B8'
   const displayName = member.full_name
@@ -156,7 +160,9 @@ export default function MemberDetailClient({
           const catColor = CATEGORY_COLORS[row.events?.category] ?? CATEGORY_COLORS.default
           const earnedPoints =
             row.point_value_override ?? row.events?.point_value ?? 0
-          const awardsPoints = row.counted
+          const pastCutoff =
+            !!row.events?.starts_at && !eventEarnsPoints(row.events, pointsCutoffAt)
+          const awardsPoints = row.counted && !pastCutoff
           return (
             <div key={row.id} className="flex items-center gap-4 border-b border-home-border px-5 py-3 last:border-b-0">
               <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl text-sm font-extrabold" style={{ background: `${catColor}20`, color: catColor }}>
@@ -176,7 +182,11 @@ export default function MemberDetailClient({
                   {row.cultureQuiz && (
                     <CultureQuizBadge place={row.cultureQuiz.place} points={row.cultureQuiz.points} />
                   )}
-                  {!row.counted && <span className="rounded-md bg-red-50 px-2 py-0.5 text-red-500">Cap reached</span>}
+                  {pastCutoff ? (
+                    <span className="rounded-md bg-home-border/60 px-2 py-0.5 text-subtitle">{noPointsReason(row.events)}</span>
+                  ) : (
+                    !row.counted && <span className="rounded-md bg-red-50 px-2 py-0.5 text-red-500">Cap reached</span>
+                  )}
                 </div>
               </div>
             </div>

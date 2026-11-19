@@ -6,6 +6,7 @@ import { selfCheckIn } from '@/app/actions/attendance'
 import IconLabel from '@/app/components/IconLabel'
 import { formatEventSchedule } from '@/utils/datetime'
 import { roleEarnsPoints } from '@/utils/members'
+import { eventEarnsPoints, noPointsReason } from '@/utils/points-cutoff'
 import { CircleCheck, Clock, MapPin, PartyPopper, Star } from 'lucide-react'
 
 interface Event {
@@ -19,6 +20,7 @@ interface Event {
   location_maps_url?: string | null
   check_in_type: string
   semester_id: string
+  points_exception?: string | null
 }
 
 interface Member {
@@ -35,9 +37,17 @@ interface Props {
   userEmail: string | null
   member: Member | null
   alreadyCheckedIn: boolean
+  pointsCutoffAt?: string | null
 }
 
-export default function CheckinClient({ event, code, userEmail, member, alreadyCheckedIn }: Props) {
+export default function CheckinClient({
+  event,
+  code,
+  userEmail,
+  member,
+  alreadyCheckedIn,
+  pointsCutoffAt = null,
+}: Props) {
   const router = useRouter()
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -68,9 +78,12 @@ export default function CheckinClient({ event, code, userEmail, member, alreadyC
 
   const eventSchedule = formatEventSchedule(event.starts_at, event.ends_at)
   const earnsPoints = roleEarnsPoints(member?.role ?? 'member', member?.is_parent)
-  const pointLabel = earnsPoints
-    ? `${event.point_value} point${event.point_value !== 1 ? 's' : ''}`
-    : 'Attendance only (no points)'
+  const pastCutoff = !eventEarnsPoints(event, pointsCutoffAt)
+  const pointLabel = pastCutoff
+    ? noPointsReason(event)
+    : earnsPoints
+      ? `${event.point_value} point${event.point_value !== 1 ? 's' : ''}`
+      : 'Attendance only (no points)'
 
   return (
     <div className="force-light relative min-h-screen overflow-hidden bg-bg px-6 py-10 text-text">
@@ -175,7 +188,14 @@ export default function CheckinClient({ event, code, userEmail, member, alreadyC
                 <div className="rounded-2xl border border-primary/20 bg-primary/5 p-4 text-center">
                   <PartyPopper className="mx-auto size-10 text-primary" aria-hidden />
                   <p className="mt-2 text-base font-semibold text-text">You&apos;re checked in!</p>
-                  {counted ? (
+                  {pastCutoff ? (
+                    <p className="mt-1 text-sm text-subtitle">
+                      Attendance recorded. This event doesn&apos;t add points
+                      {event.points_exception === 'never'
+                        ? '.'
+                        : " because it's after the points cutoff."}
+                    </p>
+                  ) : counted ? (
                     <p className="mt-1 text-sm text-subtitle">
                       +{event.point_value} point{event.point_value !== 1 ? 's' : ''} added
                       {earnsPoints ? '' : '. These points are not on the leaderboard.'}

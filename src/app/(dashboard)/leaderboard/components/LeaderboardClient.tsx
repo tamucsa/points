@@ -18,7 +18,7 @@ interface Member {
 
 interface Props {
   members: Member[]
-  semester: { name: string } | null
+  semester: { name: string; points_cutoff_at?: string | null } | null
   loadError?: string | null
 }
 
@@ -31,7 +31,7 @@ export default function LeaderboardClient({ members, semester, loadError = null 
         className="mb-2"
       />
 
-      <LeaderboardTabs />
+      <LeaderboardTabs pointsCutoffAt={semester?.points_cutoff_at ?? null} />
 
       <div className="overflow-hidden rounded-4xl border border-home-border bg-surface shadow-theme-md">
         <div className="grid grid-cols-[3rem_1fr_4rem] border-b border-home-border bg-bg px-5 py-3 text-[11px] font-semibold uppercase tracking-[0.05em] text-subtitle">

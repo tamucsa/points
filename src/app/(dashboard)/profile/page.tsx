@@ -42,7 +42,8 @@ export default async function ProfilePage() {
           point_value,
           starts_at,
           ends_at,
-          check_in_type
+          check_in_type,
+          points_exception
         )
       `)
       .eq('member_id', member.id)
@@ -127,6 +128,7 @@ export default async function ProfilePage() {
             starts_at: '',
             ends_at: null,
             check_in_type: '',
+            points_exception: null,
           },
           cultureQuiz: event?.id ? cultureQuizByEvent.get(event.id) ?? null : null,
         }
@@ -146,6 +148,7 @@ export default async function ProfilePage() {
       attendance={normalizedAttendance}
       history={historyError ? [] : (history ?? [])}
       semesterName={semester?.name ?? null}
+      pointsCutoffAt={semester?.points_cutoff_at ?? null}
       pointsLoadError={pointsError?.message ?? null}
       attendanceLoadError={attendanceError?.message ?? null}
       historyLoadError={historyError?.message ?? null}

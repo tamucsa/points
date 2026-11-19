@@ -41,7 +41,8 @@ export default async function MemberDetailPage({ params }: { params: Promise<{ i
           point_value,
           starts_at,
           ends_at,
-          check_in_type
+          check_in_type,
+          points_exception
         )
       `)
       .eq('member_id', id)
@@ -119,6 +120,7 @@ export default async function MemberDetailPage({ params }: { params: Promise<{ i
       member={member}
       attendance={attendanceRows as unknown as Parameters<typeof MemberDetailClient>[0]['attendance']}
       history={history ?? []}
+      pointsCutoffAt={semester?.points_cutoff_at ?? null}
       gmReward={gmReward}
       gmRewardLoadError={recapResult.error?.message ?? null}
     />

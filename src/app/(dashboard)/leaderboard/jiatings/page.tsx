@@ -58,7 +58,11 @@ export default async function JiatingsLeaderboardPage() {
   return (
     <JiatingsLeaderboardClient
       jiatings={jiatings}
-      semester={semester ? { name: semester.name } : null}
+      semester={
+        semester
+          ? { name: semester.name, points_cutoff_at: semester.points_cutoff_at }
+          : null
+      }
       loadError={loadError}
     />
   )

@@ -82,7 +82,14 @@ export default async function EventDetailPage({ params }: { params: Promise<{ id
         members: Array.isArray(row.members) ? row.members[0] : row.members,
       }))
 
-  const publishedSnapshot = await getSnapshotForEvent(id)
+  const [publishedSnapshot, { data: eventSemester }] = await Promise.all([
+    getSnapshotForEvent(id),
+    supabase
+      .from('semesters')
+      .select('points_cutoff_at')
+      .eq('id', event.semester_id)
+      .maybeSingle(),
+  ])
 
   let jtFamilies: { id: string; name: string }[] = []
   let mixerFamilyIds: string[] = []
@@ -287,6 +294,8 @@ export default async function EventDetailPage({ params }: { params: Promise<{ id
       recapLoadError={recapLoadError}
       cultureQuizRows={cultureQuizRows}
       cultureQuizLoadError={cultureQuizLoadError}
+      isAdmin={member.role === 'admin'}
+      pointsCutoffAt={eventSemester?.points_cutoff_at ?? null}
     />
   )
 }

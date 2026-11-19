@@ -10,6 +10,7 @@ import {
   parseGoogleCalendarId,
 } from "@/utils/jiating-calendar";
 import { backfillJiatingCalendar } from "@/utils/jiating-calendar-sync";
+import { resolveCentralEventTimestamp } from "@/utils/event-times";
 import { schoolYearFromStartDate } from "@/utils/schoolYear";
 import { setSentryUser, withServerAction } from "@/utils/sentry";
 import { createActionSupabase } from "@/utils/supabase/action";
@@ -431,6 +432,73 @@ async function updateSemesterImpl(input: {
   };
 }
 
+export async function updateSemesterPointsCutoff(input: {
+  id: string;
+  /** `YYYY-MM-DD` in Central time; empty with `time` empty clears the cutoff. */
+  date: string;
+  /** `HH:MM` in Central time. */
+  time: string;
+}) {
+  return withServerAction("updateSemesterPointsCutoff", () =>
+    updateSemesterPointsCutoffImpl(input),
+  );
+}
+
+async function updateSemesterPointsCutoffImpl(input: {
+  id: string;
+  date: string;
+  time: string;
+}) {
+  const { error: authError } = await requireAdmin();
+  if (authError) return { success: false as const, error: authError };
+
+  const admin = createAdminSupabase();
+
+  const { data: semester } = await admin
+    .from("semesters")
+    .select("id, is_active")
+    .eq("id", input.id)
+    .maybeSingle();
+
+  if (!semester) return { success: false as const, error: "Semester not found." };
+  if (!semester.is_active) {
+    return {
+      success: false as const,
+      error: "Only the active semester's points cutoff can be changed.",
+    };
+  }
+
+  const date = input.date.trim();
+  const time = input.time.trim();
+
+  let cutoff: string | null = null;
+  if (date || time) {
+    if (!date || !time) {
+      return {
+        success: false as const,
+        error: "Pick both a date and a time, or clear the cutoff.",
+      };
+    }
+    const resolved = await resolveCentralEventTimestamp(admin, date, time);
+    if (!resolved.value) {
+      return { success: false as const, error: "Invalid cutoff date or time." };
+    }
+    cutoff = resolved.value;
+  }
+
+  // Trigger semesters_recompute_points_cutoff re-runs every member's totals.
+  const { error } = await admin
+    .from("semesters")
+    .update({ points_cutoff_at: cutoff })
+    .eq("id", input.id);
+
+  if (error) {
+    return { success: false as const, error: "Failed to save points cutoff." };
+  }
+
+  return { success: true as const, error: null, pointsCutoffAt: cutoff };
+}
+
 export async function createJtFamily(input: {
   name: string;
   color: string;
@@ -771,6 +839,8 @@ export interface SemesterListItem {
   end_date: string;
   is_active: boolean;
   year_id: string;
+  /** Events starting at or after this time earn no points. */
+  points_cutoff_at: string | null;
   years: { name: string } | { name: string }[] | null;
   jtFamilies: SemesterJtFamily[];
   battlePassRewards: BattlePassReward[];
@@ -798,7 +868,9 @@ async function listSemestersImpl() {
   ] = await Promise.all([
     supabase
       .from("semesters")
-      .select("id, name, start_date, end_date, is_active, year_id, years(name)")
+      .select(
+        "id, name, start_date, end_date, is_active, year_id, points_cutoff_at, years(name)",
+      )
       .order("start_date", { ascending: false }),
     fetchAllPages<{
       id: string;

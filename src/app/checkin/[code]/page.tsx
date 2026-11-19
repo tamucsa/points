@@ -20,7 +20,7 @@ export default async function CheckinPage({
   const { data: event } = await admin
     .from("events")
     .select(
-      "id, name, category, point_value, starts_at, ends_at, location, location_maps_url, check_in_type, semester_id",
+      "id, name, category, point_value, starts_at, ends_at, location, location_maps_url, check_in_type, semester_id, points_exception",
     )
     .eq("check_in_code", code)
     .eq("check_in_type", "self")
@@ -28,6 +28,12 @@ export default async function CheckinPage({
     .maybeSingle();
 
   if (!event) notFound();
+
+  const { data: eventSemester } = await admin
+    .from("semesters")
+    .select("points_cutoff_at")
+    .eq("id", event.semester_id)
+    .maybeSingle();
 
   const {
     data: { user },
@@ -75,6 +81,7 @@ export default async function CheckinPage({
         userEmail={user?.email ?? null}
         member={member}
         alreadyCheckedIn={alreadyCheckedIn}
+        pointsCutoffAt={eventSemester?.points_cutoff_at ?? null}
       />
     </>
   );

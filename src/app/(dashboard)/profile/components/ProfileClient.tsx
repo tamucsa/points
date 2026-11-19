@@ -3,6 +3,7 @@
 import { CATEGORY_COLORS, CHECKIN_METHOD_LABELS, POINT_BUCKET_LABELS } from '@/utils/constants'
 import { formatEventSchedule } from '@/utils/datetime'
 import { isManualPointsCheckIn } from '@/utils/events'
+import { eventEarnsPoints, noPointsReason } from '@/utils/points-cutoff'
 import { earnsRewards, formatClassification, isParent } from '@/utils/members'
 import JtFamilyBadge from '@/app/(dashboard)/leaderboard/components/JtFamilyBadge'
 import MemberAvatar from '@/app/components/MemberAvatar'
@@ -47,6 +48,7 @@ interface AttendanceRow {
     starts_at: string
     ends_at: string | null
     check_in_type?: string | null
+    points_exception?: string | null
   }
   cultureQuiz?: { place: number; points: number } | null
 }
@@ -64,6 +66,8 @@ interface Props {
   attendance: AttendanceRow[]
   history: SemmarySummary[]
   semesterName: string | null
+  /** Active semester points cutoff. */
+  pointsCutoffAt?: string | null
   pointsLoadError?: string | null
   attendanceLoadError?: string | null
   historyLoadError?: string | null
@@ -77,6 +81,7 @@ export default function ProfileClient({
   attendance,
   history,
   semesterName,
+  pointsCutoffAt = null,
   pointsLoadError = null,
   attendanceLoadError = null,
   historyLoadError = null,
@@ -218,7 +223,9 @@ export default function ProfileClient({
             const catColor = CATEGORY_COLORS[category] ?? CATEGORY_COLORS.default
             const earnedPoints =
               row.point_value_override ?? row.events?.point_value ?? 0
-            const awardsPoints = row.counted
+            const pastCutoff =
+              !!row.events?.starts_at && !eventEarnsPoints(row.events, pointsCutoffAt)
+            const awardsPoints = row.counted && !pastCutoff
             return (
               <div key={row.id} className="flex items-center gap-4 border-b border-home-border px-5 py-3 last:border-b-0">
                 {/* Point badge */}
@@ -256,10 +263,16 @@ export default function ProfileClient({
                         points={row.cultureQuiz.points}
                       />
                     )}
-                    {!row.counted && (
-                      <span className="rounded-md bg-red-50 px-2 py-0.5 text-[11px] text-red-500">
-                        cap reached
+                    {pastCutoff ? (
+                      <span className="rounded-md bg-home-border/60 px-2 py-0.5 text-[11px] text-subtitle">
+                        {noPointsReason(row.events)}
                       </span>
+                    ) : (
+                      !row.counted && (
+                        <span className="rounded-md bg-red-50 px-2 py-0.5 text-[11px] text-red-500">
+                          cap reached
+                        </span>
+                      )
                     )}
                   </div>
                 </div>

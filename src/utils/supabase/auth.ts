@@ -70,7 +70,7 @@ export const getActiveSemester = cache(async () => {
   const supabase = await createServerSupabase();
   const { data } = await supabase
     .from("semesters")
-    .select("id, name")
+    .select("id, name, points_cutoff_at")
     .eq("is_active", true)
     .maybeSingle();
 
