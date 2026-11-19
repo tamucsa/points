@@ -195,7 +195,7 @@ Officers and admins create events tied to the active semester. Each event has:
 - **Scope**: CSA-wide (`org`), JT shared (`jt_shared`), or JT-specific (`jt_specific`) — set automatically per category
 - **Check-in type**: officer, self (QR), or RSVP required — fixed for some categories; officer chooses for CSA-Wide and Sports
 
-Sports events can optionally create a linked **Spectator** child event (1 point, self check-in). Spectator semester point caps are under **[Points rules](#points-rules)**.
+Sports and Dance Performance events can optionally create a linked **Spectator** child event (1 point, self check-in by QR, with officer check-in as an override). Sports Spectator points are capped per semester; Dance Spectator points are not (see **[Points rules](#points-rules)**). A member checked in to the parent event cannot also check in as a spectator, and the reverse is blocked too: remove one check-in before adding the other.
 
 ### Step-by-step: Browse Officer Events
 
@@ -209,7 +209,7 @@ Sports events can optionally create a linked **Spectator** child event (1 point,
 5. Expand **Past Events** when checking in after the start time or verifying older attendance.
 6. Long lists paginate at **10 events per page** (upcoming and past separately). Prev/Next and the range label appear **above and below** the list when there is more than one page.
 
-Member **Events** (`/events`) is narrower: only the member’s JT-specific events plus shared/org events (and Mixers their Jiating participates in). Linked **Spectator** child events are hidden (members use the Spectator QR at the venue; the parent Sports card still shows **Attended** if they checked in that way). Same category tabs, past-events collapse, and 10-per-page pagination (controls above and below); no family dropdown.
+Member **Events** (`/events`) is narrower: only the member’s JT-specific events plus shared/org events (and Mixers their Jiating participates in). Linked **Spectator** child events are hidden (members use the Spectator QR at the venue; the parent Sports / Dance Performance card still shows **Attended** if they checked in that way). Same category tabs, past-events collapse, and 10-per-page pagination (controls above and below); no family dropdown.
 
 ### Step-by-step: Create an event
 
@@ -227,7 +227,7 @@ Member **Events** (`/events`) is narrower: only the member’s JT-specific event
     - *Self (QR)* — members scan a QR code; officers can also check members in manually
     - *RSVP Required* — provide RSVP URL and deadline; after the form closes, upload a Name/Email CSV on the event page to tag members as **RSVPed** / **Not RSVPed** on check-in (optional tags; does not filter or block check-in). Re-upload replaces the list. Unmatched emails can be matched manually or marked as guests.
   - **Date**, **location**, **description** (as needed)
-4. For **Sports** events, optionally enable **Spectator check-in** (creates a child spectator event).
+4. For **Sports** or **Dance Performance** events, optionally enable **Spectator check-in** (creates a child spectator event).
 5. For **Mixers**, select at least two participating Jiatings (editable later on the event detail page). Selecting all 6 active Jiatings makes the Mixer 3 points; any fewer is 2 points. Changing families later updates the stored point value and recomputes check-in totals.
 6. For **Howdy Week**, check-in is fixed to CSV import (0 points). Publish the event, then upload the guest CSV on the event detail page.
 7. Submit the form.
@@ -324,15 +324,17 @@ Canonical scoring policy for CSA Points. Change here when club policy changes; k
 | Jiating Mixer    | 2 (3 if all 6 Jiatings) | JT shared              | Officer                                 |
 | Jiating Event    | 1      | JT specific            | Officer                                 |
 | Sports           | 1      | CSA-wide               | Officer (+ optional Spectator child)    |
-| Dance            | 1      | CSA-wide               | Officer                                 |
-| Sports Spectator | 1      | Linked child of Sports | Self (QR)                               |
+| Dance Practice   | 1      | CSA-wide               | Officer                                 |
+| Dance Performance | 2     | CSA-wide               | Officer (+ optional Spectator child)    |
+| Sports Spectator | 1      | Linked child of Sports | Self (QR), officer override; capped 10/semester |
+| Dance Spectator  | 1      | Linked child of Dance Performance | Self (QR), officer override; no cap |
 
 
 Leaderboard buckets (UI label **Sports & Dance** for the sports column):
 
 - **CSA** — CSA-Wide, Philanthropy, Concessions  
 - **Jiating** — Jiating Olympics, Jiating Event, Mixer  
-- **Sports & Dance** — Sports, Sports Spectator, and Dance  
+- **Sports & Dance** — Sports, Sports Spectator, Dance Practice, Dance Performance, and Dance Spectator  
 - **GM** — General Meeting
 
 #### Caps and `attendance.counted`

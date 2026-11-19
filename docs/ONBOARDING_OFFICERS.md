@@ -66,7 +66,8 @@ The app currently allows any officer to create any category. Prefer following th
 | **Jiating Mixer** | Jiating parents | Select participating families at create time (editable later on event detail); all 6 Jiatings = 3 points, otherwise 2; check-in tabs only for those families |
 | **Sports** | Sports chair | Optional spectator check-in child event |
 | **Philanthropy** | Philanthropy chair | |
-| **Dance** | Dance chair | |
+| **Dance Practice** | Dance chair | |
+| **Dance Performance** | Dance chair | Optional spectator check-in child event (no spectator cap) |
 | **Concessions** | Fundraising chair | |
 
 If you need an event outside your usual categories, create it only when the responsible chair/parents have asked you to.

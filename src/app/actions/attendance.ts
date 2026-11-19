@@ -7,6 +7,9 @@ import {
 import { setSentryUser, withServerAction } from "@/utils/sentry";
 import { createActionSupabase } from "@/utils/supabase/action";
 
+/** SQLSTATE raised by attendance_block_participant_spectator (participant vs spectator conflict). */
+const PARTICIPANT_SPECTATOR_CONFLICT = "CSA01";
+
 async function readCountedAfterTriggers(
   supabase: Awaited<ReturnType<typeof createActionSupabase>>,
   attendanceId: string,
@@ -97,6 +100,9 @@ async function selfCheckInImpl(eventId: string, _semesterId?: string) {
         error: "You have already checked in to this event.",
         counted: false,
       };
+    }
+    if (error.code === PARTICIPANT_SPECTATOR_CONFLICT) {
+      return { success: false, error: error.message, counted: false };
     }
     return {
       success: false,
@@ -241,6 +247,9 @@ async function officerCheckInImpl(
         error: "Member already checked in.",
         counted: false,
       };
+    }
+    if (error.code === PARTICIPANT_SPECTATOR_CONFLICT) {
+      return { success: false, error: error.message, counted: false };
     }
     return {
       success: false,

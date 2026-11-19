@@ -67,8 +67,11 @@ export const CATEGORY_ICONS: Record<string, LucideIcon> = {
   Sports: Dumbbell,
   Philanthropy: HandHeart,
   Dance: Music2,
+  'Dance Practice': Music2,
+  'Dance Performance': Music2,
   Concessions: Popcorn,
   'Sports Spectator': Eye,
+  'Dance Spectator': Eye,
 }
 
 export const NAV_ICONS = {

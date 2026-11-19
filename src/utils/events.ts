@@ -10,7 +10,8 @@ export const EVENT_CATEGORIES = [
   'Jiating Mixer',
   'Sports',
   'Philanthropy',
-  'Dance',
+  'Dance Practice',
+  'Dance Performance',
   'Concessions',
 ] as const
 
@@ -30,8 +31,11 @@ export interface CategoryConfig {
   scope: EventScope
   /** When set, check-in type is fixed for this category. */
   checkInType?: CheckInType
-  /** Sports only: optional linked spectator QR event. */
-  allowSpectators?: boolean
+  /**
+   * Optional linked spectator QR event (self check-in, officer override).
+   * Value is the child event's category.
+   */
+  spectatorCategory?: SpectatorCategory
 }
 
 /**
@@ -47,9 +51,20 @@ export const CATEGORY_CONFIG: Record<EventCategory, CategoryConfig> = {
   'Jiating Olympics': { pointValue: 2, scope: 'jt_shared', checkInType: 'officer' },
   'Jiating Event': { pointValue: 1, scope: 'jt_specific' },
   'Jiating Mixer': { pointValue: 2, scope: 'jt_shared' }, // 3 when all 6 active Jiatings participate
-  'Sports': { pointValue: 1, scope: 'org', checkInType: 'officer', allowSpectators: true },
+  'Sports': {
+    pointValue: 1,
+    scope: 'org',
+    checkInType: 'officer',
+    spectatorCategory: 'Sports Spectator',
+  },
   'Philanthropy': { pointValue: 3, scope: 'org' },
-  'Dance': { pointValue: 1, scope: 'org', checkInType: 'officer' },
+  'Dance Practice': { pointValue: 1, scope: 'org', checkInType: 'officer' },
+  'Dance Performance': {
+    pointValue: 2,
+    scope: 'org',
+    checkInType: 'officer',
+    spectatorCategory: 'Dance Spectator',
+  },
   'Concessions': { pointValue: 3, scope: 'org', checkInType: 'officer' },
 }
 
@@ -68,7 +83,8 @@ export const CATEGORY_OWNER_HINTS: Record<EventCategory, string> = {
   'Jiating Mixer': 'Typically created by Jiating parents',
   Sports: 'Typically created by the Sports chair',
   Philanthropy: 'Typically created by the Philanthropy chair',
-  Dance: 'Typically created by the Dance chair',
+  'Dance Practice': 'Typically created by the Dance chair',
+  'Dance Performance': 'Typically created by the Dance chair',
   Concessions: 'Typically created by the Fundraising chair',
 }
 
@@ -79,8 +95,29 @@ export function getCategoryOwnerHint(category: string): string | null {
   return null
 }
 
-/** Auto-created child event when Sports has spectator check-in enabled. */
-export const SPECTATOR_EVENT_CATEGORY = 'Sports Spectator'
+/** Auto-created child event when Sports has spectator check-in enabled. Capped per semester. */
+export const SPORTS_SPECTATOR_CATEGORY = 'Sports Spectator'
+/** Auto-created child event when Dance Performance has spectator check-in enabled. Uncapped. */
+export const DANCE_SPECTATOR_CATEGORY = 'Dance Spectator'
+
+export const SPECTATOR_CATEGORIES = [
+  SPORTS_SPECTATOR_CATEGORY,
+  DANCE_SPECTATOR_CATEGORY,
+] as const
+
+export type SpectatorCategory = (typeof SPECTATOR_CATEGORIES)[number]
+
+/** Spectator child events are always worth this many points. */
+export const SPECTATOR_POINT_VALUE = 1
+
+export function isSpectatorCategory(category: string) {
+  return (SPECTATOR_CATEGORIES as readonly string[]).includes(category.trim())
+}
+
+/** Spectator child category for a parent category, or null when spectators are not allowed. */
+export function getSpectatorCategory(category: string): SpectatorCategory | null {
+  return getCategoryConfig(category.trim())?.spectatorCategory ?? null
+}
 
 const SCOPE_LABELS: Record<EventScope, string> = {
   org: 'CSA-Wide',
@@ -117,10 +154,6 @@ export function getCategoryCheckInLabel(category: string, checkInType: CheckInTy
 
 export function isGeneralMeetingCategory(category: string) {
   return category.trim() === 'General Meeting'
-}
-
-export function isSportsCategory(category: string) {
-  return category.trim() === 'Sports'
 }
 
 export function isJiatingOlympicsCategory(category: string) {
@@ -379,9 +412,17 @@ export function isPhilanthropyCategory(category: string) {
   return category.trim() === 'Philanthropy'
 }
 
+/** Categories counted in the Sports & Dance points bucket (keep in sync with recompute_member_semester_points). */
+export const SPORTS_DANCE_BUCKET_CATEGORIES = [
+  'Sports',
+  SPORTS_SPECTATOR_CATEGORY,
+  'Dance Practice',
+  'Dance Performance',
+  DANCE_SPECTATOR_CATEGORY,
+] as const
+
 export function isSportsRelatedCategory(category: string) {
-  const value = category.trim()
-  return value === 'Sports' || value === SPECTATOR_EVENT_CATEGORY || value === 'Dance'
+  return (SPORTS_DANCE_BUCKET_CATEGORIES as readonly string[]).includes(category.trim())
 }
 
 /** Browse filters for officer + member event lists (not RBAC). */
@@ -397,7 +438,12 @@ export const EVENT_FILTER_TABS = [
 export type EventFilterTabId = (typeof EVENT_FILTER_TABS)[number]['id']
 
 export function isDanceCategory(category: string) {
-  return category.trim() === 'Dance'
+  const value = category.trim()
+  return (
+    value === 'Dance Practice' ||
+    value === 'Dance Performance' ||
+    value === DANCE_SPECTATOR_CATEGORY
+  )
 }
 
 export function eventMatchesFilter(
@@ -413,7 +459,7 @@ export function eventMatchesFilter(
   }
 
   if (filter === 'sports') {
-    return category === 'Sports' || category === SPECTATOR_EVENT_CATEGORY
+    return category === 'Sports' || category === SPORTS_SPECTATOR_CATEGORY
   }
 
   if (filter === 'olympics') {
@@ -428,7 +474,7 @@ export function eventMatchesFilter(
   return (
     event.scope === 'org' &&
     category !== 'Sports' &&
-    category !== SPECTATOR_EVENT_CATEGORY &&
+    category !== SPORTS_SPECTATOR_CATEGORY &&
     !isDanceCategory(category)
   )
 }
@@ -481,6 +527,6 @@ export function applyCategoryDefaults(
     check_in_type:
       resolveEventCheckInType(category, current.check_in_type) ??
       current.check_in_type,
-    has_spectators: config.allowSpectators ? current.has_spectators : false,
+    has_spectators: config.spectatorCategory ? current.has_spectators : false,
   }
 }
