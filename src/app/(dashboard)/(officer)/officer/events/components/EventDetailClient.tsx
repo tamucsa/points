@@ -35,7 +35,11 @@ import LocationAutocomplete from "@/app/components/LocationAutocomplete";
 import CollapsibleSettings from "@/app/components/CollapsibleSettings";
 import MemberAvatar from "@/app/components/MemberAvatar";
 import RoleBadges from "@/app/components/RoleBadges";
-import { inputClassName, labelClassName } from "@/utils/constants";
+import {
+  inputClassName,
+  labelClassName,
+  SPORTS_SPECTATOR_SEMESTER_CAP,
+} from "@/utils/constants";
 import {
   EVENT_TIMEZONE,
   formatEventDate,
@@ -52,6 +56,7 @@ import {
   flexibleCheckInTypes,
   formatEventPointsLabel,
   getCategoryConfig,
+  getSpectatorCategory,
   isCalendarOnlyCheckIn,
   isGeneralMeetingCategory,
   isHowdyWeekCategory,
@@ -61,6 +66,7 @@ import {
   jiatingMixerPointValue,
   PARENT_EVENT_CATEGORIES,
   resolveEventCheckInType,
+  SPORTS_SPECTATOR_CATEGORY,
 } from "@/utils/events";
 import { checkInRemovalSummary } from "@/utils/culture-quiz";
 import { CHECKIN_TYPE_ICONS } from "@/utils/icons";
@@ -128,6 +134,7 @@ interface Props {
     name: string;
     check_in_code: string | null;
     point_value: number;
+    category: string;
   } | null;
   rsvpRows: EventRsvpRow[];
   rsvpMatchMembers: { id: string; full_name: string; email: string }[];
@@ -1144,12 +1151,15 @@ export default function EventDetailClient({
                 </div>
               </div>
             )}
-            {spectatorEvent && draftCategory !== "Sports" && (
-              <p className="text-xs leading-5 text-subtitle">
-                Changing away from Sports removes the spectator QR event when
-                nobody has checked in as a spectator.
-              </p>
-            )}
+            {spectatorEvent &&
+              getSpectatorCategory(draftCategory) !== spectatorEvent.category && (
+                <p className="text-xs leading-5 text-subtitle">
+                  {getSpectatorCategory(draftCategory)
+                    ? "Changing between Sports and Dance Performance switches the spectator QR event to the new type"
+                    : "Changing to a category without spectators removes the spectator QR event"}{" "}
+                  when nobody has checked in as a spectator.
+                </p>
+              )}
             {classificationError && (
               <p className="text-sm text-red-600">{classificationError}</p>
             )}
@@ -1175,9 +1185,13 @@ export default function EventDetailClient({
             </div>
             <p className="mt-1 text-xs leading-5 text-subtitle">
               Linked QR event worth {spectatorEvent.point_value} pt
-              {spectatorEvent.point_value === 1 ? "" : "s"} (capped at
-              10/semester). Use the Spectator QR buttons above, or Check In
-              Spectators if someone cannot scan.
+              {spectatorEvent.point_value === 1 ? "" : "s"}
+              {spectatorEvent.category === SPORTS_SPECTATOR_CATEGORY
+                ? ` (capped at ${SPORTS_SPECTATOR_SEMESTER_CAP}/semester)`
+                : " (no semester cap)"}
+              . Use the Spectator QR buttons above, or Check In Spectators if
+              someone cannot scan. Members checked in to this event can&apos;t
+              also check in as spectators.
             </p>
           </div>
         )}

@@ -11,7 +11,11 @@ import IconLabel, {
 } from "@/app/components/IconLabel";
 import LocationAutocomplete from "@/app/components/LocationAutocomplete";
 import PageHeader from "@/app/components/PageHeader";
-import { inputClassName, labelClassName } from "@/utils/constants";
+import {
+  inputClassName,
+  labelClassName,
+  SPORTS_SPECTATOR_SEMESTER_CAP,
+} from "@/utils/constants";
 import {
   applyCategoryDefaults,
   checkInOptionLabel,
@@ -26,6 +30,8 @@ import {
   isMixerCategory,
   jiatingMixerPointValue,
   PARENT_EVENT_CATEGORIES,
+  SPECTATOR_POINT_VALUE,
+  SPORTS_SPECTATOR_CATEGORY,
 } from "@/utils/events";
 import { CHECKIN_TYPE_ICONS } from "@/utils/icons";
 
@@ -136,7 +142,9 @@ export default function NewEventClient({
   const categoryOwnerHint = getCategoryOwnerHint(form.category);
   const fixedCheckIn = categoryConfig?.checkInType;
   const effectiveCheckIn = fixedCheckIn ?? form.check_in_type;
-  const isSports = categoryConfig?.allowSpectators === true;
+  const spectatorCategory = categoryConfig?.spectatorCategory ?? null;
+  const allowsSpectators = spectatorCategory !== null;
+  const spectatorsCapped = spectatorCategory === SPORTS_SPECTATOR_CATEGORY;
   const isJTSpecific = form.scope === "jt_specific";
   const isMixer = isMixerCategory(form.category);
   const mixerPointValue = isMixer
@@ -244,7 +252,7 @@ export default function NewEventClient({
       rsvpUrl: isRSVP && form.rsvp_url ? form.rsvp_url.trim() : null,
       rsvpDeadline: isRSVP && form.rsvp_deadline ? form.rsvp_deadline : null,
       createdBy,
-      hasSpectators: isSports && form.has_spectators,
+      hasSpectators: allowsSpectators && form.has_spectators,
       publishMode,
       scheduleDate: form.schedule_date || null,
       scheduleTime: form.schedule_time || null,
@@ -607,14 +615,18 @@ export default function NewEventClient({
           </div>
         )}
 
-        {isSports && (
+        {allowsSpectators && (
           <div className="flex items-center justify-between rounded-2xl border border-home-border bg-bg p-4">
             <div>
               <div className="text-sm font-semibold text-text">
                 Enable Spectator Check-in
               </div>
               <div className="mt-1 text-xs text-subtitle">
-                Separate QR event worth 1 pt (capped at 10/semester)
+                Separate QR event worth {SPECTATOR_POINT_VALUE} pt
+                {spectatorsCapped
+                  ? ` (capped at ${SPORTS_SPECTATOR_SEMESTER_CAP}/semester)`
+                  : " (no semester cap)"}
+                . Participants can&apos;t also check in as spectators.
               </div>
             </div>
             <button
@@ -771,11 +783,11 @@ export default function NewEventClient({
                   {postedPoints}
                 </dd>
               </div>
-              {isSports && form.has_spectators && (
+              {allowsSpectators && form.has_spectators && (
                 <div className="flex items-start justify-between gap-4 px-4 py-2.5">
                   <dt className="shrink-0 text-subtitle">Spectators</dt>
                   <dd className="min-w-0 text-right font-medium text-text">
-                    Separate 1 pt QR event
+                    Separate {SPECTATOR_POINT_VALUE} pt QR event
                   </dd>
                 </div>
               )}

@@ -1,5 +1,5 @@
 import { type calendar_v3, google } from "googleapis";
-import { SPECTATOR_EVENT_CATEGORY } from "@/utils/events";
+import { isSpectatorCategory } from "@/utils/events";
 
 const TIME_ZONE = "America/Chicago";
 
@@ -13,7 +13,8 @@ const GOOGLE_CALENDAR_SYNC_CATEGORIES = new Set([
   "Jiating Olympics",
   "Sports",
   "Philanthropy",
-  "Dance",
+  "Dance Practice",
+  "Dance Performance",
   "Concessions",
 ]);
 
@@ -36,7 +37,7 @@ export function shouldSyncEventToGoogleCalendar(
   // Monetary / manual-points awards are not calendar events.
   if (checkInType === "manual_points") return false;
   const trimmed = category.trim();
-  if (trimmed === SPECTATOR_EVENT_CATEGORY) return false;
+  if (isSpectatorCategory(trimmed)) return false;
   return GOOGLE_CALENDAR_SYNC_CATEGORIES.has(trimmed);
 }
 

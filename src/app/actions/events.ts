@@ -10,16 +10,16 @@ import {
   canDeleteEvent,
   eventDeleteDeniedMessage,
   getCategoryConfig,
+  getSpectatorCategory,
   isManualPointsCheckIn,
   isMixerCategory,
-  isSportsCategory,
   jiatingMixerPointValue,
   MANUAL_POINTS_DEFAULT_END_TIME,
   MANUAL_POINTS_DEFAULT_START_TIME,
   parentCanManageEvent,
   parentCreateEventError,
   resolveEventCheckInType,
-  SPECTATOR_EVENT_CATEGORY,
+  SPECTATOR_POINT_VALUE,
 } from "@/utils/events";
 import {
   createCalendarEvent,
@@ -572,7 +572,8 @@ async function createEventImpl(input: CreateEventInput) {
 
   const isRSVP = checkInType === "rsvp_required";
   const isJTSpecific = scope === "jt_specific";
-  const hasSpectators = config.allowSpectators === true && input.hasSpectators;
+  const spectatorCategory = config.spectatorCategory ?? null;
+  const hasSpectators = spectatorCategory !== null && input.hasSpectators;
   const name = input.name.trim();
   const rsvpUrl = isRSVP ? input.rsvpUrl : null;
 
@@ -668,12 +669,12 @@ async function createEventImpl(input: CreateEventInput) {
     }
   }
 
-  if (isSportsCategory(input.category) && hasSpectators) {
+  if (spectatorCategory && hasSpectators) {
     const { error: spectatorError } = await supabase.from("events").insert({
       semester_id: input.semesterId,
       name: `${name} — Spectator`,
-      category: SPECTATOR_EVENT_CATEGORY,
-      point_value: 1,
+      category: spectatorCategory,
+      point_value: SPECTATOR_POINT_VALUE,
       scope,
       jt_family_id: isJTSpecific ? input.jtFamilyId : null,
       check_in_type: "self",
@@ -895,11 +896,22 @@ async function updateEventClassificationImpl(
 
   const { data: spectator } = await supabase
     .from("events")
-    .select("id, google_event_id")
+    .select("id, google_event_id, category")
     .eq("parent_event_id", eventId)
     .maybeSingle();
 
-  if (spectator && !isSportsCategory(input.category)) {
+  // Spectator child follows the parent: removed when the new category has no
+  // spectators, re-categorized when it has a different kind (Sports <-> Dance Performance).
+  const nextSpectatorCategory = getSpectatorCategory(input.category);
+  const spectatorAction: "keep" | "remove" | "recategorize" = !spectator
+    ? "keep"
+    : !nextSpectatorCategory
+      ? "remove"
+      : spectator.category !== nextSpectatorCategory
+        ? "recategorize"
+        : "keep";
+
+  if (spectator && spectatorAction !== "keep") {
     const { count, error: attendanceError } = await supabase
       .from("attendance")
       .select("id", { count: "exact", head: true })
@@ -911,7 +923,7 @@ async function updateEventClassificationImpl(
       return {
         success: false,
         error:
-          "This Sports event has spectator check-ins. Remove those before changing the category.",
+          "This event has spectator check-ins. Remove those before changing the category.",
       };
     }
   }
@@ -976,7 +988,20 @@ async function updateEventClassificationImpl(
     await supabase.from("event_jt_families").delete().eq("event_id", eventId);
   }
 
-  if (spectator && !isSportsCategory(input.category)) {
+  if (spectator && spectatorAction === "recategorize") {
+    const { error: spectatorError } = await supabase
+      .from("events")
+      .update({ category: nextSpectatorCategory })
+      .eq("id", spectator.id);
+    if (spectatorError) {
+      return {
+        success: false,
+        error: "Category saved, but the spectator event could not be updated.",
+      };
+    }
+  }
+
+  if (spectator && spectatorAction === "remove") {
     await deleteCalendarEvent(spectator.google_event_id);
     const { error: spectatorError } = await supabase
       .from("events")

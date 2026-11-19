@@ -72,6 +72,9 @@ export const CATEGORY_COLORS: Record<string, string> = {
   Mixer: '#9b6dd7',
   Philanthropy: '#e85d8a',
   Dance: '#5bc4d4',
+  'Dance Practice': '#5bc4d4',
+  'Dance Performance': '#3aa7c4',
+  'Dance Spectator': '#3aa7c4',
   Concessions: '#c9a227',
   default: '#888',
 }

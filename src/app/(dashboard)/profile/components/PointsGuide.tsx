@@ -9,15 +9,18 @@ import { isInCurrentChicagoWeek } from '@/utils/datetime'
 import {
   CATEGORY_CONFIG,
   JIATING_MIXER_SIX_WAY_POINTS,
-  SPECTATOR_EVENT_CATEGORY,
+  DANCE_SPECTATOR_CATEGORY,
   type EventCategory,
+  SPECTATOR_POINT_VALUE,
+  type SpectatorCategory,
+  SPORTS_SPECTATOR_CATEGORY,
 } from '@/utils/events'
 
 const JIATING_SIX_WAY_MIXER_LABEL = 'Jiating 6-Way Mixer'
 
 type GuideCategory =
   | EventCategory
-  | typeof SPECTATOR_EVENT_CATEGORY
+  | SpectatorCategory
   | typeof JIATING_SIX_WAY_MIXER_LABEL
 
 const BUCKET_CATEGORIES: {
@@ -39,7 +42,13 @@ const BUCKET_CATEGORIES: {
   },
   {
     bucket: POINT_BUCKET_LABELS.sports,
-    categories: ['Sports', SPECTATOR_EVENT_CATEGORY, 'Dance'],
+    categories: [
+      'Sports',
+      SPORTS_SPECTATOR_CATEGORY,
+      'Dance Practice',
+      'Dance Performance',
+      DANCE_SPECTATOR_CATEGORY,
+    ],
   },
   {
     bucket: POINT_BUCKET_LABELS.gm,
@@ -48,7 +57,9 @@ const BUCKET_CATEGORIES: {
 ]
 
 function categoryPointValue(category: GuideCategory) {
-  if (category === SPECTATOR_EVENT_CATEGORY) return 1
+  if (category === SPORTS_SPECTATOR_CATEGORY || category === DANCE_SPECTATOR_CATEGORY) {
+    return SPECTATOR_POINT_VALUE
+  }
   if (category === JIATING_SIX_WAY_MIXER_LABEL) return JIATING_MIXER_SIX_WAY_POINTS
   return CATEGORY_CONFIG[category].pointValue
 }
@@ -68,7 +79,7 @@ interface Props {
 
 export default function PointsGuide({ attendance }: Props) {
   const spectatorCounted = attendance
-    .filter(row => row.counted && row.events.category === SPECTATOR_EVENT_CATEGORY)
+    .filter(row => row.counted && row.events.category === SPORTS_SPECTATOR_CATEGORY)
     .reduce((sum, row) => sum + (row.events.point_value ?? 0), 0)
 
   const weeklyJtMixerCounted = attendance.filter(
@@ -131,7 +142,8 @@ export default function PointsGuide({ attendance }: Props) {
             Per semester, at most{' '}
             <span className="font-semibold text-text">{SPORTS_SPECTATOR_SEMESTER_CAP}</span>{' '}
             counting Sports Spectator points. Playing in a Sports event (not spectator) is separate
-            and is not limited by this cap.
+            and is not limited by this cap. Dance Spectator points are not capped. You can&apos;t
+            check in as a spectator to an event you played or performed in.
           </p>
           <div className="mt-4">
             <div className="mb-1.5 flex items-baseline justify-between text-xs text-subtitle">

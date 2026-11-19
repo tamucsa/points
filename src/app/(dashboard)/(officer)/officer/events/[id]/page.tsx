@@ -91,6 +91,7 @@ export default async function EventDetailPage({ params }: { params: Promise<{ id
     name: string
     check_in_code: string | null
     point_value: number
+    category: string
   } | null = null
 
   const [{ data: families }, { data: links }] = await Promise.all([
@@ -121,7 +122,7 @@ export default async function EventDetailPage({ params }: { params: Promise<{ id
 
   const { data: spectator } = await supabase
     .from('events')
-    .select('id, name, check_in_code, point_value')
+    .select('id, name, check_in_code, point_value, category')
     .eq('parent_event_id', id)
     .maybeSingle()
 
