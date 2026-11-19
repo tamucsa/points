@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import BattlePassRewardsEditor from "@/app/(dashboard)/(admin)/admin/semesters/components/BattlePassRewardsEditor";
+import PointsCutoffEditor from "@/app/(dashboard)/(admin)/admin/semesters/components/PointsCutoffEditor";
 import JtFamilyBadge from "@/app/(dashboard)/leaderboard/components/JtFamilyBadge";
 import {
   bootstrapYearPlaceholders,
@@ -17,6 +18,7 @@ import {
   updateSemester,
 } from "@/app/actions/semesters";
 import ColorPickerField from "@/app/components/ColorPickerField";
+import { formatPointsCutoff } from "@/utils/points-cutoff";
 import { schoolYearFromStartDate } from "@/utils/schoolYear";
 
 function yearLabel(years: SemesterListItem["years"]) {
@@ -169,6 +171,12 @@ function PastSemesterCard({
           value={`${semester.eventCount} event${semester.eventCount === 1 ? "" : "s"}`}
         />
         {memberLabel && <SemesterMeta label="Members" value={memberLabel} />}
+        {semester.points_cutoff_at && (
+          <SemesterMeta
+            label="Points cutoff"
+            value={formatPointsCutoff(semester.points_cutoff_at)}
+          />
+        )}
         <div className="grid grid-cols-[5.5rem_1fr] gap-x-3 gap-y-2 text-sm sm:grid-cols-[6.5rem_1fr]">
           <dt className="pt-0.5 text-subtitle">Jiatings</dt>
           <dd>
@@ -525,6 +533,15 @@ function ActiveSemesterCard({
           Edit semester
         </button>
       )}
+
+      <PointsCutoffEditor
+        semesterId={semester.id}
+        pointsCutoffAt={semester.points_cutoff_at}
+        onChange={(points_cutoff_at) =>
+          onUpdated({ ...semester, points_cutoff_at })
+        }
+        onMessage={onMessage}
+      />
 
       <div className="border-t border-home-border/80 pt-4">
         <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
