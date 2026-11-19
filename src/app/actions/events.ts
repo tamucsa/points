@@ -34,6 +34,7 @@ import {
   syncJiatingCalendars,
 } from "@/utils/jiating-calendar-sync";
 import { canAccessOfficerEvents, isParentOnly } from "@/utils/members";
+import { parsePointsException } from "@/utils/points-cutoff";
 import { setSentryUser, withServerAction } from "@/utils/sentry";
 import { createActionSupabase } from "@/utils/supabase/action";
 
@@ -1390,4 +1391,52 @@ async function updateEventMixerFamiliesImpl(
   await syncJiatingCalendars(eventId);
 
   return { success: true, error: null };
+}
+
+export async function updateEventPointsException(
+  eventId: string,
+  exception: string | null,
+) {
+  return withServerAction("updateEventPointsException", () =>
+    updateEventPointsExceptionImpl(eventId, exception),
+  );
+}
+
+async function updateEventPointsExceptionImpl(
+  eventId: string,
+  exception: string | null,
+) {
+  const { supabase, error: authError } = await requireAdmin();
+  if (authError) return { success: false as const, error: authError };
+
+  const next = parsePointsException(exception);
+  if (exception != null && next === null) {
+    return { success: false as const, error: "Unknown points setting." };
+  }
+
+  const { data: event } = await supabase
+    .from("events")
+    .select("id, parent_event_id")
+    .eq("id", eventId)
+    .maybeSingle();
+
+  if (!event) return { success: false as const, error: "Event not found." };
+  if (event.parent_event_id) {
+    return {
+      success: false as const,
+      error: "Set this on the main event. Its spectator event follows it.",
+    };
+  }
+
+  // A linked spectator event follows its parent. Triggers re-run points.
+  const { error } = await supabase
+    .from("events")
+    .update({ points_exception: next })
+    .or(`id.eq.${eventId},parent_event_id.eq.${eventId}`);
+
+  if (error) {
+    return { success: false as const, error: "Failed to save points setting." };
+  }
+
+  return { success: true as const, error: null, pointsException: next };
 }

@@ -8,6 +8,7 @@ import CultureQuizPanel, {
 } from "@/app/(dashboard)/(officer)/officer/events/components/CultureQuizPanel";
 import EventImportPanel from "@/app/(dashboard)/(officer)/officer/events/components/EventImportPanel";
 import EventRsvpPanel from "@/app/(dashboard)/(officer)/officer/events/components/EventRsvpPanel";
+import PointsExceptionPanel from "@/app/(dashboard)/(officer)/officer/events/components/PointsExceptionPanel";
 import HowdyWeekGuestPanel from "@/app/(dashboard)/(officer)/officer/events/components/HowdyWeekGuestPanel";
 import RecapQuizPanel from "@/app/(dashboard)/(officer)/officer/events/components/RecapQuizPanel";
 import { officerRemoveCheckIn } from "@/app/actions/attendance";
@@ -69,6 +70,7 @@ import {
   SPORTS_SPECTATOR_CATEGORY,
 } from "@/utils/events";
 import { checkInRemovalSummary } from "@/utils/culture-quiz";
+import { pointsExceptionLabel } from "@/utils/points-cutoff";
 import { CHECKIN_TYPE_ICONS } from "@/utils/icons";
 interface Event {
   id: string;
@@ -89,6 +91,7 @@ interface Event {
   scope?: string;
   jt_family_id?: string | null;
   parent_event_id?: string | null;
+  points_exception?: string | null;
 }
 
 interface AttendanceRow {
@@ -147,6 +150,10 @@ interface Props {
   recapLoadError?: string | null;
   cultureQuizRows?: CultureQuizResultRow[];
   cultureQuizLoadError?: string | null;
+  /** Admins can set the per-event points cutoff exception. */
+  isAdmin?: boolean;
+  /** Cutoff of the event's semester. */
+  pointsCutoffAt?: string | null;
 }
 
 const btnPrimaryClassName =
@@ -180,6 +187,8 @@ export default function EventDetailClient({
   recapLoadError = null,
   cultureQuizRows = [],
   cultureQuizLoadError = null,
+  isAdmin = false,
+  pointsCutoffAt = null,
 }: Props) {
   const router = useRouter();
   const [publishing, setPublishing] = useState(false);
@@ -1413,6 +1422,20 @@ export default function EventDetailClient({
               matchMembers={importMatchMembers}
               btnPrimaryClassName={btnPrimaryClassName}
               btnSecondaryClassName={btnSecondaryClassName}
+            />
+          </CollapsibleSettings>
+        )}
+        {isAdmin && !event.parent_event_id && (
+          <CollapsibleSettings
+            title="Points cutoff exception"
+            summary={pointsExceptionLabel(event.points_exception)}
+          >
+            <PointsExceptionPanel
+              eventId={event.id}
+              startsAt={event.starts_at}
+              initialException={event.points_exception ?? null}
+              pointsCutoffAt={pointsCutoffAt}
+              btnPrimaryClassName={btnPrimaryClassName}
             />
           </CollapsibleSettings>
         )}
