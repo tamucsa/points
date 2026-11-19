@@ -18,6 +18,7 @@ import {
   type EventFilterTabId,
   type EventJiatingFamily,
 } from '@/utils/events'
+import { eventEarnsPoints, noPointsReason } from '@/utils/points-cutoff'
 import { Calendar, Clock, MapPin, X } from 'lucide-react'
 
 interface Event {
@@ -35,6 +36,7 @@ interface Event {
   rsvp_url: string | null
   rsvp_deadline: string | null
   jt_family_id?: string | null
+  points_exception?: string | null
 }
 
 interface Props {
@@ -43,7 +45,7 @@ interface Props {
   rsvpedIds: Set<string>
   /** Per-member earned points when attendance.point_value_override is set. */
   earnedPointsByEventId: Record<string, number>
-  semester: { name: string } | null
+  semester: { name: string; points_cutoff_at?: string | null } | null
   jtFamilies: EventJiatingFamily[]
   mixerFamiliesByEventId: Record<string, string[]>
 }
@@ -55,11 +57,20 @@ function displayPoints(
   return earnedPointsByEventId[event.id] ?? event.point_value
 }
 
+function NoPointsPill({ event }: { event: Event }) {
+  return (
+    <span className="inline-flex items-center rounded-full bg-home-border/60 px-2 py-0.5 text-[11px] font-semibold leading-none text-subtitle">
+      {noPointsReason(event)}
+    </span>
+  )
+}
+
 function EventCard({
   event,
   attended,
   rsvped,
   points,
+  earnsPoints,
   jiatings,
   onOpen,
 }: {
@@ -67,6 +78,7 @@ function EventCard({
   attended: boolean
   rsvped: boolean
   points: number
+  earnsPoints: boolean
   jiatings: EventJiatingFamily[]
   onOpen: () => void
 }) {
@@ -91,7 +103,7 @@ function EventCard({
       }`}
     >
       <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-primary/10 text-lg font-extrabold text-primary">
-        {points}
+        {earnsPoints ? points : '—'}
       </div>
 
       <div className="min-w-0 flex-1">
@@ -107,6 +119,7 @@ function EventCard({
               RSVPed
             </span>
           )}
+          {!earnsPoints && <NoPointsPill event={event} />}
         </div>
         <EventMetaRow className="mt-2">
           <EventMetaItem>
@@ -160,12 +173,14 @@ function EventDetailModal({
   attended,
   rsvped,
   points,
+  earnsPoints,
   onClose,
 }: {
   event: Event
   attended: boolean
   rsvped: boolean
   points: number
+  earnsPoints: boolean
   onClose: () => void
 }) {
   const rsvpOpen = event.rsvp_url && event.rsvp_deadline && new Date(event.rsvp_deadline) > new Date()
@@ -213,7 +228,9 @@ function EventDetailModal({
               )}
             </div>
             <p className="mt-1 text-sm text-subtitle">
-              {points} pt{points === 1 ? '' : 's'}
+              {earnsPoints
+                ? `${points} pt${points === 1 ? '' : 's'}`
+                : noPointsReason(event)}
             </p>
           </div>
           <button
@@ -444,6 +461,7 @@ export default function MemberEventsClient({
                 attended={attendedIds.has(event.id)}
                 rsvped={rsvpedIds.has(event.id)}
                 points={displayPoints(event, earnedPointsByEventId)}
+                earnsPoints={eventEarnsPoints(event, semester?.points_cutoff_at)}
                 jiatings={eventParticipatingJiatings(event, jtFamilies, mixerFamiliesByEventId)}
                 onOpen={() => setDetailEvent(event)}
               />
@@ -473,6 +491,7 @@ export default function MemberEventsClient({
                 attended={attendedIds.has(event.id)}
                 rsvped={rsvpedIds.has(event.id)}
                 points={displayPoints(event, earnedPointsByEventId)}
+                earnsPoints={eventEarnsPoints(event, semester?.points_cutoff_at)}
                 jiatings={eventParticipatingJiatings(event, jtFamilies, mixerFamiliesByEventId)}
                 onOpen={() => setDetailEvent(event)}
               />
@@ -492,6 +511,7 @@ export default function MemberEventsClient({
           attended={attendedIds.has(detailEvent.id)}
           rsvped={rsvpedIds.has(detailEvent.id)}
           points={displayPoints(detailEvent, earnedPointsByEventId)}
+          earnsPoints={eventEarnsPoints(detailEvent, semester?.points_cutoff_at)}
           onClose={() => setDetailEvent(null)}
         />
       )}
