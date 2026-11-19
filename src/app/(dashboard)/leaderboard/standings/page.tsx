@@ -49,7 +49,11 @@ export default async function StandingsLeaderboardPage({
 
   return (
     <StandingsLeaderboardClient
-      semester={semester ? { name: semester.name } : null}
+      semester={
+        semester
+          ? { name: semester.name, points_cutoff_at: semester.points_cutoff_at }
+          : null
+      }
       snapshots={loadError ? [] : (snapshots ?? [])}
       selectedSnapshotId={loadError ? null : selectedId}
       selectedSnapshot={selectedSnapshot}

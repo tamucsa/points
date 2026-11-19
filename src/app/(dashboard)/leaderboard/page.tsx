@@ -22,7 +22,11 @@ export default async function LeaderboardPage() {
   return (
     <LeaderboardClient
       members={membersError ? [] : (members ?? [])}
-      semester={semester ? { name: semester.name } : null}
+      semester={
+        semester
+          ? { name: semester.name, points_cutoff_at: semester.points_cutoff_at }
+          : null
+      }
       loadError={membersError?.message ?? null}
     />
   )

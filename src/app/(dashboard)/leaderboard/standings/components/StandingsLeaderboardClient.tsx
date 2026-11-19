@@ -21,7 +21,7 @@ interface StandingsRow {
 }
 
 interface Props {
-  semester: { name: string } | null
+  semester: { name: string; points_cutoff_at?: string | null } | null
   snapshots: Snapshot[]
   selectedSnapshotId: string | null
   selectedSnapshot: Snapshot | null
@@ -56,7 +56,7 @@ export default function StandingsLeaderboardClient({
         className="mb-2"
       />
 
-      <LeaderboardTabs />
+      <LeaderboardTabs pointsCutoffAt={semester?.points_cutoff_at ?? null} />
 
       {!loadError && snapshots.length > 1 && (
         <div className="mb-4">

@@ -24,7 +24,7 @@ interface JiatingCard {
 
 interface Props {
   jiatings: JiatingCard[]
-  semester: { name: string } | null
+  semester: { name: string; points_cutoff_at?: string | null } | null
   loadError?: string | null
 }
 
@@ -41,7 +41,7 @@ export default function JiatingsLeaderboardClient({
         className="mb-2"
       />
 
-      <LeaderboardTabs />
+      <LeaderboardTabs pointsCutoffAt={semester?.points_cutoff_at ?? null} />
 
       {loadError ? (
         <div className="overflow-hidden rounded-4xl border border-home-border bg-surface shadow-sm">
