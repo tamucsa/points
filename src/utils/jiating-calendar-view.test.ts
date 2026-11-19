@@ -81,7 +81,7 @@ describe("week keys", () => {
 });
 
 describe("buildCalendarEntries", () => {
-  it("keeps Jiating events, mixers, CSA conflict categories, and Olympics only", () => {
+  it("keeps Jiating events, mixers, CSA conflict categories, Olympics, and Dance Performance only", () => {
     const entries = buildCalendarEntries(
       [
         event({ id: "jt" }),
@@ -90,6 +90,8 @@ describe("buildCalendarEntries", () => {
         event({ id: "wide", category: "CSA-Wide", jt_family_id: null }),
         event({ id: "wmix", category: "CSA-Wide Mixers", jt_family_id: null }),
         event({ id: "oly", category: "Jiating Olympics", jt_family_id: null }),
+        event({ id: "dance", category: "Dance Performance", jt_family_id: null }),
+        event({ id: "practice", category: "Dance Practice", jt_family_id: null }),
         event({ id: "sports", category: "Sports", jt_family_id: null }),
         event({ id: "award", check_in_type: "manual_points" }),
         event({ id: "orphan", jt_family_id: "zzz" }),
@@ -103,6 +105,7 @@ describe("buildCalendarEntries", () => {
       { mix: ["c", "a", "unknown"] },
     );
     expect(entries.map((e) => [e.id, e.kind]).sort()).toEqual([
+      ["dance", "dance"],
       ["gm", "csa"],
       ["jt", "jiating"],
       ["mix", "jiating"],
@@ -173,6 +176,7 @@ describe("filterVisibleEntries", () => {
     const ids = filterVisibleEntries(entries, new Set(["c"]), {
       csa: false,
       olympics: false,
+      dance: false,
     }).map((e) => e.id);
     expect(ids).toEqual(["mix"]);
   });
@@ -182,12 +186,14 @@ describe("filterVisibleEntries", () => {
       filterVisibleEntries(entries, new Set(), {
         csa: true,
         olympics: false,
+        dance: false,
       }).map((e) => e.id),
     ).toEqual(["gm"]);
     expect(
       filterVisibleEntries(entries, new Set(), {
         csa: false,
         olympics: true,
+        dance: false,
       }).map((e) => e.id),
     ).toEqual(["oly"]);
   });
@@ -284,7 +290,7 @@ describe("buildBusyHeatmap", () => {
     const grid = buildBusyHeatmap({
       entries,
       checkedFamilyIds: new Set(["a", "b"]),
-      layers: { csa: true, olympics: true },
+      layers: { csa: true, olympics: true, dance: false },
       weekStart,
       startHour: 18,
       endHour: 21,
@@ -309,7 +315,7 @@ describe("buildBusyHeatmap", () => {
     const on = buildBusyHeatmap({
       entries: olympics,
       checkedFamilyIds: new Set(),
-      layers: { csa: false, olympics: true },
+      layers: { csa: false, olympics: true, dance: false },
       weekStart,
       startHour: 18,
       endHour: 19,
@@ -318,7 +324,7 @@ describe("buildBusyHeatmap", () => {
     const off = buildBusyHeatmap({
       entries: olympics,
       checkedFamilyIds: new Set(),
-      layers: { csa: true, olympics: false },
+      layers: { csa: true, olympics: false, dance: false },
       weekStart,
       startHour: 18,
       endHour: 19,
@@ -330,7 +336,7 @@ describe("buildBusyHeatmap", () => {
     const grid = buildBusyHeatmap({
       entries,
       checkedFamilyIds: new Set(["b"]),
-      layers: { csa: false, olympics: false },
+      layers: { csa: false, olympics: false, dance: false },
       weekStart,
       startHour: 20,
       endHour: 21,
@@ -413,7 +419,7 @@ describe("buildBusyHeatmap with per-day ranges", () => {
     const grid = buildBusyHeatmap({
       entries: [entry("a1", "jiating", ["a"], 18, 19)],
       checkedFamilyIds: new Set(["a"]),
-      layers: { csa: false, olympics: false },
+      layers: { csa: false, olympics: false, dance: false },
       weekStart,
       startHour: 0,
       endHour: 24,

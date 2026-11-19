@@ -44,7 +44,7 @@ export function heatCellStyle(cell: HeatmapCell, denominator: number) {
   if (busy === 0) {
     return { background: "color-mix(in srgb, #10b981 16%, transparent)" };
   }
-  // A CSA-wide or Olympics event blocks everyone, so it shades the slot fully.
+  // A layer event (CSA-wide, Olympics, Dance Performance) blocks everyone, so it shades the slot fully.
   const ratio = cell.layerBusy ? 1 : busy / Math.max(1, denominator);
   const pct = Math.round(14 + ratio * 36);
   return {

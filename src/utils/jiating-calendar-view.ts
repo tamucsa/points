@@ -1,5 +1,9 @@
 import { chicagoWeekMondayKey, EVENT_TIMEZONE } from "@/utils/datetime";
-import { isJiatingOlympicsCategory, isMixerCategory } from "@/utils/events";
+import {
+  isDancePerformanceCategory,
+  isJiatingOlympicsCategory,
+  isMixerCategory,
+} from "@/utils/events";
 
 /**
  * Pure helpers for the officer Jiating calendar view.
@@ -26,14 +30,15 @@ export const CSA_CONFLICT_CATEGORIES: ReadonlySet<string> = new Set([
 export const DEFAULT_FAMILY_COLOR = "#4779B8";
 export const CSA_LAYER_COLOR = "#64748b";
 export const OLYMPICS_LAYER_COLOR = "#d97706";
+export const DANCE_LAYER_COLOR = "#3aa7c4";
 
 /**
  * Shared layers that Jiating events and mixers are checked against. Each has
- * its own legend checkbox and URL flag (`csa=0` / `oly=0` hides it).
+ * its own legend checkbox and URL flag (`csa=0` / `oly=0` / `dance=0` hides it).
  */
-export type LayerKind = "csa" | "olympics";
+export type LayerKind = "csa" | "olympics" | "dance";
 
-export const LAYER_KINDS: readonly LayerKind[] = ["csa", "olympics"];
+export const LAYER_KINDS: readonly LayerKind[] = ["csa", "olympics", "dance"];
 
 export const LAYER_META: Record<
   LayerKind,
@@ -44,6 +49,11 @@ export const LAYER_META: Record<
     label: "Jiating Olympics",
     color: OLYMPICS_LAYER_COLOR,
     param: "oly",
+  },
+  dance: {
+    label: "Dance Performance",
+    color: DANCE_LAYER_COLOR,
+    param: "dance",
   },
 };
 
@@ -191,6 +201,9 @@ export function buildCalendarEntries(
     } else if (isJiatingOlympicsCategory(category)) {
       kind = "olympics";
       familyIds = [];
+    } else if (isDancePerformanceCategory(category)) {
+      kind = "dance";
+      familyIds = [];
     } else {
       continue;
     }
@@ -247,7 +260,7 @@ export type LayerConflict = { jiatingId: string; layerId: string };
 /**
  * A conflict is a Jiating Event or Mixer (with a checked family) overlapping a
  * layer event: a General Meeting, CSA-Wide, or CSA-Wide Mixers event, or a
- * Jiating Olympics event. Layer events count whether or not their layer is
+ * Jiating Olympics or Dance Performance event. Layer events count whether or not their layer is
  * shown, so hiding a layer never hides a warning.
  */
 export function findLayerConflicts(
@@ -413,7 +426,7 @@ export function fitDayHourRanges(
 export type HeatmapCell = {
   /** Checked families with an event in this slot. */
   busyFamilyIds: string[];
-  /** A CSA-wide or Olympics event fills this slot (only counted when its layer is on). */
+  /** A layer event (CSA-wide, Olympics, Dance Performance) fills this slot (only counted when its layer is on). */
   layerBusy: boolean;
 };
 

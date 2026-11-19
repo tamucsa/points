@@ -160,6 +160,10 @@ export function isJiatingOlympicsCategory(category: string) {
   return category.trim() === 'Jiating Olympics'
 }
 
+export function isDancePerformanceCategory(category: string) {
+  return category.trim() === 'Dance Performance'
+}
+
 export function isMixerCategory(category: string) {
   const value = category.trim()
   // 'Mixer' kept for any legacy rows created before the rename.

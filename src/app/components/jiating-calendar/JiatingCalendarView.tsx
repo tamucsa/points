@@ -122,9 +122,10 @@ export default function JiatingCalendarView({
   const checked = useMemo(() => new Set(checkedList), [checkedKey]);
   const showCsa = searchParams.get(LAYER_META.csa.param) !== "0";
   const showOlympics = searchParams.get(LAYER_META.olympics.param) !== "0";
+  const showDance = searchParams.get(LAYER_META.dance.param) !== "0";
   const layers: LayerVisibility = useMemo(
-    () => ({ csa: showCsa, olympics: showOlympics }),
-    [showCsa, showOlympics],
+    () => ({ csa: showCsa, olympics: showOlympics, dance: showDance }),
+    [showCsa, showOlympics, showDance],
   );
   const layout: CalendarLayout =
     searchParams.get("layout") === "lanes" ? "lanes" : "week";
@@ -235,7 +236,7 @@ export default function JiatingCalendarView({
   ]);
 
   const legendCounts = useMemo(() => {
-    const counts: Record<string, number> = { csa: 0, olympics: 0 };
+    const counts: Record<string, number> = { csa: 0, olympics: 0, dance: 0 };
     for (const entry of weekEntries) {
       if (isLayerKind(entry.kind)) counts[entry.kind] += 1;
       for (const id of entry.familyIds) counts[id] = (counts[id] ?? 0) + 1;
@@ -433,7 +434,8 @@ export default function JiatingCalendarView({
           <div className="mb-3 rounded-2xl border border-error-border bg-error-bg p-3">
             <div className="mb-2 flex items-center justify-between">
               <p className="text-sm font-semibold text-error">
-                Jiating events overlapping CSA-wide or Jiating Olympics events
+                Jiating events overlapping CSA-wide, Jiating Olympics, or Dance
+                Performance events
                 this week
               </p>
               <button
